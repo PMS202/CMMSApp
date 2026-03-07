@@ -1,0 +1,5 @@
+PE chanel:
+https://yageo.webhook.office.com/webhookb2/43c60a89-1113-44b3-bbf9-563c8da25dbd@66d44188-4e30-446d-9ab1-a4ae1962a1b1/IncomingWebhook/e501d4f4af60441b99dae2add26939a8/743e9a0f-79fa-41cc-acb7-5b896ae80061/V2I7GvvWjBo8paRmnw9GdW9OqKmR-bUelS7B5tW1CKnPY1
+
+Maintenance chanel:
+https://yageo.webhook.office.com/webhookb2/43c60a89-1113-44b3-bbf9-563c8da25dbd@66d44188-4e30-446d-9ab1-a4ae1962a1b1/IncomingWebhook/d320c80956a14a059df2325267bbb46a/743e9a0f-79fa-41cc-acb7-5b896ae80061/V2SWQ0CJWbCKwGcLeJ_A6I0p9FUMJVNkrYb_I-_Sm0lOw1

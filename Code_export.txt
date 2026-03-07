@@ -1,0 +1,9 @@
+
+App:
+python -m nuitka --mingw64 CMMSApp.py --standalone --enable-plugin=pyqt5 --noinclude-qt-plugins=qtwebengine --include-data-dir=Icons=Icons --include-data-dir=Stylesheet=Stylesheet --include-data-dir=SumatraPDF-3.5.2-64=SumatraPDF-3.5.2-64 --include-package=UI --include-package=Calculation --include-package=Database --include-package=Stock_control --include-package=Maintenance --windows-icon-from-ico=Icons/App.ico --windows-console-mode=disable --output-dir=CMMSApp --follow-imports --nofollow-import-to=tkinter --nofollow-import-to=unittest --assume-yes-for-downloads --remove-output --jobs=6
+
+Launcher: 
+python -m nuitka --standalone --windows-console-mode=disable --follow-imports --include-package=Database --output-dir=Launcher Launcher.py --windows-icon-from-ico=Icons/App.ico --remove-output
+
+Updater:
+python -m nuitka --onefile --windows-console-mode=disable --enable-plugin=pyqt5 --follow-imports update.py --remove-output
