@@ -3045,9 +3045,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 if area_name is None or sheet_name is None:
                     return
                 excel_data_process = Downtime_Excel_Processor(file_path=file_path, sheet_name=sheet_name, area_name=area_name, database=self.database_process)
-                data, error_frame = excel_data_process.read_filter_excel()
-                if data is not None:
-                    downtime_input_dialog = Downtime_Input(parent=self, database=self.database_process, data_frame=data, error_frame=error_frame, area_name=area_name, month_year=excel_data_process.month_year)
+                self.data, self.error_frame, self.working_time = excel_data_process.read_filter_excel()
+                if self.data is not None:
+                    downtime_input_dialog = Downtime_Input(parent=self, database=self.database_process, data_frame=self.data, error_frame=self.error_frame, area_name=area_name, month_year=excel_data_process.month_year)
                     downtime_input_dialog.exec()
                 if downtime_input_dialog.result() == QtWidgets.QDialog.Accepted:
                     self.ui.DT_data_table.setUpdatesEnabled(False)
@@ -3059,7 +3059,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                             item.setTextAlignment(QtCore.Qt.AlignCenter)
                             self.DT_model.setItem(r, c, item)
                     self.ui.DT_data_table.setUpdatesEnabled(True)
-                    self.DT_summary_table_show(area_name, downtime_input_dialog.data_frame)
+                    self.DT_summary_table_show(area_name, downtime_input_dialog.data_frame, self.working_time)
                     self.DT_summary_chart_show("error", downtime_input_dialog.data_frame)
                     self.safe_connect(self.ui.DT_error_chart_btn.clicked, lambda: self.DT_summary_chart_show("error", downtime_input_dialog.data_frame))
                     self.safe_connect(self.ui.DT_line_chart_btn.clicked, lambda: self.DT_summary_chart_show("line", downtime_input_dialog.data_frame))
@@ -3067,13 +3067,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Error", f"Failed to upload data: {e}")
 
-    def DT_summary_table_show(self,area,data_frame):
+    def DT_summary_table_show(self,area,data_frame, working_time):
         try:
             area_lbl = area
             total_failure = data_frame.shape[0]
             total_loss = data_frame["total_loss_time"].sum()
+            total_working_time = working_time.drop(columns=["Date"]).apply(pd.to_numeric, errors="coerce").fillna(0).to_numpy().sum()
             mttr = round(total_loss/total_failure,2) if total_failure > 0 else 0
-            mtbf = round((30*24*60*data_frame["line"].nunique() - total_loss)/total_failure,2) if total_failure > 0 else 0
+            mtbf = round((total_working_time*60 - total_loss)/total_failure,2) if total_failure > 0 else 0
             machine_most_failure = data_frame["machine_code"].mode()[0] if not data_frame["machine_code"].mode().empty else "N/A"
             failure_code_most_frequent = data_frame["error_code"].mode()[0] if not data_frame["error_code"].mode().empty else "N/A"
             summary_data = [area_lbl, f"{total_failure} times", f"{total_loss} mins", f"{mttr} mins", f"{mtbf} mins", machine_most_failure, failure_code_most_frequent]
@@ -3097,19 +3098,21 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         
         try:
             if chart_type == "error":
+                self.style_button_with_shadow((self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn))
                 error_counts = data_frame["error_code"].value_counts()
                 self.DT_chart_drawing(data_frame, "error_code", "total_loss_time", "Top 10 Error Codes by Loss Time", "Error Code", "Total Loss Time (mins)")
             elif chart_type == "line":
+                self.style_button_with_shadow((self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn,self.ui.DT_error_chart_btn))
                 line_counts = data_frame["line"].value_counts()
                 self.DT_chart_drawing(data_frame, "line", "total_loss_time", "Top 10 Lines by Loss Time", "Line", "Total Loss Time (mins)")
             elif chart_type == "machine":
+                self.style_button_with_shadow((self.ui.DT_machine_chart_btn,self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn))
                 machine_counts = data_frame["machine_code"].value_counts()
                 self.DT_chart_drawing(data_frame, "machine_code", "total_loss_time", "Top 10 Machines by Loss Time", "Machine", "Total Loss Time (mins)")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to show chart: {e}")
 
     def DT_chart_drawing(self,data_frame, group_by_col, value_col, title, x_label, y_label):
-        self.style_button_with_shadow((self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn))
         layout = self.ui.DT_summary_chart_widget.layout()
         if layout is not None:
             while layout.count():

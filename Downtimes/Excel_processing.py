@@ -20,7 +20,9 @@ class Downtime_Excel_Processor:
         self.error_frame = pd.DataFrame(columns=["date", "line", "start_time","technical_start_time","finish_time","technical_name", "error_code", "machine_code", "column_error", "error_message"])
 
     def read_filter_excel(self):
-        change_model_code_list = ["100","199"]
+        change_model_code_list = [row[0] for row in self.database.query('''SELECT error_code FROM error_codes_list as ecl
+                                                        JOIN downtime_areas as da ON ecl.department_id = da.department_id
+                                                        WHERE `error_description` like "%đổi%model%" AND da.downtime_area_name = :area_name;''', params={"area_name": self.area_name})]
         def add_error_info(data, column_error, error_message):
             data = data.copy()
             data["column_error"] = column_error
@@ -47,17 +49,36 @@ class Downtime_Excel_Processor:
                                                 ON dapl.downtime_area_id = da.downtime_area_id
                                             WHERE da.downtime_area_name = :area_name AND m.machine_status = "GOOD";''', params = {"area_name": self.area_name})
             machine_code_list = [code[0] for code in temp]
-            self.data = pd.read_excel(self.file_path, sheet_name=self.sheet_name, skiprows=4, 
+            excel_file = pd.ExcelFile(self.file_path)
+            
+            self.working_time = pd.read_excel(excel_file, sheet_name="Working time", skiprows=13)
+            self.working_time = self.working_time.loc[:, ~self.working_time.columns.astype(str).str.contains(r"^Unnamed", case=False, na=False)]
+            self.working_time["Date"] = pd.to_datetime(self.working_time["Date"], errors='coerce')
+            self.working_time = self.working_time[self.working_time["Date"].notna()]
+            self.working_time = self.working_time.fillna(0)
+            self.working_time["Date"] = self.working_time["Date"].dt.strftime("%Y-%m-%d")
+
+
+            self.data = pd.read_excel(excel_file, sheet_name=self.sheet_name, skiprows=4, 
                                       header=None, usecols=[0,1,2,3,4,9,10,17], dtype={10: str, 17: str})
             self.data = self.data.rename(columns={0: "date", 1: "line", 2: "start_time", 3: "technical_start_time", 4: "finish_time", 9: "technical_name", 10: "error_code", 17: "machine_code"})
             self.data = self.data.replace({"nan": pd.NA})
             time_columns = ["start_time", "technical_start_time", "finish_time"]
             self.data = self.data[self.data["date"].notna()]
             for col in time_columns:
-                self.data[col] = self.data[col].replace({"24:00": "00:00"})
+                self.data[col] = (
+                            self.data[col]
+                            .astype("string")
+                            .replace(
+                                {
+                                    r"^24:(\d{2})$": r"00:\1",
+                                    r"^24:(\d{2}):(\d{2})$": r"00:\1:\2",
+                                },
+                                regex=True,
+                            ))
                 self.data[col] = self.data[col].apply(
                     lambda x: str(x).strftime("%H:%M") if hasattr(str(x), 'strftime') and pd.notna(x) 
-                    else (pd.to_datetime(str(x), format="%H:%M", errors='coerce').strftime("%H:%M") if pd.notna(x) else str(x))
+                    else (pd.to_datetime(str(x), format="%H:%M", errors='coerce').strftime("%H:%M") if pd.notna(x) or pd.to_datetime(str(x), format="%H:%M", errors='coerce') is not pd.NaT else str(x))
                 )
             normalized = self.sheet_name.replace("-", " ").replace(".", " ")
             dt = pd.to_datetime(normalized, format="%b %y")
@@ -100,20 +121,19 @@ class Downtime_Excel_Processor:
             wait_technical = wait_technical.where(wait_technical >= 0, wait_technical + 1440)
 
             self.data.insert(6, "wait_technical_time", wait_technical)
-            return self.data,self.error_frame
+            return self.data,self.error_frame, self.working_time
         except Exception as e: 
             raise Exception(f"Error reading Excel file: {e}")
-            return None, None
+            return None, None, None
 
 if __name__ == "__main__":
-    file_path = r"C:\Users\2173452100291\Documents\program\Copy of Downtime  SC-A-Tu.xlsx"
-    sheet_name = "Nov-25"
-    # file_path = r"\\172.30.73.156\ushare\2173452300015\7. AUDITS\1. Monthly data analysis\1. 2025\1. Downtime_IATF\4. Other\Downtime HOKKO-2025 Rev.xlsx"
-    # sheet_name = "Dec.25"
-    month_year = "2025-11"
-    database = Database_process()
-    processor = Downtime_Excel_Processor(file_path, sheet_name, database,area_name="SC-A")
-    processor.read_filter_excel()
-    print("Filtered Data:")
-    print(processor.error_frame)
+    file_path = r"C:\Users\2173452100291\Documents\CMMSApp\WorkingTime.xlsx"
+    sheet_name = "Working time"
+    data = pd.read_excel(file_path, sheet_name=sheet_name, skiprows=13)
+    data = data.loc[:, ~data.columns.astype(str).str.contains(r"^Unnamed", case=False, na=False)]
+    data["Date"] = pd.to_datetime(data["Date"], errors='coerce')
+    data = data[data["Date"].notna()]
+    data = data.fillna(0)
+    data["Date"] = data["Date"].dt.strftime("%Y-%m-%d")
+    print(data.drop(columns=["Date"]).apply(pd.to_numeric, errors="coerce").fillna(0).to_numpy().sum())
     
