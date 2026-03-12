@@ -9,10 +9,10 @@ from Database.MariaDB import Database_process
 
 db = Database_process()
 
-frame = db.query(sql = '''SELECT machine_code, status, line_name
-                 FROM maintenance_with_status AS ms
-                 WHERE status = "Near due" COLLATE utf8mb4_unicode_ci;''')
+frame = db.query(sql = '''SELECT machine_name,machine_code,line_name,maintenance_date FROM view_record_pending
+WHERE line_name IN ("MA16")
+ORDER BY line_name ASC, machine_code ASC;''')
 
-df = pd.DataFrame(frame, columns=['machine_code', 'status', 'line_name'])
-output_path = os.path.join(PROJECT_ROOT, 'exported_files', 'Mar.xlsx')
+df = pd.DataFrame(frame, columns=['machine_name', 'machine_code', 'line_name', 'maintenance_date'])
+output_path = os.path.join(PROJECT_ROOT, 'exported_files', 'MTPI_MA16.xlsx')
 df.to_excel(output_path, index=False)

@@ -13,6 +13,7 @@ from UI.Update_machine_info import Ui_Update_machine_info
 from UI.Sync_missing_data import Ui_Sync_Missing_Data
 from UI.Downtime_input_window import Ui_DowntimeInputWindow
 from UI.Group_choose import Ui_Group_choose
+from UI.Error_code_management import Ui_Error_Code_Management
 from Calculation.OEE_cal_result import OEE_result
 from Database.MariaDB import Database_process
 from Stock_control.stock_delegate import StockItemDelegate,ImageCache
@@ -21,11 +22,12 @@ from Maintenance.printer import Printer_process
 from Maintenance.scan_qrcode import Scan_record_process
 from Maintenance.attached_equipment import DynamicSuggestion
 from Downtimes.Excel_processing import Downtime_Excel_Processor
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+# import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
 # from PyQt5.QtWebEngineWidgets import QWebEngineView
 # from PyQt5.QtWebChannel import QWebChannel
 # from PyQt5 import QtWebEngineWidgets
+import pyqtgraph as pg
 import numpy as np
 import sys
 import os
@@ -1386,9 +1388,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                         continue
                     attached_machine[main_code] = [p.strip() for p in text.split(';') if p and p.strip()]
                 elif c == 7:
-                    editor = self.ui.print_record_table.cellWidget(r, c)
-                    text = editor.text().strip()
                     try:
+                        editor = self.ui.print_record_table.cellWidget(r, c)
+                        text = editor.text().strip()
                         if not STRICT_DATE.match(text):
                             raise ValueError("Format must be YYYY-MM-DD")
                         dt.datetime.strptime(text, "%Y-%m-%d")
@@ -1396,10 +1398,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                         QtWidgets.QMessageBox.critical(self, "Error", f"Please enter the correct date format (YYYY-MM-DD) at row {r+1}, column {c+1}")
                         return
                 else:
-                    editor = self.ui.print_record_table.cellWidget(r, c)
-                    text = editor.text().strip()
-                    if editor is None or text == "" or text == "None":
-                        QtWidgets.QMessageBox.critical(self, "Error", f"Please fill in all blanks or cells with 'None' content")
+                    try:
+                        editor = self.ui.print_record_table.cellWidget(r, c)
+                        text = editor.text().strip()
+                        if editor is None or text == "" or text == "None":
+                            QtWidgets.QMessageBox.critical(self, "Error", f"Please fill in all blanks or cells with 'None' content")
+                            return
+                    except Exception as e:
+                        QtWidgets.QMessageBox.critical(self, "Error", f"Error at row {r+1}, column {c+1}: {e}")
                         return
             if (main_code in self.record_pending) and (main_code not in  exist_map.keys()) and (main_code not in  exist_map.values()):
                 reply = QtWidgets.QMessageBox.question(
@@ -1749,7 +1755,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                             attached_file = [item,attached_name[index_1][0]] + machine_info_list[2:]
                             file_list.append([item,"_".join(x.strip().replace(" ", "_") for x in attached_file) + ".pdf"])
                     for file in file_list:
-                        record_link_dict[file[0]] = f"{save_link}/{file[1]}"
+                        record_link_dict[file[0]] = f"{save_link}/{file[1].replace('/', '-')}"
                         if os.path.isdir(self.scan_QRcode.link):
                             pass
                         else:
@@ -2985,7 +2991,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
 
 
 #==========================================================================================================================
-
+    @QtCore.pyqtSlot()
     def Downtime_page(self):
         self.ui.main_stacked.setCurrentWidget(self.ui.Downtime_page)
         self.set_stylesheet_change_page((self.ui.Downtime_btn,self.ui.OEE_btn,self.ui.Home_btn,self.ui.Maintenance_btn, self.ui.Stock_btn, self.ui.Order_btn))
@@ -2997,15 +3003,56 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.safe_connect(self.ui.DT_data_btn.clicked, self.Data_Downtime_page)
         self.safe_connect(self.ui.DT_import_data_btn.clicked, self.Import_data_Downtime_page)
         self.safe_connect(self.ui.DT_problem_report_btn.clicked, self.Problem_report_Downtime_page)
-
+    
+    @QtCore.pyqtSlot()
     def Dashboard_Downtime_page(self):
         self.style_button_with_shadow((self.ui.DT_dashboard_btn,self.ui.DT_data_btn,self.ui.DT_import_data_btn,self.ui.DT_problem_report_btn))
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_Dashboard_widget)
+        areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
+                                                                            FROM `downtime_areas`;''')]
+        self.ui.DT_area_cbb.clear()
+        self.ui.DT_area_cbb.addItem("")
+        self.ui.DT_area_cbb.addItems(areas)
+        self.DT_silde_bar_animation = QtCore.QPropertyAnimation(self.ui.frame_106, b"maximumWidth")
+        self.DT_silde_bar_animation.setDuration(310)
+        self.safe_connect(self.ui.DT_show_sorting_btn.clicked, self.show_sorting_filter_Downtime)
+        self.ui.DT_date_edit_2.setDate(QtCore.QDate.currentDate().addMonths(-1))
+        downtime_date = self.ui.DT_date_edit_2.date().toString("yyyy-MM-dd")
+        area_name = self.ui.DT_area_cbb.currentText()
+        data = self.database_process.query(sql = '''SELECT d.downtime_start_time, d.downtime_start_repair_time, d.downtime_end_time, 
+                                                            ( d.downtime_end_time - d.downtime_start_time ) AS total_loss,
+                                                            (d.downtime_end_time - d.downtime_start_repair_time) AS wait_technical,
+                                                            d.staff_name, d.error_code, m.machine_code, p.line_name
+                                                    FROM `downtime_records` d
+                                                    JOIN `machines` m ON d.machine_id = m.machine_id
+                                                    JOIN `production_lines` p ON m.line_id = p.line_id
+                                                    JOIN `downtime_areas_production_lines` dapl ON dapl.line_id = p.line_id
+                                                    JOIN `downtime_areas` da ON dapl.downtime_area_id = da.downtime_area_id
+                                                    WHERE da.downtime_area_name = :area_name AND d.downtime_date = :downtime_date;''', params = {"area_name": area_name,"downtime_date":downtime_date})
+        if not data:
+            QtWidgets.QMessageBox.information(self, "No data", "No downtime records found for the selected area and date.")
+            return
+        # self.
 
+    @QtCore.pyqtSlot()
+    def show_sorting_filter_Downtime(self):
+        if self.ui.DT_show_sorting_btn.isChecked():
+            self.ui.frame_106.setEnabled(True)
+            self.DT_silde_bar_animation.setStartValue(0)
+            self.DT_silde_bar_animation.setEndValue(535)
+        else:
+            self.ui.frame_106.setEnabled(False)
+            self.DT_silde_bar_animation.setStartValue(535)
+            self.DT_silde_bar_animation.setEndValue(0)
+        self.DT_silde_bar_animation.start()
+
+
+    @QtCore.pyqtSlot()
     def Data_Downtime_page(self):
         self.style_button_with_shadow((self.ui.DT_data_btn,self.ui.DT_import_data_btn,self.ui.DT_problem_report_btn,self.ui.DT_dashboard_btn))
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_detail_data_page)
-
+    
+    @QtCore.pyqtSlot()
     def Import_data_Downtime_page(self):
         self.style_button_with_shadow((self.ui.DT_import_data_btn,self.ui.DT_problem_report_btn,self.ui.DT_dashboard_btn,self.ui.DT_data_btn))
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_import_data_page)
@@ -3026,8 +3073,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.ui.DT_summary_table.setColumnWidth(0,180)
         self.ui.DT_summary_table.setColumnWidth(1,self.ui.DT_summary_table.width()-179)
         self.safe_connect(self.ui.DT_upload_data_btn.clicked, self.DT_excel_upload)
+        self.safe_connect(self.ui.DT_error_code_btn.clicked, self.DT_error_code_show)
 
-
+    @QtCore.pyqtSlot()
     def DT_excel_upload(self):
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Select Excel File", "", "Excel Files (*.xlsx *.xls)")
         def get_area_name():
@@ -3051,19 +3099,24 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     downtime_input_dialog.exec()
                 if downtime_input_dialog.result() == QtWidgets.QDialog.Accepted:
                     self.ui.DT_data_table.setUpdatesEnabled(False)
+                    self.ui.DT_data_table.setSortingEnabled(False)
                     self.DT_model.removeRows(0, self.DT_model.rowCount())
                     self.DT_model.setRowCount(len(downtime_input_dialog.data_frame))
-                    for r in range(len(downtime_input_dialog.data_frame)):
-                        for c in range(len(downtime_input_dialog.data_frame.columns)):
-                            item = QtGui.QStandardItem(str(downtime_input_dialog.data_frame.iat[r, c]))
+                    self.DT_data = downtime_input_dialog.data_frame
+                    self.DT_month_year = downtime_input_dialog.month_year
+                    for r in range(len(self.DT_data)):
+                        for c in range(len(self.DT_data.columns)):
+                            item = QtGui.QStandardItem(str(self.DT_data.iat[r, c]))
                             item.setTextAlignment(QtCore.Qt.AlignCenter)
                             self.DT_model.setItem(r, c, item)
                     self.ui.DT_data_table.setUpdatesEnabled(True)
-                    self.DT_summary_table_show(area_name, downtime_input_dialog.data_frame, self.working_time)
-                    self.DT_summary_chart_show("error", downtime_input_dialog.data_frame)
-                    self.safe_connect(self.ui.DT_error_chart_btn.clicked, lambda: self.DT_summary_chart_show("error", downtime_input_dialog.data_frame))
-                    self.safe_connect(self.ui.DT_line_chart_btn.clicked, lambda: self.DT_summary_chart_show("line", downtime_input_dialog.data_frame))
-                    self.safe_connect(self.ui.DT_machine_chart_btn.clicked, lambda: self.DT_summary_chart_show("machine", downtime_input_dialog.data_frame))
+                    self.ui.DT_data_table.setSortingEnabled(True)
+                    self.DT_summary_table_show(area_name, self.DT_data, self.working_time)
+                    self.DT_summary_chart_show("error", self.DT_data)
+                    self.safe_connect(self.ui.DT_error_chart_btn.clicked, lambda: self.DT_summary_chart_show("error", self.DT_data))
+                    self.safe_connect(self.ui.DT_line_chart_btn.clicked, lambda: self.DT_summary_chart_show("line", self.DT_data))
+                    self.safe_connect(self.ui.DT_machine_chart_btn.clicked, lambda: self.DT_summary_chart_show("machine", self.DT_data))
+                    self.safe_connect(self.ui.DT_import_database_btn.clicked, self.DT_import_database)
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Error", f"Failed to upload data: {e}")
 
@@ -3084,7 +3137,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.DT_summary_model.setItem(i, 1, item)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to calculate summary: {e}")
-
+    
+    @QtCore.pyqtSlot()
     def DT_summary_chart_show(self, chart_type, data_frame):
         layout = self.ui.DT_summary_chart_widget.layout()
         if layout is not None:
@@ -3168,6 +3222,54 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to show chart: {e}")
 
+    @QtCore.pyqtSlot()
+    def DT_error_code_show(self):
+        try:
+            error_code_dialog = Error_code_management(parent=self, database=self.database_process)
+            error_code_dialog.exec_()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to show error codes: {e}")
+
+    @QtCore.pyqtSlot()
+    def DT_import_database(self):
+        try:
+            if self.DT_data is None:
+                QtWidgets.QMessageBox.warning(self, "No Data", "Please upload and review the data before importing to database.")
+                return
+            import_data_list = [
+                        {
+                            "machine_code": row.iloc[9],
+                            "line_name": row.iloc[1],
+                            "downtime_date": f"{self.DT_month_year}-{int(row.iloc[0]):02d}",
+                            "downtime_start_time": row.iloc[2],
+                            "downtime_start_repair_time": row.iloc[3],
+                            "downtime_end_time": row.iloc[4],
+                            "staff_name": row.iloc[7],
+                            "error_code": row.iloc[8],
+                        }
+                        for _, row in self.DT_data.iterrows()
+            ]
+            sql = """
+                        INSERT INTO `downtime_records`
+                            (`machine_id`, `line_id`, `downtime_date`, `downtime_start_time`,
+                            `downtime_start_repair_time`, `downtime_end_time`, `staff_name`, `error_code`)
+                        SELECT
+                            (SELECT machine_id FROM `machines` WHERE machine_code = :machine_code),
+                            (SELECT line_id FROM `production_lines` WHERE line_name = :line_name),
+                            :downtime_date,
+                            :downtime_start_time,
+                            :downtime_start_repair_time,
+                            :downtime_end_time,
+                            :staff_name,
+                            :error_code
+                    """
+            import_result = self.database_process.executemany(sql=sql, params_list=import_data_list)
+            if import_result:
+                QtWidgets.QMessageBox.information(self, "Success", "Data has been imported to database successfully.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to import data to database: {e}")
+    
+    @QtCore.pyqtSlot()
     def Problem_report_Downtime_page(self):
         self.style_button_with_shadow((self.ui.DT_problem_report_btn,self.ui.DT_dashboard_btn,self.ui.DT_data_btn,self.ui.DT_import_data_btn))
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_problem_report_page)
@@ -5302,7 +5404,6 @@ class Form_Modification(QtWidgets.QDialog):
         self.ui.apply_machine_table.insertRow(current_row)
         editor = QtWidgets.QLineEdit()
         editor.setStyleSheet(''' border: none;''')
-        # editor.textChanged.connect(lambda text, r=current_row,c=0 : self.on_text_changed(text,c,r,isupdate))
         editor.textChanged.connect(
             lambda text, r=current_row, c=0: self.on_text_changed(text, c, r, isupdate)
         )
@@ -6297,6 +6398,238 @@ class Downtime_Input(QtWidgets.QDialog):
         elif name == "Delete":
             self.ui.error_row_table.model().removeRow(row)
 
+class Error_code_management(QtWidgets.QDialog):
+    def __init__(self, parent = None, database = None):
+        super().__init__(parent)
+        self.parent = parent
+        self.database = database
+        self.ui = Ui_Error_Code_Management()
+        self.ui.setupUi(self)
+        self.new_errors_code = []
+        self.remove_error_code = []
+        self.setWindowTitle("Error Code Management")
+        self.load_error_codes()
+        self.setup_signals()
+
+    def setup_signals(self):
+        self.ui.Group_cbb.currentIndexChanged.connect(self.load_area)
+        self.ui.Area_cbb.currentIndexChanged.connect(self.load_process)
+        self.ui.Load_btn.clicked.connect(self.filter_error_codes)
+        self.ui.Cancel_btn.clicked.connect(self.reject)
+        self.ui.Confirm_btn.clicked.connect(self.update_changes)
+        self.ui.Insert_btn.clicked.connect(self.insert_row)
+        self.ui.Delete_btn.clicked.connect(self.delete_row)
+
+    @QtCore.pyqtSlot()
+    def load_error_codes(self):
+        try:
+            groups = ["All"] + [row[0] for row in self.parent.group]
+            self.ui.Group_cbb.addItems(groups)
+            self.ui.Group_cbb.setCurrentText("All")
+            self.load_area()
+            self.ui.error_list_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+            self.ui.error_list_table.setSortingEnabled(False)
+            self.ui.error_list_table.setUpdatesEnabled(False)
+            result = self.database.query(sql = ''' SELECT ecl.error_code, ecl.error_description, ecl.reason, ecl.recommended_action, ecl.process, da.downtime_area_name
+                                                    FROM `error_codes_list` ecl
+                                                    JOIN `downtime_areas` da ON ecl.downtime_area_id = da.downtime_area_id
+                                                    ORDER BY ecl.error_code ASC, ecl.process COLLATE utf8mb4_unicode_ci ASC;''')
+            headers = ["Error Code", "Description", "Reason", "Recommended\nAction", "Process", "Downtime\nArea"]
+            self.error_model = QtGui.QStandardItemModel()
+            self.error_model.setHorizontalHeaderLabels(headers)
+            self.add_item_to_error_list(result, self.error_model)
+            self.ui.error_list_table.setModel(self.error_model)
+            self.ui.error_list_table.resizeColumnsToContents()
+            self.ui.error_list_table.setColumnWidth(3,self.ui.error_list_table.columnWidth(3)-15)
+            self.ui.error_list_table.setColumnWidth(2,self.ui.error_list_table.columnWidth(2)-15)
+            self.ui.error_list_table.resizeRowsToContents()
+            self.ui.error_list_table.setSortingEnabled(True)
+            self.ui.error_list_table.setUpdatesEnabled(True)
+            self.ui.error_list_table.setAlternatingRowColors(True)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to load error codes: {e}")
+
+    def add_item_to_error_list(self,data,model):
+        model.removeRows(0, model.rowCount())
+        self.new_errors_code = []
+        self.remove_error_code = []
+        for row_idx, row in enumerate(data):
+            for col_idx, col in enumerate(row):
+                item = QtGui.QStandardItem(str(col) if col is not None else "")
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                item.setEditable(False)
+                model.setItem(row_idx, col_idx, item)
+
+    @QtCore.pyqtSlot()
+    def filter_error_codes(self):
+        try:
+            selected_group = self.ui.Group_cbb.currentText()
+            area = self.ui.Area_cbb.currentText()
+            process = self.ui.Process_cbb.currentText()
+            search_char = self.ui.Search_lnedit.text().strip()
+            filter_scripts = ""
+            if selected_group == "All" and area == "All" and process == "All" and not search_char:
+                filter_scripts = ""
+                params =  None
+            else:
+                conditions = []
+                params = {}
+                if selected_group != "All":
+                    conditions.append("d.department_name = :group")
+                    params['group'] = selected_group
+                if area != "All":
+                    conditions.append("da.downtime_area_name = :area")
+                    params['area'] = area
+                if process != "All":
+                    conditions.append("ecl.process = :process")
+                    params['process'] = process
+                if search_char:
+                    conditions.append("(ecl.error_code LIKE :search OR ecl.error_description LIKE :search OR ecl.reason LIKE :search OR ecl.recommended_action LIKE :search)")
+                    params['search'] = f"%{search_char}%"
+                filter_scripts = "WHERE " + " AND ".join(conditions)
+            result = self.database.query(sql = f''' SELECT ecl.error_code, ecl.error_description, ecl.reason, ecl.recommended_action, ecl.process, da.downtime_area_name
+                                                FROM `error_codes_list` ecl
+                                                JOIN `downtime_areas` da ON ecl.downtime_area_id = da.downtime_area_id
+                                                JOIN `departments` d ON da.department_id = d.department_id
+                                                {filter_scripts}
+                                                ORDER BY ecl.error_code ASC, ecl.process COLLATE utf8mb4_unicode_ci ASC;''', params = params)
+            self.ui.error_list_table.setSortingEnabled(False)
+            self.ui.error_list_table.setUpdatesEnabled(False)
+            self.add_item_to_error_list(result, self.error_model)
+            self.ui.error_list_table.setSortingEnabled(True)
+            self.ui.error_list_table.setUpdatesEnabled(True)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to filter error codes: {e}")
+
+    @QtCore.pyqtSlot()
+    def load_area(self):
+        try:
+            selected_group = self.ui.Group_cbb.currentText()
+            if selected_group == "All":
+                result = self.database.query(sql = ''' SELECT DISTINCT da.downtime_area_name
+                                                        FROM `downtime_areas` da
+                                                        ORDER BY da.downtime_area_name COLLATE utf8mb4_unicode_ci ASC;''')
+            else:
+                result = self.database.query(sql = ''' SELECT DISTINCT da.downtime_area_name
+                                                        FROM `downtime_areas` da
+                                                        JOIN `departments` d ON da.department_id = d.department_id
+                                                        WHERE d.department_name = :group
+                                                        ORDER BY da.downtime_area_name COLLATE utf8mb4_unicode_ci ASC;''', params = {'group': selected_group})
+            self.ui.Area_cbb.clear()
+            if result:
+                self.ui.Area_cbb.addItems(["All"] + [row[0] for row in result])
+                self.ui.Area_cbb.setCurrentText("All")
+                self.load_process()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to load areas: {e}")
+
+    @QtCore.pyqtSlot()
+    def load_process(self):
+        try:
+            area = self.ui.Area_cbb.currentText()
+            if area == "All":
+                result = self.database.query(sql = ''' SELECT DISTINCT process 
+                                                        FROM `error_codes_list` ecl
+                                                        JOIN `downtime_areas` da ON ecl.downtime_area_id = da.downtime_area_id
+                                                        ORDER BY process COLLATE utf8mb4_unicode_ci ASC;''')
+            else:
+                result = self.database.query(sql = ''' SELECT DISTINCT process 
+                                                        FROM `error_codes_list` ecl
+                                                        JOIN `downtime_areas` da ON ecl.downtime_area_id = da.downtime_area_id
+                                                        WHERE da.downtime_area_name = :area
+                                                        ORDER BY process COLLATE utf8mb4_unicode_ci ASC;''', params = {'area': area})
+            self.ui.Process_cbb.clear()
+            if result:
+                self.ui.Process_cbb.addItems(["All"] + [row[0] for row in result])
+                self.ui.Process_cbb.setCurrentText("All")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to load processes: {e}")
+    
+    @QtCore.pyqtSlot()
+    def delete_row(self):
+        if self.error_model.rowCount() == 0:
+            QtWidgets.QMessageBox.warning(self, "Warning", "No rows available to delete.")
+            return
+        index = self.ui.error_list_table.currentIndex()
+        if not index.isValid():
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a row to delete.")
+            return
+        row = index.row()
+        if row in self.new_errors_code:
+            self.new_errors_code.remove(row)
+        else:
+            self.remove_error_code.append((row,self.error_model.item(row, 0).text()))
+        self.error_model.removeRow(row)
+        self.new_errors_code = [r-1 if r > row else r for r in self.new_errors_code]
+        self.remove_error_code = [(r-1 if r > row else r, code) for r, code in self.remove_error_code]
+
+
+    @QtCore.pyqtSlot()
+    def insert_row(self):
+        try:
+            self.error_model.insertRow(self.error_model.rowCount())
+            for col in range(self.error_model.columnCount()):
+                item = QtGui.QStandardItem("")
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                item.setEditable(True)
+                self.error_model.setItem(self.error_model.rowCount() - 1, col, item)
+            self.ui.error_list_table.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked | QtWidgets.QAbstractItemView.EditKeyPressed)
+            self.new_errors_code.append(self.error_model.rowCount() - 1)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to insert new error code: {e}")
+    
+    @QtCore.pyqtSlot()
+    def update_changes(self):
+        if not self.new_errors_code and not self.remove_error_code:
+            self.accept()
+            return
+        try:
+            question = ""
+            if self.new_errors_code:
+                question += f"You are going to add {len(self.new_errors_code)} new error code(s):\n{', '.join([self.error_model.item(row, 0).text() for row in self.new_errors_code])}\n"
+            if self.remove_error_code:
+                question += f"You are going to remove {len(self.remove_error_code)} error code(s):\n{', '.join([error_code for row, error_code in self.remove_error_code])}\n"
+            error_code_list_remove = []
+            reply = QtWidgets.QMessageBox.question(self, "Confirm", f'''Are you sure you want to apply changes? \n{question}''', QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.No:
+                return
+            for row,error_code in self.remove_error_code:
+                error_code_list_remove.append({'code': error_code})
+            if error_code_list_remove:
+                self.database.executemany(sql = ''' DELETE FROM `error_codes_list` WHERE error_code = :code ''', params_list = error_code_list_remove)
+            for row in self.new_errors_code:
+                error_code = self.error_model.item(row, 0).text()
+                description = self.error_model.item(row, 1).text()
+                reason = self.error_model.item(row, 2).text()
+                recommended_action = self.error_model.item(row, 3).text()
+                process = self.error_model.item(row, 4).text()
+                area_name = self.error_model.item(row, 5).text()
+                if not error_code or not area_name:
+                    QtWidgets.QMessageBox.warning(self, "Warning", f"Error Code and Downtime Area cannot be empty. Please check row {row+1}.")
+                    return
+                self.database.query(sql = ''' INSERT INTO `error_codes_list` (error_code, error_description, reason, recommended_action, process, downtime_area_id)
+                                            VALUES (:code, :description, :reason, :action, :process,
+                                            (SELECT downtime_area_id FROM `downtime_areas` WHERE downtime_area_name = :area LIMIT 1))
+                                            ON DUPLICATE KEY UPDATE
+                                            error_description = VALUES(error_description),
+                                            reason = VALUES(reason),
+                                            recommended_action = VALUES(recommended_action),
+                                            process = VALUES(process),
+                                            downtime_area_id = VALUES(downtime_area_id);''', 
+                                            params = {
+                                                'code': error_code,
+                                                'description': description,
+                                                'reason': reason,
+                                                'action': recommended_action,
+                                                'process': process,
+                                                'area': area_name
+                                            })
+            QtWidgets.QMessageBox.information(self,"Success", "Changes updated successfully.")
+            self.accept()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to update changes: {e}")
+            return
+        
 def main():
     try:
         import ctypes

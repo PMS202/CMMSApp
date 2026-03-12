@@ -337,101 +337,171 @@ class Ui_MainWindow(object):
                 self.horizontalLayout_65 = QtWidgets.QHBoxLayout(self.frame_72)
                 self.horizontalLayout_65.setSpacing(0)
                 self.horizontalLayout_65.setObjectName(u"horizontalLayout_65")
-                self.horizontalLayout_65.setContentsMargins(0, 0, 600, 0)
-                self.frame_86 = QtWidgets.QFrame(self.frame_72)
-                self.frame_86.setObjectName(u"frame_86")
-                self.frame_86.setMaximumSize(QtCore.QSize(200, 16777215))
-                self.frame_86.setFrameShape(QtWidgets.QFrame.NoFrame)
-                self.horizontalLayout_62 = QtWidgets.QHBoxLayout(self.frame_86)
-                self.horizontalLayout_62.setSpacing(0)
+                self.horizontalLayout_65.setContentsMargins(0, 0, 0, 0)
+                self.frame_106 = QtWidgets.QFrame(self.frame_72)
+                self.frame_106.setObjectName(u"frame_106")
+                self.frame_106.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_106.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.frame_106.setMaximumWidth(0)
+                self.frame_106.setEnabled(False)
+                self.frame_106.setStyleSheet(qss)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(30)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 125)) 
+                self.frame_106.setGraphicsEffect(self.shadow)
+                self.horizontalLayout_76 = QtWidgets.QHBoxLayout(self.frame_106)
+                self.horizontalLayout_76.setSpacing(20)
+                self.horizontalLayout_76.setObjectName(u"horizontalLayout_76")
+                self.horizontalLayout_76.setContentsMargins(10, 0, 10, 0)
+                self.groupBox_86 = QtWidgets.QGroupBox(self.frame_106)
+                self.groupBox_86.setObjectName(u"groupBox_86")
+                self.groupBox_86.setMinimumSize(QtCore.QSize(100, 16777215))
+                self.groupBox_86.setStyleSheet(qss)
+                self.groupBox_86.setFont(QtGui.QFont("Comic Sans MS", 10))
+                self.horizontalLayout_62 = QtWidgets.QHBoxLayout(self.groupBox_86)
+                self.horizontalLayout_62.setSpacing(6)
                 self.horizontalLayout_62.setObjectName(u"horizontalLayout_62")
-                self.horizontalLayout_62.setContentsMargins(0, 0, 0, 0)
-                self.label_63 = QtWidgets.QLabel(self.frame_86)
-                self.label_63.setObjectName(u"label_63")
-                self.label_63.setAlignment(QtCore.Qt.AlignCenter)
-
-                self.horizontalLayout_62.addWidget(self.label_63)
-
-                self.DT_area_cbb = QtWidgets.QComboBox(self.frame_86)
+                self.horizontalLayout_62.setContentsMargins(6, 0, 6, 0)
+                self.DT_area_cbb = QtWidgets.QComboBox(self.groupBox_86)
                 self.DT_area_cbb.setObjectName(u"DT_area_cbb")
 
                 self.horizontalLayout_62.addWidget(self.DT_area_cbb)
 
 
-                self.horizontalLayout_65.addWidget(self.frame_86)
+                self.horizontalLayout_76.addWidget(self.groupBox_86)
 
-                self.frame_90 = QtWidgets.QFrame(self.frame_72)
-                self.frame_90.setObjectName(u"frame_90")
-                self.frame_90.setMaximumSize(QtCore.QSize(200, 16777215))
-                self.frame_90.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.frame_90.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.horizontalLayout_63 = QtWidgets.QHBoxLayout(self.frame_90)
+                self.groupBox_90 = QtWidgets.QGroupBox(self.frame_106)
+                self.groupBox_90.setObjectName(u"groupBox_90")
+                self.groupBox_90.setMaximumSize(QtCore.QSize(200, 16777215))
+                self.groupBox_90.setStyleSheet(qss)
+                self.groupBox_90.setFont(QtGui.QFont("Comic Sans MS", 10))
+                self.horizontalLayout_63 = QtWidgets.QHBoxLayout(self.groupBox_90)
                 self.horizontalLayout_63.setObjectName(u"horizontalLayout_63")
-                self.DT_day_radiobtn = QtWidgets.QRadioButton(self.frame_90)
+                self.horizontalLayout_63.setContentsMargins(6, 0, 6, 0)
+                self.DT_day_radiobtn = QtWidgets.QRadioButton(self.groupBox_90)
                 self.DT_day_radiobtn.setObjectName(u"DT_day_radiobtn")
-
+                self.DT_day_radiobtn.setChecked(True)
                 self.horizontalLayout_63.addWidget(self.DT_day_radiobtn)
 
-                self.DT_week_radiobtn = QtWidgets.QRadioButton(self.frame_90)
+                self.DT_week_radiobtn = QtWidgets.QRadioButton(self.groupBox_90)
                 self.DT_week_radiobtn.setObjectName(u"DT_week_radiobtn")
 
                 self.horizontalLayout_63.addWidget(self.DT_week_radiobtn)
 
-                self.DT_month_radiobtn = QtWidgets.QRadioButton(self.frame_90)
+                self.DT_month_radiobtn = QtWidgets.QRadioButton(self.groupBox_90)
                 self.DT_month_radiobtn.setObjectName(u"DT_month_radiobtn")
 
                 self.horizontalLayout_63.addWidget(self.DT_month_radiobtn)
 
 
-                self.horizontalLayout_65.addWidget(self.frame_90)
+                self.horizontalLayout_76.addWidget(self.groupBox_90)
 
-                self.frame_87 = QtWidgets.QFrame(self.frame_72)
+                self.groupBox = QtWidgets.QGroupBox(self.frame_106)
+                self.groupBox.setObjectName(u"groupBox")
+                self.groupBox.setStyleSheet(qss)
+                sizePolicy1 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+                sizePolicy1.setHorizontalStretch(0)
+                sizePolicy1.setVerticalStretch(0)
+                sizePolicy1.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
+                self.groupBox.setSizePolicy(sizePolicy1)
+                self.groupBox.setFlat(False)
+                self.groupBox.setFont(QtGui.QFont("Comic Sans MS", 10))
+                self.horizontalLayout_79 = QtWidgets.QHBoxLayout(self.groupBox)
+                self.horizontalLayout_79.setObjectName(u"horizontalLayout_79")
+                self.horizontalLayout_79.setContentsMargins(6, 0, 6, 0)
+                self.frame_87 = QtWidgets.QFrame(self.groupBox)
                 self.frame_87.setObjectName(u"frame_87")
                 self.frame_87.setMaximumSize(QtCore.QSize(200, 16777215))
                 self.frame_87.setFrameShape(QtWidgets.QFrame.NoFrame)
-                self.horizontalLayout_64 = QtWidgets.QHBoxLayout(self.frame_87)
-                self.horizontalLayout_64.setObjectName(u"horizontalLayout_64")
-                self.label_65 = QtWidgets.QLabel(self.frame_87)
-                self.label_65.setObjectName(u"label_65")
-                self.label_65.setAlignment(QtCore.Qt.AlignCenter)
-                self.horizontalLayout_64.addWidget(self.label_65)
+                self.frame_87.setStyleSheet("#frame_87 {\n"
+                                                        "    background-color: transparent;\n"
+                                                        "    border: none;\n"
+                                                        "}")
+                self.horizontalLayout_77 = QtWidgets.QHBoxLayout(self.frame_87)
+                self.horizontalLayout_77.setObjectName(u"horizontalLayout_77")
+                self.horizontalLayout_77.setContentsMargins(0, 0, 0, 0)
+                self.label_69 = QtWidgets.QLabel(self.frame_87)
+                self.label_69.setObjectName(u"label_69")
+                self.label_69.setAlignment(QtCore.Qt.AlignCenter)
+                self.label_69.setStyleSheet("#label_69 {\n"
+                                                        "    background-color: transparent;\n"
+                                                        "    border: none;\n"
+                                                        "}")
+                self.horizontalLayout_77.addWidget(self.label_69)
 
-                self.DT_date_edit = QtWidgets.QDateEdit(self.frame_87)
-                self.DT_date_edit.setObjectName(u"DT_date_edit")
-                self.DT_date_edit.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
-                self.DT_date_edit.setAccelerated(False)
-                self.DT_date_edit.setProperty("showGroupSeparator", False)
-                self.DT_date_edit.setCalendarPopup(True)
+                self.DT_date_edit_2 = QtWidgets.QDateEdit(self.frame_87)
+                self.DT_date_edit_2.setObjectName(u"DT_date_edit_2")
+                self.DT_date_edit_2.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+                self.DT_date_edit_2.setAccelerated(False)
+                self.DT_date_edit_2.setProperty("showGroupSeparator", False)
+                self.DT_date_edit_2.setCalendarPopup(True)
 
-                self.horizontalLayout_64.addWidget(self.DT_date_edit)
+                self.horizontalLayout_77.addWidget(self.DT_date_edit_2)
 
 
-                self.horizontalLayout_65.addWidget(self.frame_87)
+                self.horizontalLayout_79.addWidget(self.frame_87)
 
-                self.frame_91 = QtWidgets.QFrame(self.frame_72)
+                self.frame_91 = QtWidgets.QFrame(self.groupBox)
                 self.frame_91.setObjectName(u"frame_91")
                 self.frame_91.setMaximumSize(QtCore.QSize(200, 16777215))
-                self.frame_91.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.frame_91.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.horizontalLayout_66 = QtWidgets.QHBoxLayout(self.frame_91)
-                self.horizontalLayout_66.setObjectName(u"horizontalLayout_66")
-                self.label_64 = QtWidgets.QLabel(self.frame_91)
-                self.label_64.setObjectName(u"label_64")
-                self.label_64.setAlignment(QtCore.Qt.AlignCenter)
+                self.frame_91.setFrameShape(QtWidgets.QFrame.NoFrame)
+                self.frame_91.setStyleSheet("#frame_91 {\n"
+                                                        "    background-color: transparent;\n"
+                                                        "    border: none;\n"
+                                                        "}")
+                self.frame_91.setMaximumWidth(0)
+                self.horizontalLayout_78 = QtWidgets.QHBoxLayout(self.frame_91)
+                self.horizontalLayout_78.setObjectName(u"horizontalLayout_78")
+                self.horizontalLayout_78.setContentsMargins(0, 0, 0, 0)
+                self.label_72 = QtWidgets.QLabel(self.frame_91)
+                self.label_72.setObjectName(u"label_72")
+                self.label_72.setAlignment(QtCore.Qt.AlignCenter)
+                self.label_72.setStyleSheet("#label_72 {\n"
+                                                        "    background-color: transparent;\n"
+                                                        "    border: none;\n"
+                                                        "}")
 
-                self.horizontalLayout_66.addWidget(self.label_64)
+                self.horizontalLayout_78.addWidget(self.label_72)
 
-                self.DT_week_cbb = QtWidgets.QComboBox(self.frame_91)
-                self.DT_week_cbb.setObjectName(u"DT_week_cbb")
+                self.DT_week_cbb_2 = QtWidgets.QComboBox(self.frame_91)
+                self.DT_week_cbb_2.setObjectName(u"DT_week_cbb_2")
 
-                self.horizontalLayout_66.addWidget(self.DT_week_cbb)
-
-
-                self.horizontalLayout_65.addWidget(self.frame_91)
+                self.horizontalLayout_78.addWidget(self.DT_week_cbb_2)
 
 
+                self.horizontalLayout_79.addWidget(self.frame_91)
+
+
+                self.horizontalLayout_76.addWidget(self.groupBox)
+
+
+                self.horizontalLayout_65.addWidget(self.frame_106)
+
+                self.DT_show_sorting_btn = QtWidgets.QPushButton(self.frame_72)
+                self.DT_show_sorting_btn.setObjectName(u"DT_show_sorting_btn")
+                self.DT_show_sorting_btn.setStyleSheet("#DT_show_sorting_btn {\n"
+                                                        "    background-color: transparent;\n"
+                                                        "    border: none;\n"
+                                                        "}")
+                self.DT_show_sorting_btn.setMaximumWidth(70)
+                self.DT_show_sorting_btn.setMinimumWidth(70)
+                icon18 = QtGui.QIcon()
+                icon18.addPixmap(QtGui.QPixmap(resource_path("Icons/Next.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                icon18.addPixmap(QtGui.QPixmap(resource_path("Icons/Back.ico")), QtGui.QIcon.Normal, QtGui.QIcon.On)
+                self.DT_show_sorting_btn.setIcon(icon18)
+                self.DT_show_sorting_btn.setIconSize(QtCore.QSize(25, 25))
+                self.DT_show_sorting_btn.setCheckable(True)
+                self.DT_show_sorting_btn.setAutoRepeat(False)
+                self.DT_show_sorting_btn.setAutoExclusive(False)
+                self.DT_show_sorting_btn.setFlat(True)
+                self.DT_show_sorting_btn.setChecked(False)
+                self.horizontalLayout_65.addWidget(self.DT_show_sorting_btn)
+
+                self.horizontalSpacer = QtWidgets.QSpacerItem(200, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+
+                self.horizontalLayout_65.addItem(self.horizontalSpacer)
                 self.verticalLayout_41.addWidget(self.frame_72)
-
                 self.frame_74 = QtWidgets.QFrame(self.frame_73)
                 self.frame_74.setObjectName(u"frame_74")
                 self.frame_74.setMaximumSize(QtCore.QSize(16777215, 200))
@@ -3322,12 +3392,11 @@ class Ui_MainWindow(object):
                 self.DT_data_btn.setText(_translate("MainWindow", u"Detail Data", None))
                 self.DT_import_data_btn.setText(_translate("MainWindow", u"Import Data", None))
                 self.DT_problem_report_btn.setText(_translate("MainWindow", u"Problem Report", None))
-                self.label_63.setText(_translate("MainWindow", u"Area", None))
                 self.DT_day_radiobtn.setText(_translate("MainWindow", u"Day", None))
                 self.DT_week_radiobtn.setText(_translate("MainWindow", u"Week", None))
                 self.DT_month_radiobtn.setText(_translate("MainWindow", u"Month", None))
-                self.label_65.setText(_translate("MainWindow", u"Date", None))
-                self.label_64.setText(_translate("MainWindow", u"Week", None))
+                self.label_69.setText(_translate("MainWindow", u"Date", None))
+                self.label_72.setText(_translate("MainWindow", u"Week", None))
                 self.label_57.setText(_translate("MainWindow", u"Down Time", None))
                 self.DTime_value.setText(_translate("MainWindow", u"TextLabel", None))
                 self.label_58.setText(_translate("MainWindow", u"Down Events", None))
@@ -3339,9 +3408,6 @@ class Ui_MainWindow(object):
                 self.label_61.setText(_translate("MainWindow", u"Down time table", None))
                 self.label_62.setText(_translate("MainWindow", u"Detail chart", None))
                 self.label_66.setText(_translate("MainWindow", u"Problem report", None))
-                
-                # self.label_67.setText(_translate("MainWindow", u"Group", None))
-                # self.label_68.setText(_translate("MainWindow", u"Area", None))
                 self.DT_upload_data_btn.setText(_translate("MainWindow", u"Load Excel file", None))
                 self.DT_error_code_btn.setText(_translate("MainWindow", u"Error Code Managment", None))
                 self.label_70.setText(_translate("MainWindow", u"Down Time table", None))
@@ -3350,6 +3416,9 @@ class Ui_MainWindow(object):
                 self.DT_import_database_btn.setText(_translate("MainWindow", u"Upload to database", None))
                 self.DT_line_chart_btn.setText(_translate("MainWindow", u"Line chart", None))
                 self.DT_machine_chart_btn.setText(_translate("MainWindow", u"Machine chart", None))
+                self.groupBox_86.setTitle(_translate("MainWindow", u"Area", None))
+                self.groupBox_90.setTitle(_translate("MainWindow", u"View By", None))
+                self.groupBox.setTitle(_translate("MainWindow", u"Time Range", None))
 
         def company_week_number(self,date: datetime.date) -> int:
                 year_start = datetime.date(date.year, 1, 1)

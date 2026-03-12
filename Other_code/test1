@@ -1,0 +1,52 @@
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QFrame, QPushButton
+from PyQt5.QtCore import QPropertyAnimation
+
+
+class Window(QWidget):
+
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Animated Sidebar")
+
+        layout = QHBoxLayout(self)
+
+        # sidebar
+        self.sidebar = QFrame()
+        self.sidebar.setStyleSheet("background:#2c3e50;")
+        self.sidebar.setMaximumWidth(200)
+
+        # toggle button
+        self.btn = QPushButton(">")
+        self.btn.setCheckable(True)
+        self.btn.clicked.connect(self.toggle_sidebar)
+
+        layout.addWidget(self.sidebar)
+        layout.addWidget(self.btn)
+
+        self.animation = QPropertyAnimation(self.sidebar, b"maximumWidth")
+        self.animation.setDuration(200)
+
+    def toggle_sidebar(self):
+
+        if self.btn.isChecked():
+            self.btn.setText("<")
+
+            self.animation.setStartValue(0)
+            self.animation.setEndValue(200)
+
+        else:
+            self.btn.setText(">")
+
+            self.animation.setStartValue(200)
+            self.animation.setEndValue(0)
+
+        self.animation.start()
+
+
+app = QApplication(sys.argv)
+win = Window()
+win.resize(600, 400)
+win.show()
+sys.exit(app.exec_())

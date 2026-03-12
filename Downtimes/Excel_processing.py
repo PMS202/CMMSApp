@@ -21,7 +21,7 @@ class Downtime_Excel_Processor:
 
     def read_filter_excel(self):
         change_model_code_list = [row[0] for row in self.database.query('''SELECT error_code FROM error_codes_list as ecl
-                                                        JOIN downtime_areas as da ON ecl.department_id = da.department_id
+                                                        JOIN downtime_areas as da ON ecl.downtime_area_id = da.downtime_area_id
                                                         WHERE `error_description` like "%đổi%model%" AND da.downtime_area_name = :area_name;''', params={"area_name": self.area_name})]
         def add_error_info(data, column_error, error_message):
             data = data.copy()
@@ -126,14 +126,14 @@ class Downtime_Excel_Processor:
             raise Exception(f"Error reading Excel file: {e}")
             return None, None, None
 
-if __name__ == "__main__":
-    file_path = r"C:\Users\2173452100291\Documents\CMMSApp\WorkingTime.xlsx"
-    sheet_name = "Working time"
-    data = pd.read_excel(file_path, sheet_name=sheet_name, skiprows=13)
-    data = data.loc[:, ~data.columns.astype(str).str.contains(r"^Unnamed", case=False, na=False)]
-    data["Date"] = pd.to_datetime(data["Date"], errors='coerce')
-    data = data[data["Date"].notna()]
-    data = data.fillna(0)
-    data["Date"] = data["Date"].dt.strftime("%Y-%m-%d")
-    print(data.drop(columns=["Date"]).apply(pd.to_numeric, errors="coerce").fillna(0).to_numpy().sum())
+# if __name__ == "__main__":
+#     file_path = r"C:\Users\2173452100291\Documents\CMMSApp\WorkingTime.xlsx"
+#     sheet_name = "Working time"
+#     data = pd.read_excel(file_path, sheet_name=sheet_name, skiprows=13)
+#     data = data.loc[:, ~data.columns.astype(str).str.contains(r"^Unnamed", case=False, na=False)]
+#     data["Date"] = pd.to_datetime(data["Date"], errors='coerce')
+#     data = data[data["Date"].notna()]
+#     data = data.fillna(0)
+#     data["Date"] = data["Date"].dt.strftime("%Y-%m-%d")
+#     print(data.drop(columns=["Date"]).apply(pd.to_numeric, errors="coerce").fillna(0).to_numpy().sum())
     
