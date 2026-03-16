@@ -88,7 +88,71 @@ class Scan_record_process():
         return self.path
     
 # if __name__ == "__main__":
-    # scanner = Scan_record_process()
-    # paths = scanner.paths(r"\\172.30.73.156\share\13012026190443.pdf")
-    # scanner.split_pdf(r"C:\Users\2173452100291\Documents\program\30012026134600.pdf",60,61,r"X:\Scan\MCG150061_Forming_PE1_WSPE1_2026-01-19.pdf")  
-    # scanner.scanning_oneFile(r"\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\2026\F07.pdf")    
+#     scanner = Scan_record_process()
+#     import os
+#     import sys
+#     from pathlib import Path
+#     PROJECT_ROOT = Path(__file__).resolve().parents[1]
+#     if str(PROJECT_ROOT) not in sys.path:
+#         sys.path.insert(0, str(PROJECT_ROOT))
+#     from Database.MariaDB import Database_process
+#     paths = scanner.paths(r"//172.30.73.156/share/14032026154102.pdf")
+#     database = Database_process()
+#     plan_query = ''' SELECT m.machine_code,m.machine_name,d.department_name,pl.line_name,mp.maintenance_date,(SELECT "VINH") as technical_name, mf.page_num FROM maintenance_plan as mp
+#                     JOIN machines AS m ON mp.machine_id = m.machine_id
+#                     JOIN production_lines AS pl ON m.line_id = pl.line_id
+#                     JOIN departments AS d ON pl.department_id = d.department_id
+#                     JOIN maintenance_form_register AS mfr ON mfr.machine_id = m.machine_id
+#                     JOIN maintenance_form AS mf ON mfr.form_id = mf.form_id
+#                     WHERE pl.line_name = "Z06" AND mp.maintenance_date = "2026-03-05";'''
+#     output_file = database.query(sql = plan_query)
+#     start_page_dict = {
+#         "688714": 0,
+#         "MCG151765": 2,
+#         "ACS-048": 4,
+#         "MCG152284": 5,
+#         "MCG150267": 6,
+#         "ACS-049": 8,
+#         "MCG152736": 9,
+#         "687936": 10,
+#         "ACS-051": 12,
+#         "MCG151862": 13,
+#         "688250": 14,
+#         "ACS-053": 16,
+#         "MCG152750": 17,
+#         "MCG152117": 18,
+#         "ACS-052": 20,
+#         "MCG160005": 21,
+#         "MCG150262": 22,
+#         "ACS-050": 24,
+#         "MCG151567": 25,
+#         "687793": 26,
+#         "ACS-072": 28,
+#         "MCG151573": 29,
+#         "ZAJ-037": 30,
+#         "ZAJ-036": 31,
+#         "ZAJ-034": 32,
+#         "ZAJ-033": 33,
+#         "ZAJ-032": 34,
+#         "ZAJ-031": 35,
+#         "TAJ-006": 36,
+#         "ZAJ-041": 37,
+#         "MCG152876": 38,
+#         "MCG152191": 39,
+#         "MCG170292": 40,
+#         "MCG170121": 41,
+#         "MCG152165": 42,
+#         "ZJ-093": 43,
+#         "ZJ-101": 44,
+#         "ZJ-195": 45,
+#         "ZJ-088": 46,
+#         "ZJ-086": 47,
+#         "ZJ-092": 48,
+#         "ZJ-090": 49,
+#         "ZJ-141": 50,
+#         "ZJ-221": 51,
+#         "ZJ-139": 52,
+#         "ZJ-220": 53}
+#     for output in output_file:
+#         file_name = rf"X:\Scan\{output[0]}_{output[1]}_{output[2]}_{output[3]}_{output[5]}_{output[4]}.pdf"
+#         scanner.split_pdf(r"\\172.30.73.156\share\14032026154102.pdf",start_page_dict[output[0]],start_page_dict[output[0]]+output[6]-1,file_name)  

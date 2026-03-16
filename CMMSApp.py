@@ -43,6 +43,7 @@ import datetime as dt
 import re
 from dateutil.relativedelta import relativedelta
 from pyqtspinner.spinner import WaitingSpinner
+from sqlalchemy import text
 STRICT_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 def resource_path(relative_path):
@@ -3008,32 +3009,120 @@ class OEEAppWindow(QtWidgets.QMainWindow):
     def Dashboard_Downtime_page(self):
         self.style_button_with_shadow((self.ui.DT_dashboard_btn,self.ui.DT_data_btn,self.ui.DT_import_data_btn,self.ui.DT_problem_report_btn))
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_Dashboard_widget)
-        areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
-                                                                            FROM `downtime_areas`;''')]
-        self.ui.DT_area_cbb.clear()
-        self.ui.DT_area_cbb.addItem("")
-        self.ui.DT_area_cbb.addItems(areas)
-        self.DT_silde_bar_animation = QtCore.QPropertyAnimation(self.ui.frame_106, b"maximumWidth")
-        self.DT_silde_bar_animation.setDuration(310)
-        self.safe_connect(self.ui.DT_show_sorting_btn.clicked, self.show_sorting_filter_Downtime)
-        self.ui.DT_date_edit_2.setDate(QtCore.QDate.currentDate().addMonths(-1))
-        downtime_date = self.ui.DT_date_edit_2.date().toString("yyyy-MM-dd")
-        area_name = self.ui.DT_area_cbb.currentText()
-        data = self.database_process.query(sql = '''SELECT d.downtime_start_time, d.downtime_start_repair_time, d.downtime_end_time, 
-                                                            ( d.downtime_end_time - d.downtime_start_time ) AS total_loss,
-                                                            (d.downtime_end_time - d.downtime_start_repair_time) AS wait_technical,
-                                                            d.staff_name, d.error_code, m.machine_code, p.line_name
-                                                    FROM `downtime_records` d
-                                                    JOIN `machines` m ON d.machine_id = m.machine_id
-                                                    JOIN `production_lines` p ON m.line_id = p.line_id
-                                                    JOIN `downtime_areas_production_lines` dapl ON dapl.line_id = p.line_id
-                                                    JOIN `downtime_areas` da ON dapl.downtime_area_id = da.downtime_area_id
-                                                    WHERE da.downtime_area_name = :area_name AND d.downtime_date = :downtime_date;''', params = {"area_name": area_name,"downtime_date":downtime_date})
-        if not data:
-            QtWidgets.QMessageBox.information(self, "No data", "No downtime records found for the selected area and date.")
+        try:
+            areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
+                                                                                FROM `downtime_areas`;''')]
+            self.ui.DT_area_cbb.clear()
+            # self.ui.DT_area_cbb.addItem("")
+            self.ui.DT_area_cbb.addItems(areas)
+            self.DT_silde_bar_animation = QtCore.QPropertyAnimation(self.ui.frame_106, b"maximumWidth")
+            self.DT_silde_bar_animation.setDuration(310)
+            self.safe_connect(self.ui.DT_show_sorting_btn.clicked, self.show_sorting_filter_Downtime)
+            area_name = self.ui.DT_area_cbb.currentText()
+            nearest_date = self.database_process.query(sql = '''SELECT MAX(downtime_date) FROM `downtime_records`;''')[0][0]
+            self.ui.DT_date_edit_2.setDate(QtCore.QDate.fromString(str(nearest_date), "yyyy-MM-dd"))
+            self.Dashboard_Downtime_page_refresh(area_name, nearest_date)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
             return
-        # self.
 
+    def Dashboard_Downtime_page_refresh(self, area_name, date):
+        try:
+            data = self.database_process.query(sql = '''SELECT d.downtime_start_time, d.downtime_start_repair_time, d.downtime_end_time, 
+                                                            TIMESTAMPDIFF
+                                                            (
+                                                                MINUTE,
+                                                                CONCAT(d.downtime_date,' ', d.downtime_start_time),
+                                                                CASE 
+                                                                    WHEN d.downtime_end_time < d.downtime_start_time 
+                                                                    THEN CONCAT(DATE_ADD(d.downtime_date, INTERVAL 1 DAY),' ', d.downtime_end_time)
+                                                                    ELSE CONCAT(d.downtime_date,' ', d.downtime_end_time)
+                                                            END  ) AS total_loss,
+                                                            TIMESTAMPDIFF
+                                                                (
+                                                                    MINUTE,
+                                                                    CONCAT(d.downtime_date,' ', d.downtime_start_repair_time),
+                                                                    CASE 
+                                                                        WHEN d.downtime_end_time < d.downtime_start_repair_time 
+                                                                        THEN CONCAT(DATE_ADD(d.downtime_date, INTERVAL 1 DAY),' ', d.downtime_end_time)
+                                                                        ELSE CONCAT(d.downtime_date,' ', d.downtime_end_time)
+                                                                END  ) AS wait_technical,
+                                                                d.staff_name, d.error_code, m.machine_code, p.line_name
+                                                        FROM `downtime_records` d
+                                                        JOIN `machines` m ON d.machine_id = m.machine_id
+                                                        JOIN `production_lines` p ON m.line_id = p.line_id
+                                                        JOIN `downtime_areas_production_lines` dapl ON dapl.line_id = p.line_id
+                                                        JOIN `downtime_areas` da ON dapl.downtime_area_id = da.downtime_area_id
+                                                        WHERE da.downtime_area_name = :area_name AND d.downtime_date = :downtime_date
+                                                        ORDER BY d.downtime_start_time,d.downtime_date;''', params = {"area_name": area_name,"downtime_date":date})
+            working_time = self.database_process.query(sql = '''SELECT SUM(operation_hours) FROM `line_operation_times` as lot
+                                                                JOIN downtime_areas_production_lines as dapl ON lot.line_id = dapl.line_id
+                                                                JOIN downtime_areas as da ON dapl.downtime_area_id = da.downtime_area_id
+                                                                WHERE da.downtime_area_name = :area_name AND lot.operation_date = :operation_date''', params={"area_name": area_name, "operation_date": date})[0][0]
+            if not data:
+                QtWidgets.QMessageBox.information(self, "No data", "No downtime records found for the selected area and date.")
+                return
+            self.data = pd.DataFrame(data, columns=["Downtime Start Time", "Downtime Start Repair Time", "Downtime End Time", "Total Loss Time", "Wait Technical Time", "Staff Name", "Error Code", "Machine Code", "Line Name"])
+            total_loss = self.data["Total Loss Time"].sum()
+            downtime_count = len(self.data)
+            mttr = self.data["Total Loss Time"].mean() if downtime_count > 0 else 0
+            mttr = str(dt.timedelta(minutes=int(mttr)))
+            mtbf = (working_time * 60 - total_loss) / downtime_count if downtime_count > 0 else working_time * 60
+            mtbf = str(dt.timedelta(minutes=int(mtbf)))
+            total_loss = str(dt.timedelta(minutes=int(total_loss)))
+            self.ui.DTime_value.setText(str(total_loss))
+            self.ui.DEvent_value.setText(str(downtime_count))
+            self.ui.MTTR_value.setText(str(mttr))
+            self.ui.MTBF_value.setText(str(mtbf))
+            DE_perhours = pd.DataFrame(columns=["Date_time"])
+            DE_perhours["Date_time"] = pd.to_datetime(date) + self.data["Downtime Start Time"]
+            DE_perhours["Date_time"] = DE_perhours["Date_time"].dt.floor("h")
+            full_hours = pd.date_range(start=pd.to_datetime(date),periods=24,freq="h")
+            Event_hourly_df = (
+                DE_perhours.groupby("Date_time")
+                .size()
+                .reset_index(name="count_event")
+            )
+            Event_hourly_df = (
+                Event_hourly_df
+                .set_index("Date_time")
+                .reindex(full_hours, fill_value=0)
+                .rename_axis("Date_time")
+                .reset_index()
+            )
+            MTTR_perhours = pd.DataFrame(columns=["Date_time", "MTTR"])
+            MTTR_perhours["Date_time"] = pd.to_datetime(date) + self.data["Downtime Start Time"]
+            MTTR_perhours["MTTR"] = self.data["Total Loss Time"]
+            MTTR_perhours["Date_time"] = MTTR_perhours["Date_time"].dt.floor("h")
+            MTTR_perhours = (
+                MTTR_perhours
+                .groupby("Date_time")["MTTR"]
+                .mean()
+                .reindex(full_hours, fill_value=0)
+                .rename_axis("Date_time")
+                .reset_index()
+            )
+            MTBF_perhours = pd.DataFrame(columns=["Date_time", "MTBF"])
+            MTBF_perhours["Date_time"] = pd.to_datetime(date) + self.data["Downtime Start Time"]
+            MTBF_perhours["MTBF"] =  MTBF_perhours["Date_time"].diff().dt.total_seconds().div(60).fillna(0)
+            MTBF_perhours["Date_time"] = MTBF_perhours["Date_time"].dt.floor("h")
+            MTBF_perhours = (
+                MTBF_perhours
+                .dropna(subset=["MTBF"])
+                .groupby("Date_time")["MTBF"]
+                .mean()
+                .reindex(full_hours, fill_value=0)
+                .rename_axis("Date_time")
+                .reset_index()
+            )
+            self.Sparkline_chart(self.ui.DTime_chart, self.data["Total Loss Time"].tolist(), (165, 201, 229), "Downtime vs Time")
+            self.Sparkline_chart(self.ui.DEvent_chart, Event_hourly_df["count_event"].tolist(), (165, 201, 229), "Downtime Events vs Time")
+            self.Sparkline_chart(self.ui.MTTR_chart, MTTR_perhours["MTTR"].tolist(), (165, 201, 229), "MTTR vs Time")
+            self.Sparkline_chart(self.ui.MTBF_chart, MTBF_perhours["MTBF"].tolist(), (165, 201, 229), "MTBF vs Time")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
+            return
+        
     @QtCore.pyqtSlot()
     def show_sorting_filter_Downtime(self):
         if self.ui.DT_show_sorting_btn.isChecked():
@@ -3046,6 +3135,39 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.DT_silde_bar_animation.setEndValue(0)
         self.DT_silde_bar_animation.start()
 
+    def Sparkline_chart(self, widget,data, color,title=""):
+        old_layout = widget.layout()
+        if old_layout is not None:
+            while old_layout.count():
+                item = old_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+        else:
+            new_layout = QtWidgets.QVBoxLayout()
+            new_layout.setContentsMargins(0, 0, 0, 30)
+            new_layout.setSpacing(0)
+            widget.setLayout(new_layout)
+        plot = pg.PlotWidget()
+        plot.setFixedSize(140, 100)
+        plot.setBackground(None)
+        plot.hideAxis('left')
+        plot.hideAxis('bottom')
+        plot.setTitle(f'<span style="color: grey; font-size: 8pt">{title}</span>')
+        plot.setMouseEnabled(x=False, y=False)
+        plot.setMenuEnabled(False)
+        x = np.arange(len(data))
+        y = np.array(data, dtype=float)
+        curve = pg.PlotCurveItem(x, y, pen=pg.mkPen(color, width=1.5))
+        fill = pg.FillBetweenItem(
+            curve,
+            pg.PlotCurveItem(x, np.zeros_like(y)),
+            brush=pg.mkBrush(116, 185, 232, 80)
+        )
+        plot.addItem(curve)
+        plot.addItem(fill)
+        widget.setMaximumSize(150, 150)
+        widget.layout().addWidget(plot)
+        
 
     @QtCore.pyqtSlot()
     def Data_Downtime_page(self):
@@ -3064,6 +3186,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.ui.DT_data_table.setColumnWidth(0,100)
         vetical_header = ["Area", "Total Failure", "Total Loss", "MTTR", "MTBF","Machine with Most Failure", "Failure Code Most Frequent"]
         self.DT_summary_model = QtGui.QStandardItemModel(len(vetical_header), 2)
+        self.ui.DT_summary_table.setUpdatesEnabled(False)
+        self.ui.DT_summary_table.setSortingEnabled(False)
         for i in range(len(vetical_header)):
             item = QtGui.QStandardItem(vetical_header[i])
             item.setTextAlignment(QtCore.Qt.AlignCenter)
@@ -3072,6 +3196,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.ui.DT_summary_table.horizontalScrollBar().setVisible(False)
         self.ui.DT_summary_table.setColumnWidth(0,180)
         self.ui.DT_summary_table.setColumnWidth(1,self.ui.DT_summary_table.width()-179)
+        self.ui.DT_summary_table.setUpdatesEnabled(True)
+        self.ui.DT_summary_table.setSortingEnabled(True)
         self.safe_connect(self.ui.DT_upload_data_btn.clicked, self.DT_excel_upload)
         self.safe_connect(self.ui.DT_error_code_btn.clicked, self.DT_error_code_show)
 
@@ -3116,7 +3242,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     self.safe_connect(self.ui.DT_error_chart_btn.clicked, lambda: self.DT_summary_chart_show("error", self.DT_data))
                     self.safe_connect(self.ui.DT_line_chart_btn.clicked, lambda: self.DT_summary_chart_show("line", self.DT_data))
                     self.safe_connect(self.ui.DT_machine_chart_btn.clicked, lambda: self.DT_summary_chart_show("machine", self.DT_data))
-                    self.safe_connect(self.ui.DT_import_database_btn.clicked, self.DT_import_database)
+                    self.safe_connect(self.ui.DT_import_database_btn.clicked, lambda: self.DT_import_database(self.working_time))
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Error", f"Failed to upload data: {e}")
 
@@ -3131,10 +3257,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             machine_most_failure = data_frame["machine_code"].mode()[0] if not data_frame["machine_code"].mode().empty else "N/A"
             failure_code_most_frequent = data_frame["error_code"].mode()[0] if not data_frame["error_code"].mode().empty else "N/A"
             summary_data = [area_lbl, f"{total_failure} times", f"{total_loss} mins", f"{mttr} mins", f"{mtbf} mins", machine_most_failure, failure_code_most_frequent]
+            self.ui.DT_summary_table.setUpdatesEnabled(False)
+            self.ui.DT_summary_table.setSortingEnabled(False)
             for i in range(len(summary_data)):
                 item = QtGui.QStandardItem(str(summary_data[i]))
                 item.setTextAlignment(QtCore.Qt.AlignCenter)
                 self.DT_summary_model.setItem(i, 1, item)
+            self.ui.DT_summary_table.setUpdatesEnabled(True)
+            self.ui.DT_summary_table.setSortingEnabled(True)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to calculate summary: {e}")
     
@@ -3231,11 +3361,17 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to show error codes: {e}")
 
     @QtCore.pyqtSlot()
-    def DT_import_database(self):
+    def DT_import_database(self,working_time):
+        if self.DT_data is None:
+            QtWidgets.QMessageBox.warning(self, "No Data", "Please upload and review the data before importing to database.")
+            return
         try:
-            if self.DT_data is None:
-                QtWidgets.QMessageBox.warning(self, "No Data", "Please upload and review the data before importing to database.")
-                return
+            working_time_reframe = working_time.melt(
+                        id_vars=["Date"],
+                        var_name="Line",
+                        value_name="Working Time"
+                    )
+            working_time_reframe = working_time_reframe[working_time_reframe["Working Time"] > 0]
             import_data_list = [
                         {
                             "machine_code": row.iloc[9],
@@ -3249,23 +3385,54 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                         }
                         for _, row in self.DT_data.iterrows()
             ]
-            sql = """
-                        INSERT INTO `downtime_records`
-                            (`machine_id`, `line_id`, `downtime_date`, `downtime_start_time`,
-                            `downtime_start_repair_time`, `downtime_end_time`, `staff_name`, `error_code`)
-                        SELECT
-                            (SELECT machine_id FROM `machines` WHERE machine_code = :machine_code),
-                            (SELECT line_id FROM `production_lines` WHERE line_name = :line_name),
-                            :downtime_date,
-                            :downtime_start_time,
-                            :downtime_start_repair_time,
-                            :downtime_end_time,
-                            :staff_name,
-                            :error_code
-                    """
-            import_result = self.database_process.executemany(sql=sql, params_list=import_data_list)
-            if import_result:
-                QtWidgets.QMessageBox.information(self, "Success", "Data has been imported to database successfully.")
+            working_time_import_list = [
+                    {
+                        "line_name": row["Line"],
+                        "operation_date": row["Date"],
+                        "operation_hours": row["Working Time"]
+                    }
+                    for _, row in working_time_reframe.iterrows()
+                ]
+            sql = '''INSERT INTO `downtime_records`
+                        (`machine_id`, `line_id`, `downtime_date`, `downtime_start_time`,
+                        `downtime_start_repair_time`, `downtime_end_time`, `staff_name`, `error_code`)
+                    SELECT
+                        (SELECT machine_id FROM `machines` WHERE machine_code = :machine_code),
+                        (SELECT line_id FROM `production_lines` WHERE line_name = :line_name),
+                        :downtime_date,
+                        :downtime_start_time,
+                        :downtime_start_repair_time,
+                        :downtime_end_time,
+                        :staff_name,
+                        :error_code
+                '''
+            sql_working_time = '''INSERT INTO `line_operation_times`
+                        (`line_id`, `operation_date`, `operation_hours`)
+                        VALUES
+                        ((SELECT line_id FROM `production_lines` WHERE line_name = :line_name),
+                         :operation_date,
+                         :operation_hours)
+                        '''
+            with self.database_process.Session() as session:
+                try:
+                    import_result = session.execute(text(sql), import_data_list,execution_options={"executemany": True})
+                    import_working_time_result = session.execute(text(sql_working_time), working_time_import_list,execution_options={"executemany": True})
+                    session.commit()
+                    QtWidgets.QMessageBox.information(self, "Success", "Data has been successfully imported to the database.")
+                    self.ui.DT_data_table.setUpdatesEnabled(False)
+                    self.ui.DT_data_table.setSortingEnabled(False)
+                    self.ui.DT_summary_table.setUpdatesEnabled(False)
+                    self.ui.DT_summary_table.setSortingEnabled(False)
+                    self.DT_model.removeRows(0, self.DT_model.rowCount())
+                    self.DT_summary_model.removeRows(0, self.DT_summary_model.rowCount())
+                    self.ui.DT_summary_chart_widget.layout().deleteLater()
+                    self.ui.DT_data_table.setUpdatesEnabled(True)
+                    self.ui.DT_data_table.setSortingEnabled(True)
+                    self.ui.DT_summary_table.setUpdatesEnabled(True)
+                    self.ui.DT_summary_table.setSortingEnabled(True)
+                except Exception:
+                    session.rollback()
+                    raise
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to import data to database: {e}")
     
@@ -5472,11 +5639,12 @@ class Form_Modification(QtWidgets.QDialog):
             self.ui.apply_machine_table.setItem(r,1,QtWidgets.QTableWidgetItem(f"{result[0][0]}"))
         except Exception as e:
             QtWidgets.QMessageBox.critical(self,"Error", f"Failed to load data: {e}")
-            editor = self.ui.apply_machine_table.cellWidget(r,0)
-            editor.blockSignals(True)
-            editor.setText("")
-            editor.blockSignals(False)
-            self.ui.apply_machine_table.setItem(r,1,QtWidgets.QTableWidgetItem(""))
+            if self.ui.apply_machine_table.cellWidget(r,0):
+                editor = self.ui.apply_machine_table.cellWidget(r,0)
+                editor.blockSignals(True)
+                editor.setText("")
+                editor.blockSignals(False)
+                self.ui.apply_machine_table.setItem(r,1,QtWidgets.QTableWidgetItem(""))
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -5769,6 +5937,8 @@ class Login_Dialog(QtWidgets.QDialog):
             self.ui.user_status.clear()
             username = self.ui.user_line.text().strip()
             password = self.ui.password_line.text().strip()
+            # password = "1"
+            username = "misa"
             self.ui.login_btn.setEnabled(False)
             QtWidgets.QApplication.processEvents()
             result = self.database.query(sql = ''' SELECT s.user_id,s.username,s.password_hash,r.role_level,d.department_name,s.first_name,s.last_name FROM `Users` as s 
