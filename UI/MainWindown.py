@@ -332,6 +332,7 @@ class Ui_MainWindow(object):
                 self.frame_72 = QtWidgets.QFrame(self.frame_73)
                 self.frame_72.setObjectName(u"frame_72")
                 self.frame_72.setMaximumSize(QtCore.QSize(16777215, 50))
+                self.frame_72.setMinimumSize(QtCore.QSize(0, 50))
                 self.frame_72.setLayoutDirection(QtCore.Qt.LeftToRight)
                 self.frame_72.setFrameShape(QtWidgets.QFrame.NoFrame)
                 self.horizontalLayout_65 = QtWidgets.QHBoxLayout(self.frame_72)
@@ -393,7 +394,7 @@ class Ui_MainWindow(object):
                 self.DT_month_radiobtn.setObjectName(u"DT_month_radiobtn")
 
                 self.horizontalLayout_63.addWidget(self.DT_month_radiobtn)
-
+                
 
                 self.horizontalLayout_76.addWidget(self.groupBox_90)
 
@@ -789,6 +790,8 @@ class Ui_MainWindow(object):
 
                 self.DT_table = QtWidgets.QTableView(self.frame_82)
                 self.DT_table.setObjectName(u"DT_table")
+                self.DT_table.setStyleSheet(qss)
+                self.DT_table.setMinimumSize(QtCore.QSize(325, 0))
                 sizePolicy1 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
                 sizePolicy1.setHorizontalStretch(0)
                 sizePolicy1.setVerticalStretch(0)
@@ -799,8 +802,9 @@ class Ui_MainWindow(object):
                 self.DT_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
                 self.DT_table.setAlternatingRowColors(True)
                 self.DT_table.setShowGrid(False)
-                self.DT_table.setSortingEnabled(True)
-                self.DT_table.horizontalHeader().setVisible(True)
+                self.DT_table.setSortingEnabled(False)
+                self.DT_table.verticalHeader().setVisible(False)
+                self.DT_table.resizeRowsToContents()
 
                 self.verticalLayout_47.addWidget(self.DT_table)
 
@@ -819,12 +823,51 @@ class Ui_MainWindow(object):
                 self.frame_83.setStyleSheet(qss)
                 self.verticalLayout_46 = QtWidgets.QVBoxLayout(self.frame_83)
                 self.verticalLayout_46.setObjectName(u"verticalLayout_46")
-                self.verticalLayout_46.setContentsMargins(10, 10, 10, 10)
-                self.label_62 = QtWidgets.QLabel(self.frame_83)
-                self.label_62.setObjectName(u"label_62")
-                self.label_62.setMaximumSize(QtCore.QSize(16777215, 30))
+                self.verticalLayout_46.setContentsMargins(10, 10, 10,0)
+                self.verticalLayout_46.setSpacing(6)
+                
+                self.frame_86 = QtWidgets.QFrame(self.frame_83)
+                self.frame_86.setObjectName(u"frame_86")
+                self.frame_86.setMaximumSize(QtCore.QSize(16777215, 30))
+                self.frame_86.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_86.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_64 = QtWidgets.QHBoxLayout(self.frame_86)
+                self.horizontalLayout_64.setSpacing(0)
+                self.horizontalLayout_64.setObjectName(u"horizontalLayout_64")
+                self.horizontalLayout_64.setContentsMargins(0, 0, 0, 0)
+                # self.label_62 = QtWidgets.QLabel(self.frame_86)
+                # self.label_62.setObjectName(u"label_62")
+                # self.label_62.setMaximumSize(QtCore.QSize(16777215, 30))
 
-                self.verticalLayout_46.addWidget(self.label_62)
+                # self.horizontalLayout_64.addWidget(self.label_62)
+                self.DT_detail_chart_line_btn = QtWidgets.QPushButton(self.frame_86)
+                self.DT_detail_chart_line_btn.setObjectName(u"DT_detail_chart_line_btn")
+                self.DT_detail_chart_line_btn.setFlat(True)
+
+                self.horizontalLayout_64.addWidget(self.DT_detail_chart_line_btn)
+
+                self.DT_detail_chart_machine_btn = QtWidgets.QPushButton(self.frame_86)
+                self.DT_detail_chart_machine_btn.setObjectName(u"DT_detail_chart_machine_btn")
+                self.DT_detail_chart_machine_btn.setFlat(True)
+
+                self.horizontalLayout_64.addWidget(self.DT_detail_chart_machine_btn)
+
+                self.DT_detail_chart_error_btn = QtWidgets.QPushButton(self.frame_86)
+                self.DT_detail_chart_error_btn.setObjectName(u"DT_detail_chart_error_btn")
+                self.DT_detail_chart_error_btn.setFlat(True)
+
+                self.horizontalLayout_64.addWidget(self.DT_detail_chart_error_btn)
+                self.DT_detail_chart_time_btn = QtWidgets.QPushButton(self.frame_86)
+                self.DT_detail_chart_time_btn.setObjectName(u"DT_detail_chart_time_btn")
+                self.DT_detail_chart_time_btn.setFlat(True)
+
+                self.horizontalLayout_64.addWidget(self.DT_detail_chart_time_btn)
+
+
+                self.horizontalSpacer_2 = QtWidgets.QSpacerItem(593, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+                self.horizontalLayout_64.addItem(self.horizontalSpacer_2)
+
+                self.verticalLayout_46.addWidget(self.frame_86)
 
                 self.DT_chart = QtWidgets.QWidget(self.frame_83)
                 self.DT_chart.setObjectName(u"DT_chart")
@@ -916,58 +959,6 @@ class Ui_MainWindow(object):
                 self.horizontalLayout_71.setSpacing(10)
                 self.horizontalLayout_71.setObjectName(u"horizontalLayout_71")
                 self.horizontalLayout_71.setContentsMargins(0, 0, 0, 0)
-                # self.frame_99 = QtWidgets.QFrame(self.frame_98)
-                # self.frame_99.setObjectName(u"frame_99")
-                # self.frame_99.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                # self.frame_99.setFrameShadow(QtWidgets.QFrame.Raised)
-                # self.horizontalLayout_69 = QtWidgets.QHBoxLayout(self.frame_99)
-                # self.horizontalLayout_69.setSpacing(4)
-                # self.horizontalLayout_69.setObjectName(u"horizontalLayout_69")
-                # self.horizontalLayout_69.setContentsMargins(0, 0, 0, 0)
-                # self.label_67 = QtWidgets.QLabel(self.frame_99)
-                # self.label_67.setObjectName(u"label_67")
-                # self.label_67.setMaximumSize(QtCore.QSize(40, 16777215))
-                # font3 = QtGui.QFont()
-                # font3.setFamily(u"Rockwell")
-                # font3.setPointSize(10)
-                # self.label_67.setFont(font3)
-                # self.label_67.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
-
-                # self.horizontalLayout_69.addWidget(self.label_67)
-
-                # self.DT_group_input_data = QtWidgets.QComboBox(self.frame_99)
-                # self.DT_group_input_data.setObjectName(u"DT_group_input_data")
-                # self.DT_group_input_data.setFont(font3)
-
-                # self.horizontalLayout_69.addWidget(self.DT_group_input_data)
-
-
-                # self.horizontalLayout_71.addWidget(self.frame_99)
-
-                # self.frame_102 = QtWidgets.QFrame(self.frame_98)
-                # self.frame_102.setObjectName(u"frame_102")
-                # self.frame_102.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                # self.frame_102.setFrameShadow(QtWidgets.QFrame.Raised)
-                # self.horizontalLayout_70 = QtWidgets.QHBoxLayout(self.frame_102)
-                # self.horizontalLayout_70.setSpacing(4)
-                # self.horizontalLayout_70.setObjectName(u"horizontalLayout_70")
-                # self.horizontalLayout_70.setContentsMargins(0, 0, 0, 0)
-                # self.label_68 = QtWidgets.QLabel(self.frame_102)
-                # self.label_68.setObjectName(u"label_68")
-                # self.label_68.setMaximumSize(QtCore.QSize(40, 16777215))
-                # self.label_68.setFont(font3)
-                # self.label_68.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
-
-                # self.horizontalLayout_70.addWidget(self.label_68)
-
-                # self.DT_area_input_data = QtWidgets.QComboBox(self.frame_102)
-                # self.DT_area_input_data.setObjectName(u"DT_area_input_data")
-                # self.DT_area_input_data.setFont(font3)
-
-                # self.horizontalLayout_70.addWidget(self.DT_area_input_data)
-
-
-                # self.horizontalLayout_71.addWidget(self.frame_102)
 
                 self.DT_upload_data_btn = QtWidgets.QPushButton(self.frame_98)
                 self.DT_upload_data_btn.setObjectName(u"DT_upload_data_btn")
@@ -1106,20 +1097,17 @@ class Ui_MainWindow(object):
                 self.DT_error_chart_btn = QtWidgets.QPushButton(self.frame_105)
                 self.DT_error_chart_btn.setObjectName(u"DT_error_chart_btn")
                 self.DT_error_chart_btn.setFlat(True)
-                self.DT_error_chart_btn.setStyleSheet(qss)
 
                 self.horizontalLayout_74.addWidget(self.DT_error_chart_btn)
 
                 self.DT_line_chart_btn = QtWidgets.QPushButton(self.frame_105)
                 self.DT_line_chart_btn.setObjectName(u"DT_line_chart_btn")
                 self.DT_line_chart_btn.setFlat(True)
-                self.DT_line_chart_btn.setStyleSheet(qss)
                 self.horizontalLayout_74.addWidget(self.DT_line_chart_btn)
 
                 self.DT_machine_chart_btn = QtWidgets.QPushButton(self.frame_105)
                 self.DT_machine_chart_btn.setObjectName(u"DT_machine_chart_btn")
                 self.DT_machine_chart_btn.setFlat(True)
-                self.DT_error_chart_btn.setStyleSheet(qss)
                 self.horizontalLayout_74.addWidget(self.DT_machine_chart_btn)
 
 
@@ -3416,7 +3404,6 @@ class Ui_MainWindow(object):
                 self.label_60.setText(_translate("MainWindow", u"MTBF", None))
                 self.MTBF_value.setText(_translate("MainWindow", u"TextLabel", None))
                 self.label_61.setText(_translate("MainWindow", u"Down time summary table", None))
-                self.label_62.setText(_translate("MainWindow", u"Detail chart", None))
                 self.label_66.setText(_translate("MainWindow", u"Problem report", None))
                 self.DT_upload_data_btn.setText(_translate("MainWindow", u"Load Excel file", None))
                 self.DT_error_code_btn.setText(_translate("MainWindow", u"Error Code Managment", None))
@@ -3429,6 +3416,10 @@ class Ui_MainWindow(object):
                 self.groupBox_86.setTitle(_translate("MainWindow", u"Area", None))
                 self.groupBox_90.setTitle(_translate("MainWindow", u"View By", None))
                 self.groupBox.setTitle(_translate("MainWindow", u"Time Range", None))
+                self.DT_detail_chart_machine_btn.setText(_translate("MainWindow", u"Machine", None))
+                self.DT_detail_chart_line_btn.setText(_translate("MainWindow", u"Line", None))
+                self.DT_detail_chart_error_btn.setText(_translate("MainWindow", u"Error", None))
+                self.DT_detail_chart_time_btn.setText(_translate("MainWindow", u"Time", None))
 
         def company_week_number(self,date: datetime.date) -> int:
                 year_start = datetime.date(date.year, 1, 1)

@@ -1,52 +1,64 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QFrame, QPushButton
-from PyQt5.QtCore import QPropertyAnimation
+import numpy as np
+from PyQt5 import QtWidgets
+import pyqtgraph as pg
 
-
-class Window(QWidget):
-
+class HistogramDashboard(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Animated Sidebar")
+        self.setWindowTitle("Histogram Dashboard")
 
-        layout = QHBoxLayout(self)
+        # Main widget
+        self.plot = pg.PlotWidget()
+        self.setCentralWidget(self.plot)
 
-        # sidebar
-        self.sidebar = QFrame()
-        self.sidebar.setStyleSheet("background:#2c3e50;")
-        self.sidebar.setMaximumWidth(200)
+        # Style
+        self.plot.setBackground('w')
+        self.plot.showGrid(x=True, y=True, alpha=0.3)
 
-        # toggle button
-        self.btn = QPushButton(">")
-        self.btn.setCheckable(True)
-        self.btn.clicked.connect(self.toggle_sidebar)
+        # Axis label
+        self.plot.setLabel('left', 'Frequency')
+        self.plot.setLabel('bottom', 'Value')
 
-        layout.addWidget(self.sidebar)
-        layout.addWidget(self.btn)
+        # Legend (horizontal)
+        self.legend = self.plot.addLegend(colCount=1)
 
-        self.animation = QPropertyAnimation(self.sidebar, b"maximumWidth")
-        self.animation.setDuration(200)
+        # Generate sample data (ví dụ downtime)
+        data = np.random.normal(loc=50, scale=15, size=1000)
 
-    def toggle_sidebar(self):
+        self.plot_histogram(data)
 
-        if self.btn.isChecked():
-            self.btn.setText("<")
+    def plot_histogram(self, data):
+        # Tính histogram
+        y, x = np.histogram(data, bins=20)
 
-            self.animation.setStartValue(0)
-            self.animation.setEndValue(200)
+        # Vẽ dạng bar
+        bg = pg.BarGraphItem(
+            x=x[:-1],
+            height=y,
+            width=(x[1] - x[0]) * 0.8,
+            brush=(100, 150, 255, 200)
+        )
 
-        else:
-            self.btn.setText(">")
+        self.plot.addItem(bg)
 
-            self.animation.setStartValue(200)
-            self.animation.setEndValue(0)
+        # Legend (dùng dummy tròn cho đẹp)
+        curve = self.plot.plot(
+            [], [],
+            pen=None,
+            symbol='o',
+            symbolSize=10,
+            symbolBrush=(100, 150, 255),
+            symbolPen=None
+        )
 
-        self.animation.start()
+        self.legend.addItem(curve, "Downtime Distribution")
 
 
-app = QApplication(sys.argv)
-win = Window()
-win.resize(600, 400)
-win.show()
-sys.exit(app.exec_())
+if __name__ == "__main__":
+    app = QtWidgets.QApplication(sys.argv)
+    window = HistogramDashboard()
+    window.resize(800, 500)
+    window.show()
+    sys.exit(app.exec_())

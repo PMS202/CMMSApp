@@ -501,7 +501,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         else:
             if self.login_info["role_level"] in ["Manager","Admin"]:
                 pass
-            elif ( self.login_info["department"] == dep ) and ( self.login_info["role_level"] in ["Supervisor"]):
+            elif ( self.login_info["department"] == dep ) and ( self.login_info["role_level"] == "Supervisor"):
                 pass
             else:
                 QtWidgets.QMessageBox.information(self,"Permission denied","Your don't have permission to update this machine info")
@@ -1341,7 +1341,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             try:
                 if oneFile == False:
                     index = next(i for i, row in enumerate(save_list) if row[1]["machine_code"] == code)
-                    save_list.pop(index)
+                    save_list.pop(index) # đang có lỗi ở đây, cần kiểm tra lại
                 else:
                     index = next(i for i, row in enumerate(save_list) if row[1]["machine_code"] == code)
                     save_list[index][1] = "text" 
@@ -1521,7 +1521,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.result_print_record = []
 
     @QtCore.pyqtSlot()
-    def Mainten_Input_page(self):
+    def Mainten_Input_page(self): 
         self.style_button_with_shadow((self.ui.Main_Input_record_btn,self.ui.Main_detail_plan_btn,self.ui.Main_Home_btn,self.ui.Main_Print_record_btn))
         self.wrong_scan = []
         try:
@@ -2027,6 +2027,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             )
             self.ui.Group_cbb_DP.addItems([d[0] for d in self.group])
             self.ui.Group_cbb_DP.setCurrentText(self.login_info['department'])
+            self.group_cbb_DP_change()
             self.safe_connect( self.ui.Group_cbb_DP.currentIndexChanged, lambda _: self.group_cbb_DP_change())
             self.safe_connect( self.ui.Code_lnedit_DP.textChanged, lambda text: self.filter_suggestion(target = self.ui.Code_lnedit_DP,
                                                                                         text = "DISTINCT ( m.machine_code )",table = "`Maintenance_plan` as mp",
@@ -2965,6 +2966,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                     QPushButton {
                                                 background-color: rgba(0, 0, 0, 0.08);
                                                 border: none;
+                                                border-radius: 0px;
                                                 border-bottom: 2px solid rgba(0, 0, 255, 1);
                                                 padding: 5px 15px;
                                                 font-weight: bold;
@@ -3013,7 +3015,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
                                                                                 FROM `downtime_areas`;''')]
             self.ui.DT_area_cbb.clear()
-            # self.ui.DT_area_cbb.addItem("")
             self.ui.DT_area_cbb.addItems(areas)
             self.DT_silde_bar_animation = QtCore.QPropertyAnimation(self.ui.frame_106, b"maximumWidth")
             self.DT_silde_bar_animation.setDuration(310)
@@ -3022,52 +3023,55 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             nearest_date = self.database_process.query(sql = '''SELECT MAX(downtime_date) FROM `downtime_records`;''')[0][0]
             self.ui.DT_date_edit_2.setDate(QtCore.QDate.fromString(str(nearest_date), "yyyy-MM-dd"))
             self.Dashboard_Downtime_page_refresh(area_name, nearest_date)
+            self.DT_filtered_dict = {
+                "area": area_name,
+                "view_by" : "day",
+                "time_range": nearest_date
+            }
+            self.safe_connect(self.ui.DT_area_cbb.currentTextChanged,
+                              lambda: self.DT_filtering(changed_object = "area"))
+            self.safe_connect(self.ui.DT_day_radiobtn.clicked, 
+                              lambda: self.DT_filtering(changed_object = "day"))
+            self.safe_connect(self.ui.DT_week_radiobtn.clicked, 
+                              lambda: self.DT_filtering(changed_object = "week"))
+            self.safe_connect(self.ui.DT_month_radiobtn.clicked,
+                              lambda: self.DT_filtering(changed_object = "month"))
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
             return
 
     def Dashboard_Downtime_page_refresh(self, area_name, date):
+        self.style_button_with_shadow((self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_error_btn,self.ui.DT_detail_chart_time_btn))
+        def assign_shift(t):
+            hours = t.seconds // 3600  
+            if 6 <= hours < 14:
+                return "Shift 1"
+            elif 14 <= hours < 22:
+                return "Shift 2"
+            else:  
+                return "Shift 3"
         try:
-            data = self.database_process.query(sql = '''SELECT d.downtime_start_time, d.downtime_start_repair_time, d.downtime_end_time, 
-                                                            TIMESTAMPDIFF
-                                                            (
-                                                                MINUTE,
-                                                                CONCAT(d.downtime_date,' ', d.downtime_start_time),
-                                                                CASE 
-                                                                    WHEN d.downtime_end_time < d.downtime_start_time 
-                                                                    THEN CONCAT(DATE_ADD(d.downtime_date, INTERVAL 1 DAY),' ', d.downtime_end_time)
-                                                                    ELSE CONCAT(d.downtime_date,' ', d.downtime_end_time)
-                                                            END  ) AS total_loss,
-                                                            TIMESTAMPDIFF
-                                                                (
-                                                                    MINUTE,
-                                                                    CONCAT(d.downtime_date,' ', d.downtime_start_repair_time),
-                                                                    CASE 
-                                                                        WHEN d.downtime_end_time < d.downtime_start_repair_time 
-                                                                        THEN CONCAT(DATE_ADD(d.downtime_date, INTERVAL 1 DAY),' ', d.downtime_end_time)
-                                                                        ELSE CONCAT(d.downtime_date,' ', d.downtime_end_time)
-                                                                END  ) AS wait_technical,
-                                                                d.staff_name, d.error_code, m.machine_code, p.line_name
-                                                        FROM `downtime_records` d
-                                                        JOIN `machines` m ON d.machine_id = m.machine_id
-                                                        JOIN `production_lines` p ON m.line_id = p.line_id
-                                                        JOIN `downtime_areas_production_lines` dapl ON dapl.line_id = p.line_id
-                                                        JOIN `downtime_areas` da ON dapl.downtime_area_id = da.downtime_area_id
-                                                        WHERE da.downtime_area_name = :area_name AND d.downtime_date = :downtime_date
-                                                        ORDER BY d.downtime_start_time,d.downtime_date;''', params = {"area_name": area_name,"downtime_date":date})
-            working_time = self.database_process.query(sql = '''SELECT SUM(operation_hours) FROM `line_operation_times` as lot
+            data = self.database_process.query(sql = '''SELECT Start_Time, Start_Repair_Time, End_Time, 
+                                                            Total_Loss, Wait_Technical, Staff_Name, Error_Code, Machine_Code, Line_Name
+                                                        FROM `downtime_report`
+                                                        WHERE Downtime_Area = :area_name AND Date = :downtime_date
+                                                        ORDER BY Start_Time, Date;''', params = {"area_name": area_name,"downtime_date":date})
+            working_time = self.database_process.query(sql = '''SELECT pl.line_name, lot.operation_hours FROM `line_operation_times` as lot
                                                                 JOIN downtime_areas_production_lines as dapl ON lot.line_id = dapl.line_id
                                                                 JOIN downtime_areas as da ON dapl.downtime_area_id = da.downtime_area_id
-                                                                WHERE da.downtime_area_name = :area_name AND lot.operation_date = :operation_date''', params={"area_name": area_name, "operation_date": date})[0][0]
+                                                                JOIN production_lines as pl ON lot.line_id = pl.line_id
+                                                                WHERE da.downtime_area_name = :area_name AND lot.operation_date = :operation_date;''', params={"area_name": area_name, "operation_date": date})
             if not data:
                 QtWidgets.QMessageBox.information(self, "No data", "No downtime records found for the selected area and date.")
                 return
             self.data = pd.DataFrame(data, columns=["Downtime Start Time", "Downtime Start Repair Time", "Downtime End Time", "Total Loss Time", "Wait Technical Time", "Staff Name", "Error Code", "Machine Code", "Line Name"])
+            self.data["Shift"] = self.data["Downtime Start Time"].apply(assign_shift)
+            self.working_time = pd.DataFrame(working_time, columns=["Line Name","Working Time"])
             total_loss = self.data["Total Loss Time"].sum()
             downtime_count = len(self.data)
             mttr = self.data["Total Loss Time"].mean() if downtime_count > 0 else 0
             mttr = str(dt.timedelta(minutes=int(mttr)))
-            mtbf = (working_time * 60 - total_loss) / downtime_count if downtime_count > 0 else working_time * 60
+            mtbf = (self.working_time["Working Time"].sum() * 60 - total_loss) / downtime_count if downtime_count > 0 else self.working_time["Working Time"].sum() * 60
             mtbf = str(dt.timedelta(minutes=int(mtbf)))
             total_loss = str(dt.timedelta(minutes=int(total_loss)))
             self.ui.DTime_value.setText(str(total_loss))
@@ -3115,10 +3119,16 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 .rename_axis("Date_time")
                 .reset_index()
             )
+            self.DT_chart_current_group = None
+            self.DT_table_show(self.data, self.working_time)
+            self.DT_detail_chart_drawing(group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line")
             self.Sparkline_chart(self.ui.DTime_chart, self.data["Total Loss Time"].tolist(), (165, 201, 229), "Downtime vs Time")
             self.Sparkline_chart(self.ui.DEvent_chart, Event_hourly_df["count_event"].tolist(), (165, 201, 229), "Downtime Events vs Time")
             self.Sparkline_chart(self.ui.MTTR_chart, MTTR_perhours["MTTR"].tolist(), (165, 201, 229), "MTTR vs Time")
             self.Sparkline_chart(self.ui.MTBF_chart, MTBF_perhours["MTBF"].tolist(), (165, 201, 229), "MTBF vs Time")
+            self.safe_connect(self.ui.DT_detail_chart_line_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line"))
+            self.safe_connect(self.ui.DT_detail_chart_machine_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Machine Code", value_col="Total Loss Time", data=self.data, title="Downtime By Machine"))
+            self.safe_connect(self.ui.DT_detail_chart_error_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Error Code", value_col="Total Loss Time", data=self.data, title="Downtime By Error Code"))
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
             return
@@ -3135,7 +3145,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.DT_silde_bar_animation.setEndValue(0)
         self.DT_silde_bar_animation.start()
 
-    def Sparkline_chart(self, widget,data, color,title=""):
+    def Sparkline_chart(self, widget, data, color, title=""):
         old_layout = widget.layout()
         if old_layout is not None:
             while old_layout.count():
@@ -3168,6 +3178,222 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         widget.setMaximumSize(150, 150)
         widget.layout().addWidget(plot)
         
+    def DT_table_show(self, data, working_time):
+        if data is None or data.empty or working_time is None or working_time.empty:
+            QtWidgets.QMessageBox.information(self, "No data", "No downtime records found for the selected area and date.")
+            return
+        try:
+            gb = data.groupby("Line Name")
+            summary_df = pd.DataFrame({
+                "Line": gb["Total Loss Time"].sum().index,
+                "Total Downtime": gb["Total Loss Time"].sum().values,
+                "Failure Event": gb.size().values,
+                "MTTR": gb["Total Loss Time"].mean().values,
+                "MTBF": gb["Total Loss Time"].apply(
+                    lambda x: (
+                        float(working_time.loc[working_time["Line Name"] == x.name, "Working Time"].sum()) * 60 - x.sum()
+                    ) / len(x)
+                    if len(x) > 0
+                    else float(working_time.loc[working_time["Line Name"] == x.name, "Working Time"].sum()) * 60
+                ).values
+            })
+            summary_df["Total Downtime"] = summary_df["Total Downtime"].apply(lambda x: str(dt.timedelta(minutes=int(x))))
+            summary_df["MTTR"] = summary_df["MTTR"].apply(lambda x: str(dt.timedelta(minutes=int(x))))
+            summary_df["MTBF"] = summary_df["MTBF"].apply(lambda x: str(dt.timedelta(minutes=int(x))) if x > 0 else "N/A")
+            summary_df = summary_df.sort_values(by="Line", ascending=False).reset_index(drop=True)
+            self.ui.DT_table.setUpdatesEnabled(False)
+            self.ui.DT_table.setSortingEnabled(False)
+            if hasattr(self, 'DT_dashboard_summary_model'):
+                self.DT_dashboard_summary_model.removeRows(0, self.DT_dashboard_summary_model.rowCount())
+            self.DT_dashboard_summary_model = QtGui.QStandardItemModel(len(summary_df), len(summary_df.columns))
+            header = ["Line","Total\nDowntime", "Down\nEvents", "MTTR", "MTBF"]
+            self.DT_dashboard_summary_model.setHorizontalHeaderLabels(header)
+            for r in range(len(summary_df)):
+                for c in range(len(summary_df.columns)):
+                    if c == 0:
+                        item = QtGui.QStandardItem(str(summary_df.iat[r, c]))
+                        item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    else:
+                        value = round(summary_df.iat[r, c], 0) if isinstance(summary_df.iat[r, c], float) and summary_df.iat[r, c] == 0 else summary_df.iat[r, c]
+                        item = QtGui.QStandardItem(str(value))
+                        item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.DT_dashboard_summary_model.setItem(r, c, item)
+            self.ui.DT_table.setModel(self.DT_dashboard_summary_model)
+            self.ui.DT_table.horizontalScrollBar().setVisible(False)
+            self.ui.DT_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+            self.ui.DT_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+            self.ui.DT_table.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+            self.ui.DT_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+            self.ui.DT_table.setSortingEnabled(True)
+            self.ui.DT_table.setUpdatesEnabled(True)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load summary data: {e}")
+
+    @QtCore.pyqtSlot()
+    def DT_detail_chart_drawing(self,group_col,value_col, data, title=""):
+        if self.DT_chart_current_group == group_col:
+            return
+        if group_col == "Line Name":
+            self.DT_chart_current_group = "Line Name"
+            self.style_button_with_shadow((self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_error_btn,self.ui.DT_detail_chart_time_btn))
+        elif group_col == "Machine Code":
+            self.DT_chart_current_group = "Machine Code"
+            self.style_button_with_shadow((self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_error_btn,self.ui.DT_detail_chart_time_btn))
+        elif group_col == "Error Code":
+            self.DT_chart_current_group = "Line Name"
+            self.style_button_with_shadow((self.ui.DT_detail_chart_error_btn,self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_time_btn))
+        else:
+            self.DT_chart_current_group = "Time"
+            self.style_button_with_shadow((self.ui.DT_detail_chart_time_btn,self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_error_btn))
+        try:
+            old_layout = self.ui.DT_chart.layout()
+            if old_layout is not None:
+                while old_layout.count():
+                    item = old_layout.takeAt(0)
+                    if item.widget():
+                        item.widget().deleteLater()
+            else:
+                new_layout = QtWidgets.QVBoxLayout()
+                new_layout.setContentsMargins(0, 0, 0, 30)
+                new_layout.setSpacing(0)
+                self.ui.DT_chart.setLayout(new_layout)
+            self.bar_item = None
+            self.line_item = None
+            plot = pg.PlotWidget()
+            plot.setBackground(None)
+            plot.setTitle(f'<span style="color: grey; font-size: 10pt; font-weight: bold">{title}</span>')
+            plot.showGrid(x=False, y=False, alpha=0.3)
+            y0_axis = plot.getAxis('left')
+            y1_axis = plot.getAxis('right')
+            x_axis  = plot.getAxis('bottom')
+            y0_axis.setLabel("Time (minutes)")
+            y0_axis.setPen(None)
+            y0_axis.setTextPen('gray')
+            x_axis.setLabel(group_col)
+            plot.showAxis('right')
+            y1_axis.setLabel("Cumulative %")
+            y1_axis.setPen(None)
+            y1_axis.setTicks([[(0, '0%'), (20, '20%'), (40, '40%'), (60, '60%'), (80, '80%'), (100, '100%')]])
+            y1_axis.setTextPen('gray')
+            plot.setMouseEnabled(False,False)
+            pivot = (   data.groupby([group_col, "Shift"])[value_col]
+                        .sum()
+                        .unstack(fill_value=0)
+                        .reindex(columns=["Shift 1", "Shift 2", "Shift 3"], fill_value=0) )
+
+            pivot["total"] = pivot.sum(axis=1)
+            pivot = pivot.sort_values("total", ascending=False).drop(columns="total")
+            pivot = pivot[:25] if len(pivot) > 25 else pivot
+            categories = pivot.index.tolist()
+            s1 = pivot["Shift 1"].values.astype(float)
+            s2 = pivot["Shift 2"].values.astype(float)
+            s3 = pivot["Shift 3"].values.astype(float)
+            total = s1 + s2 + s3
+            x = np.arange(len(categories))
+            colors = {
+                "Shift 1": (187, 78, 139, 150), 
+                "Shift 2": (142, 71, 130, 150),  
+                "Shift 3": (60, 209, 197, 150),   
+            }
+            bar1 = pg.BarGraphItem(x=x, y0=np.zeros(len(x)), y1=s1,
+                                width=0.6, brush=pg.mkBrush(*colors["Shift 1"]),
+                                pen=pg.mkPen((248, 12, 145,255), width=0.5))
+            bar2 = pg.BarGraphItem(x=x, y0=s1, y1=s1+s2,
+                                width=0.6, brush=pg.mkBrush(*colors["Shift 2"]),
+                                pen=pg.mkPen((198, 53, 170,255), width=0.5))
+            bar3 = pg.BarGraphItem(x=x, y0=s1+s2, y1=total,
+                                width=0.6, brush=pg.mkBrush(*colors["Shift 3"]),
+                                pen=pg.mkPen((0, 255, 235,255), width=0.5))
+            legend = plot.addLegend(offset=(230, 1), colCount=3, spacing=20)
+            scatter1 = pg.ScatterPlotItem(symbol='o', size=15, brush=pg.mkBrush(*colors["Shift 1"]), pen=None)
+            scatter2 = pg.ScatterPlotItem(symbol='o', size=15, brush=pg.mkBrush(*colors["Shift 2"]), pen=None)
+            scatter3 = pg.ScatterPlotItem(symbol='o', size=15, brush=pg.mkBrush(*colors["Shift 3"]), pen=None)
+            legend.addItem(scatter1, "Shift 1")
+            legend.addItem(scatter2, "Shift 2")
+            legend.addItem(scatter3, "Shift 3")
+            plot.addItem(bar1)
+            plot.addItem(bar2)
+            plot.addItem(bar3)
+            cum = np.cumsum(total) / np.sum(total) * 100
+            vb2 = pg.ViewBox()
+            plot.scene().addItem(vb2)
+
+            plot.getAxis('right').linkToView(vb2)
+            vb2.setXLink(plot)
+
+            def update_views():
+                vb2.setGeometry(plot.getViewBox().sceneBoundingRect())
+                vb2.linkedViewChanged(plot.getViewBox(), vb2.XAxis)
+
+            def on_hover(pos):
+                if plot.sceneBoundingRect().contains(pos):
+                    mouse_point = plot.getViewBox().mapSceneToView(pos)
+                    index = round(mouse_point.x())
+                    if 0 <= index < len(categories):
+                        QtWidgets.QToolTip.showText(
+                            QtGui.QCursor.pos(),
+                            categories[index]
+                            + f"\nShift 1: {s1[index]:.2f} min"
+                            + f"\nShift 2: {s2[index]:.2f} min"
+                            + f"\nShift 3: {s3[index]:.2f} min"
+                            + f"\nTotal: {total[index]:.2f} min"
+                        )
+            plot.getViewBox().sigResized.connect(update_views)
+            self.line_item = pg.PlotCurveItem(
+                x=x, y=cum,
+                pen=pg.mkPen((231, 76, 60), width=3),
+                symbol='o',
+                symbolBrush=(231, 76, 60),
+                symbolSize=0
+            )
+
+            vb2.addItem(self.line_item)
+            vb2.setYRange(0, 100)
+            update_views()
+            if len(categories) > 10:
+                plot.getAxis('bottom').setTicks([list(zip(x, [""]*len(categories)))])
+            else:
+                plot.getAxis('bottom').setTicks([list(zip(x, categories))])
+            y_min = 0
+            y_max = max(total) * 1.2 if len(total) > 0 else 1
+            tick_step = max(5, int(y_max / 8 / 5) * 5)
+            major_ticks = [(v, str(int(v))) for v in np.arange(0, y_max + tick_step, tick_step)]
+            y0_axis.setTicks([major_ticks])
+            plot.setYRange(y_min, y_max, padding=0)
+            plot.scene().sigMouseMoved.connect(on_hover)
+
+            self.ui.DT_chart.layout().addWidget(plot)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to draw chart: {e}")
+
+    @QtCore.pyqtSlot()
+    def DT_filtering(self,changed_object):
+        if changed_object == self.DT_filtered_dict.get(changed_object):
+            return
+        try:
+            area_name = self.ui.DT_area_cbb.currentText()
+            if self.ui.DT_day_radiobtn.isChecked():
+                self.ui.frame_91.setEnabled(False)
+                self.ui.frame_91.setMaximumWidth(0)
+                self.ui.frame_87.setEnabled(True)
+                self.ui.frame_87.setMaximumWidth(200)
+                date = self.ui.DT_date_edit_2.date().toString("yyyy-MM-dd")
+            elif self.ui.DT_week_radiobtn.isChecked():
+                self.ui.frame_87.setEnabled(False)
+                self.ui.frame_87.setMaximumWidth(0)
+                self.ui.frame_91.setEnabled(True)
+                self.ui.frame_91.setMaximumWidth(200)
+            else:
+                if not self.ui.frame_87.isEnabled():
+                    self.ui.frame_91.setEnabled(False)
+                    self.ui.frame_91.setMaximumWidth(0) 
+                    self.ui.frame_87.setEnabled(True)
+                    self.ui.frame_87.setMaximumWidth(200)
+                self.ui.DT_date_edit_2.setDisplayFormat("MM/yyyy")
+                pass
+            # self.Dashboard_Downtime_page_refresh(area_name, date)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to filter data: {e}")
 
     @QtCore.pyqtSlot()
     def Data_Downtime_page(self):
@@ -5081,13 +5307,22 @@ class Update_machine_info(QtWidgets.QDialog):
                                                         WHERE m.machine_code = :code;
                                                     ''',params = {'code':old_code,'line':self.ui.maintenance_plan_table_af.item(row,2).text(),'quarter':(self.parent.ui.company_week_month(self.parent.year_num,int(self.ui.maintenance_plan_table_af.item(row,1).text())) - 1) // 3 + 1,
                                                                   'week':self.ui.maintenance_plan_table_af.item(row,1).text(),'original_week':self.ui.maintenance_plan_table_af.item(row,1).text(),'year':self.parent.year_num})
-                self.database.query(sql = '''   UPDATE `Maintenance_Form_Register` AS mfr
-                                                SET mfr.form_id = ( SELECT mf.form_id FROM `Maintenance_form` AS mf
-                                                                    JOIN `Departments` AS d
-                                                                    ON mf.department_id = d.department_id
-                                                                    WHERE mf.form_name = :form AND d.department_name = :dep LIMIT 1)
-                                                WHERE mfr.machine_id = ( SELECT m2.machine_id FROM `Machines` AS m2 WHERE m2.machine_code = :code LIMIT 1);
-                                    ''',params = {'code':old_code,'form':form,'dep':dep})
+                if self.register_form:
+                    self.database.query(sql = '''   UPDATE `Maintenance_Form_Register` AS mfr
+                                                    SET mfr.form_id = ( SELECT mf.form_id FROM `Maintenance_form` AS mf
+                                                                        JOIN `Departments` AS d
+                                                                        ON mf.department_id = d.department_id
+                                                                        WHERE mf.form_name = :form AND d.department_name = :dep LIMIT 1)
+                                                    WHERE mfr.machine_id = ( SELECT m2.machine_id FROM `Machines` AS m2 WHERE m2.machine_code = :code LIMIT 1);
+                                        ''',params = {'code':old_code,'form':form,'dep':dep})
+                else:
+                    self.database.query(sql = '''   INSERT INTO `maintenance_form_register` (machine_id, form_id)
+                                                    VALUES ((SELECT m2.machine_id FROM `machines` AS m2 WHERE m2.machine_code = :code LIMIT 1),
+                                                            (SELECT mf.form_id FROM `maintenance_form` AS mf
+                                                             JOIN `departments` AS d
+                                                             ON mf.department_id = d.department_id
+                                                             WHERE mf.form_name = :form AND d.department_name = :dep LIMIT 1));
+                                        ''',params = {'code':old_code,'form':form,'dep':dep})
 
                 self.database.query(sql = '''   UPDATE `Machines` AS m
                                                 SET 
@@ -5350,7 +5585,6 @@ class Print_selector(QtWidgets.QWidget):
         self.close()
 
     def print_job(self, data):
-        total = len(data)
         for i, info in enumerate(data, start=0):
             if info[0] in self.attached_machine:
                 self.printer_process.send_to_printer(input_pdf = info[-1], data = [info[0], info[1],info[3], info[4], info[8], str(info[7])],attached_machine = self.attached_machine[info[0]],file_index= i)
@@ -5373,6 +5607,7 @@ class Print_selector(QtWidgets.QWidget):
                                                                 params = {'code':attached_code,'line':info[4],'technical':info[8],'date':info[7],'attach_with':info[0]})
                 except Exception as e:
                     QtWidgets.QMessageBox.critical(self,"Error",  f"Fail to load : {e}")
+                    return
             else:
                 try:
                     temp = self.database.query(sql = f'''SELECT rp.rp_id,m.machine_code FROM `Record_pending` as rp
@@ -5495,7 +5730,6 @@ class Form_Modification(QtWidgets.QDialog):
         self.pdf_page = Scan_record_process()
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.Window)
         self.parent = parent
-        self.debounce_timers = {}
         self.setup_signals()
         self.result = []
         self.department_maintenance_form = None
@@ -5636,15 +5870,18 @@ class Form_Modification(QtWidgets.QDialog):
                                                                     JOIN `Departments` as d
                                                                     ON p.department_id = d.department_id
                                                                     WHERE m.machine_code = :code AND d.department_name = :dep;''',params = {'code':code,'dep':self.department_update.strip()})
-            self.ui.apply_machine_table.setItem(r,1,QtWidgets.QTableWidgetItem(f"{result[0][0]}"))
+            if result:
+                self.ui.apply_machine_table.setItem(r,1,QtWidgets.QTableWidgetItem(f"{result[0][0]}"))
+            else:
+                raise ValueError(f"Machine code {code} not found in your department or has been register for other form")
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to load data: {e}")
-            if self.ui.apply_machine_table.cellWidget(r,0):
-                editor = self.ui.apply_machine_table.cellWidget(r,0)
-                editor.blockSignals(True)
-                editor.setText("")
-                editor.blockSignals(False)
-                self.ui.apply_machine_table.setItem(r,1,QtWidgets.QTableWidgetItem(""))
+            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to load data : {e}")
+            # if self.ui.apply_machine_table.cellWidget(r,0):
+            #     editor = self.ui.apply_machine_table.cellWidget(r,0)
+            #     editor.blockSignals(True)
+            #     editor.setText("")
+            #     editor.blockSignals(False)
+            #     self.ui.apply_machine_table.setItem(r,1,QtWidgets.QTableWidgetItem(""))
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
@@ -6329,6 +6566,19 @@ class Sync_Missing_Data(QtWidgets.QWidget):
 
         except Exception as e:
             QtWidgets.QMessageBox.critical(self,"Error", f"Failed to sync data: {e}")
+    
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self._drag_pos = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == QtCore.Qt.LeftButton and self._drag_pos is not None:
+            self.move(event.globalPos() - self._drag_pos)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        self._drag_pos = None
 
 class Group_Area_Choose(QtWidgets.QDialog):
     def __init__(self, parent = None, database = None, file_path = None):
