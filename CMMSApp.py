@@ -44,6 +44,10 @@ import re
 from dateutil.relativedelta import relativedelta
 from pyqtspinner.spinner import WaitingSpinner
 from sqlalchemy import text
+from scipy.interpolate import interp1d
+from scipy.ndimage import gaussian_filter1d
+import calendar
+
 STRICT_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 def resource_path(relative_path):
@@ -3006,11 +3010,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.safe_connect(self.ui.DT_data_btn.clicked, self.Data_Downtime_page)
         self.safe_connect(self.ui.DT_import_data_btn.clicked, self.Import_data_Downtime_page)
         self.safe_connect(self.ui.DT_problem_report_btn.clicked, self.Problem_report_Downtime_page)
+        self.safe_connect(self.ui.DT_date_edit_2.dateChanged, lambda: self.DT_filtering(changed_object = "date_range"))
     
     @QtCore.pyqtSlot()
     def Dashboard_Downtime_page(self):
         self.style_button_with_shadow((self.ui.DT_dashboard_btn,self.ui.DT_data_btn,self.ui.DT_import_data_btn,self.ui.DT_problem_report_btn))
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_Dashboard_widget)
+        if self.ui.DT_area_cbb.count() > 0:
+            return
         try:
             areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
                                                                                 FROM `downtime_areas`;''')]
@@ -3022,25 +3029,25 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             area_name = self.ui.DT_area_cbb.currentText()
             nearest_date = self.database_process.query(sql = '''SELECT MAX(downtime_date) FROM `downtime_records`;''')[0][0]
             self.ui.DT_date_edit_2.setDate(QtCore.QDate.fromString(str(nearest_date), "yyyy-MM-dd"))
-            self.Dashboard_Downtime_page_refresh(area_name, nearest_date)
+            self.Dashboard_Downtime_page_refresh(area_name = area_name, target = nearest_date, view_by = "day")
             self.DT_filtered_dict = {
                 "area": area_name,
                 "view_by" : "day",
                 "time_range": nearest_date
             }
             self.safe_connect(self.ui.DT_area_cbb.currentTextChanged,
-                              lambda: self.DT_filtering(changed_object = "area"))
+                              lambda: self.DT_Viewby(changed_object = "area"))
             self.safe_connect(self.ui.DT_day_radiobtn.clicked, 
-                              lambda: self.DT_filtering(changed_object = "day"))
+                              lambda: self.DT_Viewby(changed_object = "day"))
             self.safe_connect(self.ui.DT_week_radiobtn.clicked, 
-                              lambda: self.DT_filtering(changed_object = "week"))
+                              lambda: self.DT_Viewby(changed_object = "week"))
             self.safe_connect(self.ui.DT_month_radiobtn.clicked,
-                              lambda: self.DT_filtering(changed_object = "month"))
+                              lambda: self.DT_Viewby(changed_object = "month"))
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
             return
 
-    def Dashboard_Downtime_page_refresh(self, area_name, date):
+    def Dashboard_Downtime_page_refresh(self, area_name, target, view_by = "day"):
         self.style_button_with_shadow((self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_error_btn,self.ui.DT_detail_chart_time_btn))
         def assign_shift(t):
             hours = t.seconds // 3600  
@@ -3050,21 +3057,35 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 return "Shift 2"
             else:  
                 return "Shift 3"
-        try:
-            data = self.database_process.query(sql = '''SELECT Start_Time, Start_Repair_Time, End_Time, 
+        year = "2025"
+        if view_by == "day":
+            filer_scripts = "Date = :object"
+            filter_scripts_wt =  f"lot.operation_date = :object AND YEAR(lot.operation_date) = {year}"
+        elif view_by == "week":
+            filer_scripts = f"Working_Week = :object AND YEAR(Date) = {year}" #{self.year_num}
+            filter_scripts_wt =  f''' lot.operation_date IN (SELECT DISTINCT Date FROM downtime_report 
+                                        WHERE Downtime_Area = :area_name AND YEAR(Date) = {year} AND `Working_Week` = :object
+                                        ORDER BY Date)'''
+        elif view_by == "month":
+            filer_scripts = f"MONTH(Date) = :object AND YEAR(Date) = {year}"
+            filter_scripts_wt =  f''' lot.operation_date IN (SELECT DISTINCT Date FROM downtime_report 
+                                        WHERE Downtime_Area = :area_name AND YEAR(Date) = {year} AND `Working_Month` = :object
+                                        ORDER BY Date)'''
+        try: 
+            data = self.database_process.query(sql = f'''SELECT Date ,Start_Time, Start_Repair_Time, End_Time, 
                                                             Total_Loss, Wait_Technical, Staff_Name, Error_Code, Machine_Code, Line_Name
                                                         FROM `downtime_report`
-                                                        WHERE Downtime_Area = :area_name AND Date = :downtime_date
-                                                        ORDER BY Start_Time, Date;''', params = {"area_name": area_name,"downtime_date":date})
-            working_time = self.database_process.query(sql = '''SELECT pl.line_name, lot.operation_hours FROM `line_operation_times` as lot
+                                                        WHERE Downtime_Area = :area_name AND {filer_scripts}
+                                                        ORDER BY Date,Start_Time ;''', params = {"area_name": area_name,"object":target})
+            working_time = self.database_process.query(sql = f'''SELECT pl.line_name, lot.operation_hours FROM `line_operation_times` as lot
                                                                 JOIN downtime_areas_production_lines as dapl ON lot.line_id = dapl.line_id
                                                                 JOIN downtime_areas as da ON dapl.downtime_area_id = da.downtime_area_id
                                                                 JOIN production_lines as pl ON lot.line_id = pl.line_id
-                                                                WHERE da.downtime_area_name = :area_name AND lot.operation_date = :operation_date;''', params={"area_name": area_name, "operation_date": date})
-            if not data:
+                                                                WHERE da.downtime_area_name = :area_name AND {filter_scripts_wt};''', params={"area_name": area_name, "object": target})
+            if not data and not working_time:
                 QtWidgets.QMessageBox.information(self, "No data", "No downtime records found for the selected area and date.")
                 return
-            self.data = pd.DataFrame(data, columns=["Downtime Start Time", "Downtime Start Repair Time", "Downtime End Time", "Total Loss Time", "Wait Technical Time", "Staff Name", "Error Code", "Machine Code", "Line Name"])
+            self.data = pd.DataFrame(data, columns=["Date", "Downtime Start Time", "Downtime Start Repair Time", "Downtime End Time", "Total Loss Time", "Wait Technical Time", "Staff Name", "Error Code", "Machine Code", "Line Name"])
             self.data["Shift"] = self.data["Downtime Start Time"].apply(assign_shift)
             self.working_time = pd.DataFrame(working_time, columns=["Line Name","Working Time"])
             total_loss = self.data["Total Loss Time"].sum()
@@ -3073,21 +3094,41 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             mttr = str(dt.timedelta(minutes=int(mttr)))
             mtbf = (self.working_time["Working Time"].sum() * 60 - total_loss) / downtime_count if downtime_count > 0 else self.working_time["Working Time"].sum() * 60
             mtbf = str(dt.timedelta(minutes=int(mtbf)))
-            total_loss = str(dt.timedelta(minutes=int(total_loss)))
-            self.ui.DTime_value.setText(str(total_loss))
+            delta = dt.timedelta(minutes=int(total_loss))
+            seconds = int(delta.total_seconds())
+            hours = seconds // 3600
+            minutes = (seconds % 3600) // 60
+            seconds = seconds % 60
+            total_loss = f"{hours:02}:{minutes:02}:{seconds:02}"
+            self.ui.DTime_value.setText(total_loss)
             self.ui.DEvent_value.setText(str(downtime_count))
             self.ui.MTTR_value.setText(str(mttr))
             self.ui.MTBF_value.setText(str(mtbf))
             DE_perhours = pd.DataFrame(columns=["Date_time"])
-            DE_perhours["Date_time"] = pd.to_datetime(date) + self.data["Downtime Start Time"]
-            DE_perhours["Date_time"] = DE_perhours["Date_time"].dt.floor("h")
-            full_hours = pd.date_range(start=pd.to_datetime(date),periods=24,freq="h")
+            if view_by == "day":
+                base_date = pd.to_datetime(target)
+                self.data["Actual_datetime"] = base_date + self.data["Downtime Start Time"]
+                full_range = pd.date_range(start=base_date, periods=24, freq="h")
+            elif view_by == "week":
+                base_date = self.database_process.query(sql = f'''SELECT MIN(Date) FROM `downtime_report` 
+                                                                    WHERE Downtime_Area = :area_name AND {filer_scripts}''', params={"area_name": area_name,"object":target})[0][0]
+                base_date = pd.to_datetime(base_date)
+                days_back = (base_date.day_of_week + 1) % 7
+                base_date = base_date - pd.Timedelta(days=days_back)    
+                self.data["Actual_datetime"] = pd.to_datetime(self.data["Date"]) + self.data["Downtime Start Time"]
+                full_range = pd.date_range(start=base_date, periods=24*7, freq="h")
+            elif view_by == "month":
+                base_date = pd.Timestamp(year=int(year), month=int(target), day=1)
+                self.data["Actual_datetime"] = pd.to_datetime(self.data["Date"]) + self.data["Downtime Start Time"]
+                full_range = pd.date_range(start=base_date, periods=calendar.monthrange(int(year), int(target))[1]*24, freq="h")
+            DE_perhours["Date_time"] = self.data["Actual_datetime"].dt.floor("h")
+            full_hours = full_range
             Event_hourly_df = (
                 DE_perhours.groupby("Date_time")
                 .size()
                 .reset_index(name="count_event")
             )
-            Event_hourly_df = (
+            Event_hourly_df = ( 
                 Event_hourly_df
                 .set_index("Date_time")
                 .reindex(full_hours, fill_value=0)
@@ -3095,7 +3136,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 .reset_index()
             )
             MTTR_perhours = pd.DataFrame(columns=["Date_time", "MTTR"])
-            MTTR_perhours["Date_time"] = pd.to_datetime(date) + self.data["Downtime Start Time"]
+            MTTR_perhours["Date_time"] = self.data["Actual_datetime"].dt.floor("h")
             MTTR_perhours["MTTR"] = self.data["Total Loss Time"]
             MTTR_perhours["Date_time"] = MTTR_perhours["Date_time"].dt.floor("h")
             MTTR_perhours = (
@@ -3107,7 +3148,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 .reset_index()
             )
             MTBF_perhours = pd.DataFrame(columns=["Date_time", "MTBF"])
-            MTBF_perhours["Date_time"] = pd.to_datetime(date) + self.data["Downtime Start Time"]
+            MTBF_perhours["Date_time"] = self.data["Actual_datetime"].dt.floor("h")
             MTBF_perhours["MTBF"] =  MTBF_perhours["Date_time"].diff().dt.total_seconds().div(60).fillna(0)
             MTBF_perhours["Date_time"] = MTBF_perhours["Date_time"].dt.floor("h")
             MTBF_perhours = (
@@ -3122,13 +3163,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.DT_chart_current_group = None
             self.DT_table_show(self.data, self.working_time)
             self.DT_detail_chart_drawing(group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line")
-            self.Sparkline_chart(self.ui.DTime_chart, self.data["Total Loss Time"].tolist(), (165, 201, 229), "Downtime vs Time")
-            self.Sparkline_chart(self.ui.DEvent_chart, Event_hourly_df["count_event"].tolist(), (165, 201, 229), "Downtime Events vs Time")
-            self.Sparkline_chart(self.ui.MTTR_chart, MTTR_perhours["MTTR"].tolist(), (165, 201, 229), "MTTR vs Time")
-            self.Sparkline_chart(self.ui.MTBF_chart, MTBF_perhours["MTBF"].tolist(), (165, 201, 229), "MTBF vs Time")
+            self.Sparkline_chart(self.ui.DTime_chart, self.data["Total Loss Time"].tolist(), (165, 201, 229), "Downtime Over Time")
+            self.Sparkline_chart(self.ui.DEvent_chart, Event_hourly_df["count_event"].tolist(), (165, 201, 229), "Downtime Events Over Time")
+            self.Sparkline_chart(self.ui.MTTR_chart, MTTR_perhours["MTTR"].tolist(), (165, 201, 229), "MTTR Over Time")
+            self.Sparkline_chart(self.ui.MTBF_chart, MTBF_perhours["MTBF"].tolist(), (165, 201, 229), "MTBF Over Time")
             self.safe_connect(self.ui.DT_detail_chart_line_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line"))
             self.safe_connect(self.ui.DT_detail_chart_machine_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Machine Code", value_col="Total Loss Time", data=self.data, title="Downtime By Machine"))
             self.safe_connect(self.ui.DT_detail_chart_error_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Error Code", value_col="Total Loss Time", data=self.data, title="Downtime By Error Code"))
+            self.safe_connect(self.ui.DT_detail_chart_time_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Downtime Start Time", value_col="Total Loss Time", data=self.data, title="Downtime By Time"))
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
             return
@@ -3167,15 +3209,22 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         plot.setMenuEnabled(False)
         x = np.arange(len(data))
         y = np.array(data, dtype=float)
-        curve = pg.PlotCurveItem(x, y, pen=pg.mkPen(color, width=1.5))
+
+        if len(y) > 100:
+            y_smooth = gaussian_filter1d(y, sigma=len(y) / 80)
+            y_smooth = np.clip(y_smooth, 0, None) 
+        else:
+            y_smooth = y
+
+        curve = pg.PlotCurveItem(x, y_smooth, pen=pg.mkPen(color, width=1.5))
         fill = pg.FillBetweenItem(
             curve,
-            pg.PlotCurveItem(x, np.zeros_like(y)),
+            pg.PlotCurveItem(x, np.zeros_like(y_smooth)),
             brush=pg.mkBrush(116, 185, 232, 80)
         )
         plot.addItem(curve)
         plot.addItem(fill)
-        widget.setMaximumSize(150, 150)
+        widget.setMaximumSize(135, 150)
         widget.layout().addWidget(plot)
         
     def DT_table_show(self, data, working_time):
@@ -3240,11 +3289,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.DT_chart_current_group = "Machine Code"
             self.style_button_with_shadow((self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_error_btn,self.ui.DT_detail_chart_time_btn))
         elif group_col == "Error Code":
-            self.DT_chart_current_group = "Line Name"
+            self.DT_chart_current_group = "Error Code"
             self.style_button_with_shadow((self.ui.DT_detail_chart_error_btn,self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_time_btn))
         else:
-            self.DT_chart_current_group = "Time"
+            self.DT_chart_current_group = "Downtime Start Time"
             self.style_button_with_shadow((self.ui.DT_detail_chart_time_btn,self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_error_btn))
+            self.DT_time_density_chart(data,value_col)
+            return
         try:
             old_layout = self.ui.DT_chart.layout()
             if old_layout is not None:
@@ -3259,28 +3310,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.ui.DT_chart.setLayout(new_layout)
             self.bar_item = None
             self.line_item = None
-            plot = pg.PlotWidget()
-            plot.setBackground(None)
-            plot.setTitle(f'<span style="color: grey; font-size: 10pt; font-weight: bold">{title}</span>')
-            plot.showGrid(x=False, y=False, alpha=0.3)
-            y0_axis = plot.getAxis('left')
-            y1_axis = plot.getAxis('right')
-            x_axis  = plot.getAxis('bottom')
-            y0_axis.setLabel("Time (minutes)")
-            y0_axis.setPen(None)
-            y0_axis.setTextPen('gray')
-            x_axis.setLabel(group_col)
-            plot.showAxis('right')
-            y1_axis.setLabel("Cumulative %")
-            y1_axis.setPen(None)
-            y1_axis.setTicks([[(0, '0%'), (20, '20%'), (40, '40%'), (60, '60%'), (80, '80%'), (100, '100%')]])
-            y1_axis.setTextPen('gray')
-            plot.setMouseEnabled(False,False)
             pivot = (   data.groupby([group_col, "Shift"])[value_col]
-                        .sum()
-                        .unstack(fill_value=0)
-                        .reindex(columns=["Shift 1", "Shift 2", "Shift 3"], fill_value=0) )
-
+                            .sum()
+                            .unstack(fill_value=0)
+                            .reindex(columns=["Shift 1", "Shift 2", "Shift 3"], fill_value=0) )
             pivot["total"] = pivot.sum(axis=1)
             pivot = pivot.sort_values("total", ascending=False).drop(columns="total")
             pivot = pivot[:25] if len(pivot) > 25 else pivot
@@ -3290,6 +3323,47 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             s3 = pivot["Shift 3"].values.astype(float)
             total = s1 + s2 + s3
             x = np.arange(len(categories))
+            if group_col == "Machine Code":
+                _angle = -45
+                dx = -15
+                dy = 5
+            elif group_col == "Error Code" and len(categories) > 10:
+                _angle = -40
+                dx = 0
+                dy = 0
+            else:
+                _angle = 0
+                dx = 0
+                dy = 0
+            x_axis = RotatedAxisItem(angle=_angle, dx=dx, dy=dy, orientation='bottom')
+            plot = pg.PlotWidget(axisItems={'bottom': x_axis})
+            chart_font = QtGui.QFont("Comic Sans MS", 9)
+            chart_font.setStyleStrategy(QtGui.QFont.PreferAntialias)
+            chart_font.setHintingPreference(QtGui.QFont.PreferFullHinting)
+            chart_font.setBold(True)
+            plot.setBackground(None)
+            plot.setTitle(f'<span style="color: grey; font-size: 10pt; font-weight: bold">{title}</span>')
+            plot.showGrid(x=False, y=False, alpha=0.3)
+            plot.hideButtons()
+            y0_axis = plot.getAxis('left')
+            y1_axis = plot.getAxis('right')
+            x_axis  = plot.getAxis('bottom')
+            y0_axis.setLabel("Time (minutes)")
+            y0_axis.setPen(None)
+            y0_axis.setTextPen('gray')
+            x_axis.setLabel(group_col)
+            if _angle == -45:
+                x_axis.setStyle(tickTextHeight=10)
+                x_axis.setHeight(70)
+            plot.showAxis('right')
+            y1_axis.setLabel("Cumulative %")
+            y1_axis.setPen(None)
+            y1_axis.setTicks([[(0, '0%'), (20, '20%'), (40, '40%'), (60, '60%'), (80, '80%'), (100, '100%')]])
+            y1_axis.setTextPen('gray')
+            x_axis.setTickFont(chart_font)
+            y0_axis.setTickFont(chart_font)
+            y1_axis.setTickFont(chart_font)
+            plot.setMouseEnabled(False,False)
             colors = {
                 "Shift 1": (187, 78, 139, 150), 
                 "Shift 2": (142, 71, 130, 150),  
@@ -3317,7 +3391,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             cum = np.cumsum(total) / np.sum(total) * 100
             vb2 = pg.ViewBox()
             plot.scene().addItem(vb2)
-
+            plot.getAxis('bottom').setTicks([list(zip(x, categories))])
+            plot.getAxis('bottom').setStyle(tickTextOffset=20)
             plot.getAxis('right').linkToView(vb2)
             vb2.setXLink(plot)
 
@@ -3337,6 +3412,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                             + f"\nShift 2: {s2[index]:.2f} min"
                             + f"\nShift 3: {s3[index]:.2f} min"
                             + f"\nTotal: {total[index]:.2f} min"
+                            + f"\nCumulative: {cum[index] - cum[index-1] if index > 0 else cum[index]:.2f} %"
                         )
             plot.getViewBox().sigResized.connect(update_views)
             self.line_item = pg.PlotCurveItem(
@@ -3350,10 +3426,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             vb2.addItem(self.line_item)
             vb2.setYRange(0, 100)
             update_views()
-            if len(categories) > 10:
-                plot.getAxis('bottom').setTicks([list(zip(x, [""]*len(categories)))])
-            else:
-                plot.getAxis('bottom').setTicks([list(zip(x, categories))])
             y_min = 0
             y_max = max(total) * 1.2 if len(total) > 0 else 1
             tick_step = max(5, int(y_max / 8 / 5) * 5)
@@ -3367,7 +3439,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to draw chart: {e}")
 
     @QtCore.pyqtSlot()
-    def DT_filtering(self,changed_object):
+    def DT_Viewby(self,changed_object):
         if changed_object == self.DT_filtered_dict.get(changed_object):
             return
         try:
@@ -3377,23 +3449,160 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.ui.frame_91.setMaximumWidth(0)
                 self.ui.frame_87.setEnabled(True)
                 self.ui.frame_87.setMaximumWidth(200)
-                date = self.ui.DT_date_edit_2.date().toString("yyyy-MM-dd")
+                self.ui.DT_date_edit_2.setDisplayFormat("dd-MMM-yyyy")
+                self.safe_connect(self.ui.DT_date_edit_2.dateChanged, lambda: self.DT_filtering(changed_object = "date_range"))
+                try:
+                    self.ui.DT_week_cbb_2.currentTextChanged.disconnect()
+                except TypeError:
+                    pass
+                target = self.ui.DT_date_edit_2.date().toString("yyyy-MM-dd")
             elif self.ui.DT_week_radiobtn.isChecked():
                 self.ui.frame_87.setEnabled(False)
                 self.ui.frame_87.setMaximumWidth(0)
                 self.ui.frame_91.setEnabled(True)
                 self.ui.frame_91.setMaximumWidth(200)
+                if self.ui.DT_week_cbb_2.count() == 0:
+                    self.ui.DT_week_cbb_2.addItems([str(week_num) for week_num in range(1,self.qty_week+1)])
+                self.ui.DT_week_cbb_2.setCurrentText(str(self.ui.company_week_number(self.ui.today)))
+                self.safe_connect(self.ui.DT_week_cbb_2.currentTextChanged, lambda: self.DT_filtering(changed_object = "week_range"))
+                try:
+                    self.ui.DT_date_edit_2.dateChanged.disconnect()
+                except TypeError:
+                    pass
+                target = int(self.ui.DT_week_cbb_2.currentText())
             else:
                 if not self.ui.frame_87.isEnabled():
                     self.ui.frame_91.setEnabled(False)
                     self.ui.frame_91.setMaximumWidth(0) 
                     self.ui.frame_87.setEnabled(True)
                     self.ui.frame_87.setMaximumWidth(200)
-                self.ui.DT_date_edit_2.setDisplayFormat("MM/yyyy")
-                pass
-            # self.Dashboard_Downtime_page_refresh(area_name, date)
+                self.ui.DT_date_edit_2.setDisplayFormat("MMM-yyyy")
+                target = self.ui.DT_date_edit_2.date().month()
+            self.Dashboard_Downtime_page_refresh(area_name=area_name, target=target, view_by=changed_object)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to filter data: {e}")
+    
+    @QtCore.pyqtSlot()
+    def DT_filtering(self, changed_object = None):
+        if changed_object == None:
+            return
+        try:
+            if changed_object == "date_range":
+                area_name = self.ui.DT_area_cbb.currentText()
+                date = self.ui.DT_date_edit_2.date().toString("yyyy-MM-dd")
+                self.Dashboard_Downtime_page_refresh(area_name, date, view_by="day")
+            if changed_object == "week_range":
+                area_name = self.ui.DT_area_cbb.currentText()
+                week_num = int(self.ui.DT_week_cbb_2.currentText())
+                self.Dashboard_Downtime_page_refresh(area_name, week_num, view_by="week")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to filter data: {e}")
+
+    def DT_time_density_chart(self, data,value_col):
+        def process_small_data_to_smooth_data(raw_points):
+            x_old = np.linspace(0, 1, len(raw_points))
+            x_new = np.linspace(0, 1, len(raw_points) * 10)
+            f = interp1d(x_old, raw_points, kind='cubic')
+            data_resampled = f(x_new)
+            data_smooth = gaussian_filter1d(data_resampled, sigma=10)
+            
+            range_val = data_smooth.max() - data_smooth.min()
+            if range_val == 0:
+                return np.zeros((len(x_new), 1))  # Trả về toàn 0 nếu không có data
+            
+            final_data = (data_smooth - data_smooth.min()) / range_val
+            return final_data.reshape(-1, 1)
+        try:
+            old_layout = self.ui.DT_chart.layout()
+            if old_layout is not None:
+                while old_layout.count():
+                    item = old_layout.takeAt(0)
+                    if item.widget():
+                        item.widget().deleteLater()
+            else:
+                new_layout = QtWidgets.QVBoxLayout()
+                new_layout.setContentsMargins(0, 0, 0, 0)
+                new_layout.setSpacing(0)
+                self.ui.DT_chart.setLayout(new_layout)
+            plot = pg.PlotWidget()
+            plot.setBackground(None)
+            plot.setTitle(f'<span style="color: grey; font-size: 10pt; font-weight: bold">Downtime Density Over Time</span>')
+            plot.showGrid(x=True, y=True, alpha=0.3)
+            x_axis  = plot.getAxis('bottom')
+            y_axis = plot.getAxis('left')
+            x_axis.setLabel("Time")
+            y_axis.setLabel("")
+            plot.setMouseEnabled(False,False)
+            full_10min = pd.timedelta_range(start="0 days", periods=144, freq="10min")
+            pivot = (
+                        data.assign(
+                            Time_10min=data["Downtime Start Time"].dt.floor("10min")  # timedelta trực tiếp
+                        )
+                        .groupby(["Time_10min", "Shift"])
+                        .size()
+                        .unstack(fill_value=0)
+                        .reindex(index=full_10min, columns=["Shift 1", "Shift 2", "Shift 3"], fill_value=0)
+                    )
+            Shift_1 = pivot["Shift 1"].loc["0 days 06:00:00":"0 days 14:00:00"]
+            Shift_2 = pivot["Shift 2"].loc["0 days 14:00:00":"0 days 22:00:00"]
+            Shift_3 = pd.concat([pivot["Shift 3"].loc["0 days 22:00:00":"0 days 23:59:59"], pivot["Shift 3"].loc["0 days 00:00:00":"0 days 06:00:00"]])
+            Shift_1_density = process_small_data_to_smooth_data(Shift_1.values)
+            Shift_2_density = process_small_data_to_smooth_data(Shift_2.values)
+            Shift_3_density = process_small_data_to_smooth_data(Shift_3.values)
+            s1 = Shift_1_density.flatten()
+            s2 = Shift_2_density.flatten()
+            s3 = Shift_3_density.flatten()
+            min_len = min(len(s1), len(s2), len(s3))
+            gap_col = np.full(min_len, -1.0)  
+            image_data = np.column_stack([
+                s3[:min_len],
+                gap_col,
+                s2[:min_len],
+                gap_col,
+                s1[:min_len]
+            ])
+            lut = np.zeros((256, 3), dtype=np.uint8)
+            lut[0] = [255, 255, 255] 
+            lut[127:, 0] = np.linspace(252, 203,   129).astype(np.uint8)
+            lut[127:, 1] = np.linspace(220, 23,    129).astype(np.uint8)
+            lut[127:, 2] = np.linspace(221, 17,    129).astype(np.uint8)
+            img = pg.ImageItem()
+            img.setImage(image_data)
+            img.setLookupTable(lut)
+            img.setLevels([-1, 1])
+            font = QtGui.QFont()
+            font.setFamily("Comic Sans MS") 
+            font.setPointSize(10)      
+            font.setBold(True)
+            plot.showGrid(x=False, y=False)
+            x_axis.setTicks([[(i * min_len / 8, f'{i}h') for i in range(9)]])
+            x_axis.setTextPen(pg.mkPen(color=(100, 100, 100)))
+            x_axis.setPen(None)
+            x_axis.setTickFont(font)
+            y_axis.setTicks([[(0.5, 'Shift 3'), (2.5, 'Shift 2'), (4.5, 'Shift 1')]])
+            y_axis.setTextPen(pg.mkPen(color=(100, 100, 100)))
+            y_axis.setPen(None)
+            y_axis.setTickFont(font)
+            plot.addItem(img)
+            plot.setXRange(0, min_len, padding=0)
+            plot.setYRange(0, 3, padding=0)
+            plot.setFixedSize(800, 300) 
+            plot.enableAutoRange(axis=pg.ViewBox.XYAxes, enable=True)
+            shift_labels = [("22h", "6h"), ("14h", "22h"), ("6h", "14h")]
+            for i, (t_start, t_end) in enumerate(shift_labels):
+                y_pos = i*2 + 0.88
+                lbl_s = pg.TextItem(t_start, color=(100, 100, 100), anchor=(0, 1))
+                lbl_e = pg.TextItem(t_end,   color=(100, 100, 100), anchor=(1, 1))
+                lbl_s.setFont(font)
+                lbl_e.setFont(font)
+                lbl_s.setPos(0,        y_pos)
+                lbl_e.setPos(min_len,  y_pos)
+                plot.addItem(lbl_s)
+                plot.addItem(lbl_e)
+            self.ui.DT_chart.layout().addWidget(plot)
+
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to generate density chart: {e}")
 
     @QtCore.pyqtSlot()
     def Data_Downtime_page(self):
@@ -7049,7 +7258,41 @@ class Error_code_management(QtWidgets.QDialog):
         except Exception as e:
             QtWidgets.QMessageBox.critical(self,"Error", f"Failed to update changes: {e}")
             return
-        
+
+class RotatedAxisItem(pg.AxisItem):
+    def __init__(self, angle=-45, dx=-10, dy=5, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.angle = angle
+        self.dx = dx
+        self.dy = dy
+
+    def drawPicture(self, p, axisSpec, tickSpecs, textSpecs):
+        if self.angle == 0:
+            super().drawPicture(p, axisSpec, tickSpecs, textSpecs)
+            return
+        p.setRenderHint(p.Antialiasing, False)
+        p.setRenderHint(p.TextAntialiasing, True)
+
+        pen, p1, p2 = axisSpec
+        p.setPen(pen)
+        p.drawLine(p1, p2)
+
+        for pen, p1, p2 in tickSpecs:
+            p.setPen(pen)
+            p.drawLine(p1, p2)
+
+        if self.style['showValues']:
+            p.setFont(self.style['tickFont'] or self.font())
+            p.setPen(self.textPen())
+            for rect, flags, text in textSpecs:
+                offset_rect = rect.translated(self.dx, self.dy)
+                p.save()
+                p.translate(offset_rect.center())
+                p.rotate(self.angle)
+                p.translate(-offset_rect.center())
+                p.drawText(offset_rect, flags , text)
+                p.restore()
+
 def main():
     try:
         import ctypes

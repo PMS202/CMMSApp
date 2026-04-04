@@ -1,64 +1,78 @@
 import sys
 import numpy as np
-from PyQt5 import QtWidgets
 import pyqtgraph as pg
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtCore import Qt
+from scipy.ndimage import gaussian_filter1d
 
-class HistogramDashboard(QtWidgets.QMainWindow):
+class ShiftDensityChart(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("Biểu đồ mật độ máy hư theo giờ")
+        self.resize(1000, 450)
 
-        self.setWindowTitle("Histogram Dashboard")
+        # Cấu hình Widget chính
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
 
-        # Main widget
-        self.plot = pg.PlotWidget()
-        self.setCentralWidget(self.plot)
+        # Khởi tạo GraphicsLayoutWidget của pyqtgraph
+        self.win = pg.GraphicsLayoutWidget()
+        self.win.setBackground('w') # Nền trắng
+        layout.addWidget(self.win)
 
-        # Style
-        self.plot.setBackground('w')
-        self.plot.showGrid(x=True, y=True, alpha=0.3)
+        # Dữ liệu mô phỏng cho 3 ca (mỗi ca 8 tiếng, độ phân giải 1000 điểm cho mượt)
+        # Bạn có thể thay thế np.random bằng dữ liệu thực tế đã nội suy
+        data_s1 = self.generate_super_smooth_data()
+        data_s2 = self.generate_super_smooth_data()
+        data_s3 = self.generate_super_smooth_data()
+        print(data_s1.shape, data_s2.shape, data_s3.shape)  # Kiểm tra kích thước dữ liệu
 
-        # Axis label
-        self.plot.setLabel('left', 'Frequency')
-        self.plot.setLabel('bottom', 'Value')
+        # Vẽ từng ca
+        self.create_shift_plot(0, "Shift 1", data_s1, "6h", "14h")
+        self.create_shift_plot(1, "Shift 2", data_s2, "14h", "22h")
+        self.create_shift_plot(2, "Shift 3", data_s3, "22h", "6h")
 
-        # Legend (horizontal)
-        self.legend = self.plot.addLegend(colCount=1)
+    def generate_super_smooth_data(self):
+        # 1. Tạo dữ liệu thô
+        x = np.linspace(0, 10, 1000)
+        raw_data = np.sin(x) + np.sin(x*0.5) + np.random.normal(0, 0.2, 1000)
+        
+        # 2. Áp dụng bộ lọc Gaussian để làm mịn các đỉnh nhọn
+        # sigma càng cao, màu chuyển càng chậm và mượt
+        smooth_data = gaussian_filter1d(raw_data, sigma=20) 
+        
+        # 3. Chuẩn hóa
+        data = (smooth_data - smooth_data.min()) / (smooth_data.max() - smooth_data.min())
+        return data.reshape(-1, 1)
 
-        # Generate sample data (ví dụ downtime)
-        data = np.random.normal(loc=50, scale=15, size=1000)
-
-        self.plot_histogram(data)
-
-    def plot_histogram(self, data):
-        # Tính histogram
-        y, x = np.histogram(data, bins=20)
-
-        # Vẽ dạng bar
-        bg = pg.BarGraphItem(
-            x=x[:-1],
-            height=y,
-            width=(x[1] - x[0]) * 0.8,
-            brush=(100, 150, 255, 200)
-        )
-
-        self.plot.addItem(bg)
-
-        # Legend (dùng dummy tròn cho đẹp)
-        curve = self.plot.plot(
-            [], [],
-            pen=None,
-            symbol='o',
-            symbolSize=10,
-            symbolBrush=(100, 150, 255),
-            symbolPen=None
-        )
-
-        self.legend.addItem(curve, "Downtime Distribution")
-
+    def create_shift_plot(self, row, title, data, start_label, end_label):
+        p = self.win.addPlot(row=row, col=0)
+        
+        # Tạo dải màu 1024 bước
+        colors = [(224, 243, 255), (0, 91, 150), (179, 229, 252)]
+        cmap = pg.ColorMap(pos=[0.0, 0.5, 1.0], color=colors)
+        lut = cmap.getLookupTable(start=0.0, stop=1.0, nPts=1024)
+        
+        img = pg.ImageItem()
+        img.setImage(data)
+        img.setLookupTable(lut)
+        
+        # Quan trọng: Ép kiểu dữ liệu về float để gradient tính toán chính xác
+        img.setImage(data.astype(float)) 
+        
+        p.addItem(img)
+        
+        # Cố định khung hình theo chiều ngang
+        p.setXRange(0, 1000, padding=0)
+        p.setYRange(0, 1, padding=0)
+        
+        # Ẩn các chi tiết thừa để trông giống "thanh mật độ"
+        p.hideAxis('left')
+        p.getAxis('bottom').setTicks([[(0, start_label), (1000, end_label)]])
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    window = HistogramDashboard()
-    window.resize(800, 500)
+    app = QApplication(sys.argv)
+    window = ShiftDensityChart()
     window.show()
     sys.exit(app.exec_())
