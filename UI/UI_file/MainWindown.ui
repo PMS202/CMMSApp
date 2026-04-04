@@ -100,7 +100,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap>../../Icons/Tokin-logo.ico</pixmap>
+        <pixmap>../../../../Icons/Tokin-logo.ico</pixmap>
        </property>
        <property name="scaledContents">
         <bool>true</bool>
@@ -129,7 +129,7 @@
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>../../Icons/OEE.ico</normaloff>../../Icons/OEE.ico</iconset>
+         <normaloff>../../../../Icons/OEE.ico</normaloff>../../../../Icons/OEE.ico</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -164,7 +164,7 @@
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>../../Icons/maintenance.ico</normaloff>../../Icons/maintenance.ico</iconset>
+         <normaloff>../../../../Icons/maintenance.ico</normaloff>../../../../Icons/maintenance.ico</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -202,7 +202,7 @@
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>../../Icons/Home.ico</normaloff>../../Icons/Home.ico</iconset>
+         <normaloff>../../../../Icons/Home.ico</normaloff>../../../../Icons/Home.ico</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -237,7 +237,7 @@
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>../../Icons/Order.ico</normaloff>../../Icons/Order.ico</iconset>
+         <normaloff>../../../../Icons/Order.ico</normaloff>../../../../Icons/Order.ico</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -272,7 +272,7 @@
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>../../Icons/Safety_stock.ico</normaloff>../../Icons/Safety_stock.ico</iconset>
+         <normaloff>../../../../Icons/Safety_stock.ico</normaloff>../../../../Icons/Safety_stock.ico</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -307,7 +307,7 @@
        </property>
        <property name="icon">
         <iconset>
-         <normaloff>../../../program/Icons/Downtime.ico</normaloff>../../../program/Icons/Downtime.ico</iconset>
+         <normaloff>../../../../../program/Icons/Downtime.ico</normaloff>../../../../../program/Icons/Downtime.ico</iconset>
        </property>
        <property name="iconSize">
         <size>
@@ -500,7 +500,7 @@
                  </property>
                  <property name="icon">
                   <iconset>
-                   <normaloff>../../Icons/OIP.ico</normaloff>../../Icons/OIP.ico</iconset>
+                   <normaloff>../../../../Icons/OIP.ico</normaloff>../../../../Icons/OIP.ico</iconset>
                  </property>
                 </widget>
                 <widget class="QLabel" name="label_5">
@@ -638,7 +638,7 @@
                  </property>
                  <property name="icon">
                   <iconset>
-                   <normaloff>OIP.png</normaloff>OIP.png</iconset>
+                   <normaloff>../../../../.designer/backup/OIP.png</normaloff>../../../../.designer/backup/OIP.png</iconset>
                  </property>
                 </widget>
                 <widget class="QPushButton" name="Open_Excel_FG">
@@ -661,7 +661,7 @@
                  </property>
                  <property name="icon">
                   <iconset>
-                   <normaloff>../../Icons/Open.ico</normaloff>../../Icons/Open.ico</iconset>
+                   <normaloff>../../../../Icons/Open.ico</normaloff>../../../../Icons/Open.ico</iconset>
                  </property>
                 </widget>
                 <widget class="QPushButton" name="Open_Excel_NG">
@@ -684,7 +684,7 @@
                  </property>
                  <property name="icon">
                   <iconset>
-                   <normaloff>Open.png</normaloff>Open.png</iconset>
+                   <normaloff>../../../../.designer/backup/Open.png</normaloff>../../../../.designer/backup/Open.png</iconset>
                  </property>
                 </widget>
                </widget>
@@ -719,7 +719,7 @@
                </property>
                <property name="icon">
                 <iconset>
-                 <normaloff>../../Icons/Excel_icon.ico</normaloff>../../Icons/Excel_icon.ico</iconset>
+                 <normaloff>../../../../Icons/Excel_icon.ico</normaloff>../../../../Icons/Excel_icon.ico</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -753,7 +753,7 @@
                </property>
                <property name="icon">
                 <iconset>
-                 <normaloff>../../Icons/Set.ico</normaloff>../../Icons/Set.ico</iconset>
+                 <normaloff>../../../../Icons/Set.ico</normaloff>../../../../Icons/Set.ico</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -787,7 +787,7 @@
                </property>
                <property name="icon">
                 <iconset>
-                 <normaloff>../../Icons/view.ico</normaloff>../../Icons/view.ico</iconset>
+                 <normaloff>../../../../Icons/view.ico</normaloff>../../../../Icons/view.ico</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -821,7 +821,7 @@
                </property>
                <property name="icon">
                 <iconset>
-                 <normaloff>../../Icons/Process_button.ico</normaloff>../../Icons/Process_button.ico</iconset>
+                 <normaloff>../../../../Icons/Process_button.ico</normaloff>../../../../Icons/Process_button.ico</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -944,7 +944,7 @@
                 </property>
                 <property name="icon">
                  <iconset>
-                  <normaloff>../../../program/Icons/Dashboard.ico</normaloff>../../../program/Icons/Dashboard.ico</iconset>
+                  <normaloff>../../../../../program/Icons/Dashboard.ico</normaloff>../../../../../program/Icons/Dashboard.ico</iconset>
                 </property>
                 <property name="iconSize">
                  <size>
@@ -967,7 +967,7 @@
                 </property>
                 <property name="icon">
                  <iconset>
-                  <normaloff>../../../program/Icons/Record.ico</normaloff>../../../program/Icons/Record.ico</iconset>
+                  <normaloff>../../../../../program/Icons/Record.ico</normaloff>../../../../../program/Icons/Record.ico</iconset>
                 </property>
                 <property name="iconSize">
                  <size>
@@ -987,7 +987,7 @@
                 </property>
                 <property name="icon">
                  <iconset>
-                  <normaloff>../../Icons/Import.ico</normaloff>../../Icons/Import.ico</iconset>
+                  <normaloff>../../../../Icons/Import.ico</normaloff>../../../../Icons/Import.ico</iconset>
                 </property>
                 <property name="iconSize">
                  <size>
@@ -1007,7 +1007,7 @@
                 </property>
                 <property name="icon">
                  <iconset>
-                  <normaloff>../../../program/Icons/problem_report.png</normaloff>../../../program/Icons/problem_report.png</iconset>
+                  <normaloff>../../../../../program/Icons/problem_report.png</normaloff>../../../../../program/Icons/problem_report.png</iconset>
                 </property>
                 <property name="iconSize">
                  <size>
@@ -1026,7 +1026,7 @@
            <item>
             <widget class="QStackedWidget" name="DT_stacked_widget">
              <property name="currentIndex">
-              <number>0</number>
+              <number>3</number>
              </property>
              <widget class="QWidget" name="DT_Dashboard_widget">
               <layout class="QHBoxLayout" name="horizontalLayout_67">
@@ -1367,7 +1367,7 @@
                        </property>
                        <property name="icon">
                         <iconset>
-                         <normaloff>../../Icons/Next.ico</normaloff>../../Icons/Next.ico</iconset>
+                         <normaloff>../../../../Icons/Next.ico</normaloff>../../../../Icons/Next.ico</iconset>
                        </property>
                        <property name="iconSize">
                         <size>
@@ -1912,6 +1912,11 @@
                            </property>
                            <item>
                             <widget class="QPushButton" name="DT_detail_chart_machine_btn">
+                             <property name="font">
+                              <font>
+                               <family>Comic Sans MS</family>
+                              </font>
+                             </property>
                              <property name="text">
                               <string>Machine</string>
                              </property>
@@ -2298,7 +2303,7 @@
                                 </property>
                                 <property name="icon">
                                  <iconset>
-                                  <normaloff>../../../program/Icons/Excel_icon.ico</normaloff>../../../program/Icons/Excel_icon.ico</iconset>
+                                  <normaloff>../../../../../program/Icons/Excel_icon.ico</normaloff>../../../../../program/Icons/Excel_icon.ico</iconset>
                                 </property>
                                 <property name="iconSize">
                                  <size>
@@ -2360,7 +2365,7 @@
                                 </property>
                                 <property name="icon">
                                  <iconset>
-                                  <normaloff>../../../program/Icons/upload.ico</normaloff>../../../program/Icons/upload.ico</iconset>
+                                  <normaloff>../../../../../program/Icons/upload.ico</normaloff>../../../../../program/Icons/upload.ico</iconset>
                                 </property>
                                 <property name="iconSize">
                                  <size>
@@ -2633,7 +2638,208 @@
                </item>
               </layout>
              </widget>
-             <widget class="QWidget" name="DT_problem_report_page"/>
+             <widget class="QWidget" name="DT_problem_report_page">
+              <layout class="QVBoxLayout" name="verticalLayout_53">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QFrame" name="frame_90">
+                 <property name="frameShape">
+                  <enum>QFrame::StyledPanel</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_54">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QFrame" name="frame_107">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>200</height>
+                     </size>
+                    </property>
+                    <property name="frameShape">
+                     <enum>QFrame::StyledPanel</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Raised</enum>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_66">
+                     <property name="spacing">
+                      <number>0</number>
+                     </property>
+                     <property name="leftMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>5</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>5</number>
+                     </property>
+                     <item>
+                      <widget class="QToolButton" name="DT_new_report_btn">
+                       <property name="text">
+                        <string>New Report</string>
+                       </property>
+                       <property name="icon">
+                        <iconset>
+                         <normaloff>../../Icons/Add_new.ico</normaloff>../../Icons/Add_new.ico</iconset>
+                       </property>
+                       <property name="iconSize">
+                        <size>
+                         <width>50</width>
+                         <height>50</height>
+                        </size>
+                       </property>
+                       <property name="toolButtonStyle">
+                        <enum>Qt::ToolButtonTextUnderIcon</enum>
+                       </property>
+                       <property name="autoRaise">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="DT_search_report_btn">
+                       <property name="text">
+                        <string>Search</string>
+                       </property>
+                       <property name="icon">
+                        <iconset>
+                         <normaloff>../../Icons/Document_search.ico</normaloff>../../Icons/Document_search.ico</iconset>
+                       </property>
+                       <property name="iconSize">
+                        <size>
+                         <width>50</width>
+                         <height>50</height>
+                        </size>
+                       </property>
+                       <property name="toolButtonStyle">
+                        <enum>Qt::ToolButtonTextUnderIcon</enum>
+                       </property>
+                       <property name="autoRaise">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="DT_filter_report_btn">
+                       <property name="text">
+                        <string>Filter</string>
+                       </property>
+                       <property name="icon">
+                        <iconset>
+                         <normaloff>../../Icons/Fillter.ico</normaloff>../../Icons/Fillter.ico</iconset>
+                       </property>
+                       <property name="iconSize">
+                        <size>
+                         <width>50</width>
+                         <height>50</height>
+                        </size>
+                       </property>
+                       <property name="toolButtonStyle">
+                        <enum>Qt::ToolButtonTextUnderIcon</enum>
+                       </property>
+                       <property name="autoRaise">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="DT_reload_report_btn">
+                       <property name="text">
+                        <string>Reload</string>
+                       </property>
+                       <property name="icon">
+                        <iconset>
+                         <normaloff>../../Icons/reset.ico</normaloff>../../Icons/reset.ico</iconset>
+                       </property>
+                       <property name="iconSize">
+                        <size>
+                         <width>50</width>
+                         <height>50</height>
+                        </size>
+                       </property>
+                       <property name="toolButtonStyle">
+                        <enum>Qt::ToolButtonTextUnderIcon</enum>
+                       </property>
+                       <property name="autoRaise">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QFrame" name="frame_108">
+                    <property name="frameShape">
+                     <enum>QFrame::StyledPanel</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Raised</enum>
+                    </property>
+                    <layout class="QHBoxLayout" name="horizontalLayout_80">
+                     <item>
+                      <widget class="QTreeView" name="DT_report_file_tree">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QTableView" name="DT_report_file_table"/>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
             </widget>
            </item>
           </layout>
@@ -2699,7 +2905,7 @@
               </property>
               <property name="icon">
                <iconset>
-                <normaloff>../../Icons/user.ico</normaloff>../../Icons/user.ico</iconset>
+                <normaloff>../../../../Icons/user.ico</normaloff>../../../../Icons/user.ico</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -3232,7 +3438,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../Icons/Dropdown.ico</normaloff>../../Icons/Dropdown.ico</iconset>
+              <normaloff>../../../../Icons/Dropdown.ico</normaloff>../../../../Icons/Dropdown.ico</iconset>
             </property>
             <property name="iconSize">
              <size>
@@ -3421,7 +3627,7 @@
             </property>
             <property name="icon">
              <iconset>
-              <normaloff>../../Icons/reset.ico</normaloff>../../Icons/reset.ico</iconset>
+              <normaloff>../../../../Icons/reset.ico</normaloff>../../../../Icons/reset.ico</iconset>
             </property>
             <property name="iconSize">
              <size>
@@ -4301,7 +4507,7 @@
                </property>
                <property name="icon">
                 <iconset>
-                 <normaloff>../../Icons/Back.ico</normaloff>../../Icons/Back.ico</iconset>
+                 <normaloff>../../../../Icons/Back.ico</normaloff>../../../../Icons/Back.ico</iconset>
                </property>
                <property name="flat">
                 <bool>true</bool>
@@ -4318,7 +4524,7 @@
                </property>
                <property name="icon">
                 <iconset>
-                 <normaloff>../../Icons/Next.ico</normaloff>../../Icons/Next.ico</iconset>
+                 <normaloff>../../../../Icons/Next.ico</normaloff>../../../../Icons/Next.ico</iconset>
                </property>
                <property name="flat">
                 <bool>true</bool>
@@ -4672,7 +4878,7 @@
                        </property>
                        <property name="icon">
                         <iconset>
-                         <normaloff>../../Icons/databaseExport.ico</normaloff>../../Icons/databaseExport.ico</iconset>
+                         <normaloff>../../../../Icons/databaseExport.ico</normaloff>../../../../Icons/databaseExport.ico</iconset>
                        </property>
                        <property name="iconSize">
                         <size>
@@ -4695,7 +4901,7 @@
                        </property>
                        <property name="icon">
                         <iconset>
-                         <normaloff>../../../program/Icons/Clear.ico</normaloff>../../../program/Icons/Clear.ico</iconset>
+                         <normaloff>../../../../../program/Icons/Clear.ico</normaloff>../../../../../program/Icons/Clear.ico</iconset>
                        </property>
                       </widget>
                      </item>
@@ -4727,7 +4933,7 @@
                      </property>
                      <property name="icon">
                       <iconset>
-                       <normaloff>../../Icons/new_register.ico</normaloff>../../Icons/new_register.ico</iconset>
+                       <normaloff>../../../../Icons/new_register.ico</normaloff>../../../../Icons/new_register.ico</iconset>
                      </property>
                      <property name="iconSize">
                       <size>
@@ -4756,7 +4962,7 @@
                      </property>
                      <property name="icon">
                       <iconset>
-                       <normaloff>../../Icons/reset.ico</normaloff>../../Icons/reset.ico</iconset>
+                       <normaloff>../../../../Icons/reset.ico</normaloff>../../../../Icons/reset.ico</iconset>
                      </property>
                      <property name="iconSize">
                       <size>
@@ -4841,7 +5047,7 @@
                     </property>
                     <property name="icon">
                      <iconset>
-                      <normaloff>../../Icons/plus.ico</normaloff>../../Icons/plus.ico</iconset>
+                      <normaloff>../../../../Icons/plus.ico</normaloff>../../../../Icons/plus.ico</iconset>
                     </property>
                     <property name="iconSize">
                      <size>
@@ -4858,7 +5064,7 @@
                     </property>
                     <property name="icon">
                      <iconset>
-                      <normaloff>../../Icons/delete.ico</normaloff>../../Icons/delete.ico</iconset>
+                      <normaloff>../../../../Icons/delete.ico</normaloff>../../../../Icons/delete.ico</iconset>
                     </property>
                     <property name="iconSize">
                      <size>
@@ -4875,7 +5081,7 @@
                     </property>
                     <property name="icon">
                      <iconset>
-                      <normaloff>../../Icons/print.ico</normaloff>../../Icons/print.ico</iconset>
+                      <normaloff>../../../../Icons/print.ico</normaloff>../../../../Icons/print.ico</iconset>
                     </property>
                     <property name="iconSize">
                      <size>
@@ -5111,7 +5317,7 @@
                           </property>
                           <property name="icon">
                            <iconset>
-                            <normaloff>../../../program/Icons/plus.ico</normaloff>../../../program/Icons/plus.ico</iconset>
+                            <normaloff>../../../../../program/Icons/plus.ico</normaloff>../../../../../program/Icons/plus.ico</iconset>
                           </property>
                           <property name="iconSize">
                            <size>
@@ -5134,7 +5340,7 @@
                           </property>
                           <property name="icon">
                            <iconset>
-                            <normaloff>../../../program/Icons/delete.ico</normaloff>../../../program/Icons/delete.ico</iconset>
+                            <normaloff>../../../../../program/Icons/delete.ico</normaloff>../../../../../program/Icons/delete.ico</iconset>
                           </property>
                           <property name="iconSize">
                            <size>
@@ -5151,7 +5357,7 @@
                           </property>
                           <property name="icon">
                            <iconset>
-                            <normaloff>../../../program/Icons/Sync_missing_data.ico</normaloff>../../../program/Icons/Sync_missing_data.ico</iconset>
+                            <normaloff>../../../../../program/Icons/Sync_missing_data.ico</normaloff>../../../../../program/Icons/Sync_missing_data.ico</iconset>
                           </property>
                           <property name="iconSize">
                            <size>
@@ -5634,7 +5840,7 @@
              </property>
              <property name="icon">
               <iconset>
-               <normaloff>../../Icons/Home.ico</normaloff>../../Icons/Home.ico</iconset>
+               <normaloff>../../../../Icons/Home.ico</normaloff>../../../../Icons/Home.ico</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -5654,7 +5860,7 @@
              </property>
              <property name="icon">
               <iconset>
-               <normaloff>../../Icons/print.ico</normaloff>../../Icons/print.ico</iconset>
+               <normaloff>../../../../Icons/print.ico</normaloff>../../../../Icons/print.ico</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -5674,7 +5880,7 @@
              </property>
              <property name="icon">
               <iconset>
-               <normaloff>../../Icons/Record.ico</normaloff>../../Icons/Record.ico</iconset>
+               <normaloff>../../../../Icons/Record.ico</normaloff>../../../../Icons/Record.ico</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -5694,7 +5900,7 @@
              </property>
              <property name="icon">
               <iconset>
-               <normaloff>../../Icons/Add_new.ico</normaloff>../../Icons/Add_new.ico</iconset>
+               <normaloff>../../../../Icons/Add_new.ico</normaloff>../../../../Icons/Add_new.ico</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -6150,7 +6356,7 @@
            </property>
            <property name="icon">
             <iconset>
-             <normaloff>../../Icons/Dropdown.ico</normaloff>../../Icons/Dropdown.ico</iconset>
+             <normaloff>../../../../Icons/Dropdown.ico</normaloff>../../../../Icons/Dropdown.ico</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -6185,7 +6391,7 @@
            </property>
            <property name="icon">
             <iconset>
-             <normaloff>../../Icons/reset.ico</normaloff>../../Icons/reset.ico</iconset>
+             <normaloff>../../../../Icons/reset.ico</normaloff>../../../../Icons/reset.ico</iconset>
            </property>
            <property name="iconSize">
             <size>
