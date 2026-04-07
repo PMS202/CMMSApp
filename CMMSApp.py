@@ -22,6 +22,7 @@ from Maintenance.printer import Printer_process
 from Maintenance.scan_qrcode import Scan_record_process
 from Maintenance.attached_equipment import DynamicSuggestion
 from Downtimes.Excel_processing import Downtime_Excel_Processor
+from UI.Report_input import Ui_ReportInput
 # import plotly.graph_objects as go
 # from plotly.subplots import make_subplots
 # from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -47,6 +48,7 @@ from sqlalchemy import text
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter1d
 import calendar
+import subprocess
 
 STRICT_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -464,7 +466,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             headers = ["Code","Name","Group","Line", "Working\nWeek", "Status","Action"]
             self.data_model = QtGui.QStandardItemModel()
             self.data_model.setHorizontalHeaderLabels(headers)
-            self.add_data_to_model(result, self.ui.Maintenance_table, self.data_model)
+            self.add_data_to_model(result, self.ui.Maintenance_table, self.data_model , callback=self.count_equipment)
 
             delegate = StatusColorDelegate(self.ui.Maintenance_table)
             self.ui.Maintenance_table.setItemDelegate(delegate)
@@ -481,17 +483,28 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
         self.monitor_week_page()
 
-    def add_data_to_model(self,data,target,model):
+    def add_data_to_model(self,data,target,model, callback = None , column_range = None, tooltip_Enable = False):
         model.removeRows(0, model.rowCount())
         for row in data:
             items = []
-            for col in row:
+            display_row = row
+            if isinstance(column_range, tuple) and len(column_range) >= 2:
+                display_row = row[column_range[0]:column_range[1]]
+            if tooltip_Enable:
+                row_tooltip = f'''<b>More Information:</b>
+                <br/>Issue Description: {row[10] if row[10] else "N/A"}
+                <br/>Corrective Action: {row[11] if row[11] else "N/A"}
+                '''
+            for col in display_row:
                 item = QtGui.QStandardItem(str(col) if col is not None else "")
                 item.setTextAlignment(QtCore.Qt.AlignCenter)
+                if tooltip_Enable:
+                    item.setToolTip(row_tooltip)
                 items.append(item)
             model.appendRow(items)
+        if callback is not None and callable(callback):
+            callback()
         target.setModel(model)
-        self.count_equipment()
 
     @QtCore.pyqtSlot()
     def on_delegate_btn_clicked(self,name,index):
@@ -578,7 +591,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 result = self.database_process.query(sql='''SELECT machine_code,machine_name,department_name,line_name,working_week,status 
                                                             FROM maintenance_with_status
                                                             ORDER BY next_due_date ASC''')
-                self.add_data_to_model(result,self.ui.Maintenance_table,self.data_model)
+                self.add_data_to_model(result,self.ui.Maintenance_table,self.data_model,callback=self.count_equipment)
                 self.hide_filter() 
                 return
             final_query = f'''SELECT machine_code,machine_name,department_name,line_name,working_week,status 
@@ -589,7 +602,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to filter data: {e}")
             return
-        self.add_data_to_model(result,self.ui.Maintenance_table,self.data_model)
+        self.add_data_to_model(result,self.ui.Maintenance_table,self.data_model,callback=self.count_equipment)
         self.hide_filter()
     
     @QtCore.pyqtSlot()
@@ -3875,7 +3888,174 @@ class OEEAppWindow(QtWidgets.QMainWindow):
     def Problem_report_Downtime_page(self):
         self.style_button_with_shadow((self.ui.DT_problem_report_btn,self.ui.DT_dashboard_btn,self.ui.DT_data_btn,self.ui.DT_import_data_btn))
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_problem_report_page)
+        self.DT_tree = self.ui.DT_report_file_tree
+        self.DT_path_model = QtGui.QStandardItemModel(0, 2) 
+        self.DT_path_model.setHorizontalHeaderLabels(["Select Folder","Q'ty"])
+        self.DT_tree_path_dict = {
+                "Current_pos" : None,
+                "Current_PE" : None,
+        }
+        root_names = [
+            "In-Line Incident", 
+            "Customer Complaint", 
+            "Safety Accident", 
+            "MSA Request",
+            "Downtime Analysis", 
+            "4M Change",
+            "Other Incident"
+        ]
+        for name in root_names:
+            root_item = QtGui.QStandardItem(name)
+            for i in range(1, 6):
+                pe_name = f"PE{i}"
+                child_col0 = QtGui.QStandardItem(pe_name)
+                child_col1 = QtGui.QStandardItem("")
+                root_item.appendRow([child_col0, child_col1])
+            self.DT_path_model.appendRow([root_item, QtGui.QStandardItem("")])
+        self.DT_tree.setModel(self.DT_path_model)
+        self.DT_tree.setExpandsOnDoubleClick(True)
+        self.DT_tree.setColumnWidth(0, 200)
+        self.DT_tree.setColumnWidth(1, self.DT_tree.width() - 205)
+        self.DT_tree.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.safe_connect(self.DT_tree.clicked, self.DT_report_file_tree_clicked)
+        self.DT_report_file_model = QtGui.QStandardItemModel(0, 10)
+        self.DT_report_file_model.setHorizontalHeaderLabels([ "Report ID","Title", "Department", "Line", "Machine", "Report Type", "Date", "Reported By", "Status", "Notes"])
+        self.ui.DT_report_file_table.setModel(self.DT_report_file_model)
+        self.ui.DT_report_file_table.setColumnWidth(0, 0)
+        self.ui.DT_report_file_table.setColumnWidth(1, 390)
+        self.ui.DT_report_file_table.setColumnWidth(2, 80)
+        self.ui.DT_report_file_table.setColumnWidth(3, 60)
+        self.ui.DT_report_file_table.setColumnWidth(4, 100)
+        self.ui.DT_report_file_table.setColumnWidth(5, 100)
+        self.ui.DT_report_file_table.setColumnWidth(6, 80)
+        self.ui.DT_report_file_table.setColumnWidth(7, 80)
+        self.ui.DT_report_file_table.setColumnWidth(8, 60)
+        self.ui.DT_report_file_table.setColumnWidth(9, 125)
+        self.ui.DT_report_file_table.verticalHeader().hide()
+        self.ui.DT_report_file_table.setShowGrid(True)
+        self.ui.DT_report_file_table.setGridStyle(QtCore.Qt.SolidLine)
+        self.ui.DT_report_file_table.setAlternatingRowColors(True)
+        self.ui.DT_report_file_table.verticalHeader().setMinimumSectionSize(40)
+        self.ui.DT_report_file_table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.safe_connect(self.ui.DT_report_file_table.customContextMenuRequested, self.DT_report_file_table_context_menu)
+        self.safe_connect(self.ui.DT_new_report_btn.clicked, self.New_report_input)
 
+    def DT_report_file_tree_clicked(self, index):
+        parts = []
+        current = index
+        while current.isValid():
+            parts.insert(0, current.data())
+            current = current.parent()
+        new_pe = parts[-1] if len(parts) == 2 else None
+        if self.DT_tree_path_dict["Current_pos"] == parts[0] and self.DT_tree_path_dict["Current_PE"] == new_pe:
+            return
+        self.DT_tree_path_dict["Current_pos"] = parts[0]
+        self.DT_tree_path_dict["Current_PE"] = new_pe
+        filter_scripts = "rt.report_type_name = :report_type AND d.department_name = :group" if new_pe else "rt.report_type_name = :report_type"
+        try:
+            result = self.database_process.query(sql = f'''
+                                                SELECT pr.report_id, pr.report_title, d.department_name, pl.line_name, 
+                                                m.machine_code, rt.report_type_name , pr.report_date, pr.reported_by, pr.status,pr.notes,
+                                                pr.issue_description, pr.corrective_action,pr.report_file_path, pr.path_type
+                                                FROM problem_reports AS pr
+                                                LEFT JOIN departments AS d ON pr.department_id = d.department_id
+                                                LEFT JOIN production_lines AS pl ON pr.line_id = pl.line_id
+                                                LEFT JOIN machines AS m ON pr.machine_id = m.machine_id
+                                                LEFT JOIN report_types AS rt ON pr.report_type_id = rt.report_type_id
+                                                WHERE {filter_scripts}
+                                                ORDER BY pr.report_date DESC;
+                ''', params={"report_type": self.DT_tree_path_dict["Current_pos"], "group": self.DT_tree_path_dict["Current_PE"]})
+            self.DT_report_file_data_frame = pd.DataFrame(result, columns=["report_id", "report_title", "department_name", "line_name", "machine_code", "report_type_name", "report_date", "reported_by", "status", "notes","issue_description", "corrective_action","report_file_path","path_type"])
+            self.ui.DT_report_file_table.setUpdatesEnabled(False)
+            self.ui.DT_report_file_table.setSortingEnabled(False)
+            self.add_data_to_model(data = result, target = self.ui.DT_report_file_table, model = self.DT_report_file_model , column_range=(0,10), 
+                                   callback=lambda m=self.DT_report_file_model, d=result: self.icon_from_path(m, d),tooltip_Enable=True)
+            self.ui.DT_report_file_table.setWordWrap(True)
+            self.ui.DT_report_file_table.resizeRowsToContents()
+            self.ui.DT_report_file_table.setUpdatesEnabled(True)
+            self.ui.DT_report_file_table.setSortingEnabled(True)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load files: {e}")
+
+    def icon_from_path(self,model = None,data = None,file_extension = None):
+        icon_provider = QtWidgets.QFileIconProvider()
+        ext_map = {
+                    "PDF":    "file.pdf",
+                    "DOC":    "file.doc",
+                    "DOCX":   "file.docx",
+                    "XLS":    "file.xls",
+                    "XLSX":   "file.xlsx",
+                    "XLSM":   "file.xlsm",
+                    "PPTX":   "file.pptx",
+                    "JPG":    "file.jpg",
+                    "JPEG":   "file.jpeg",
+                    "PNG":    "file.png",
+                }
+        if file_extension:
+            if file_extension in ext_map:
+                file_name = ext_map[file_extension]
+                icon = icon_provider.icon(QtCore.QFileInfo(file_name))
+            else:
+                icon = icon_provider.icon(QtWidgets.QFileIconProvider.File)
+            return icon
+        for row_idx, row_data in enumerate(data):
+            path_type = row_data[13]
+            file_path  = row_data[12]
+            if path_type == "FOLDER":
+                icon = icon_provider.icon(QtWidgets.QFileIconProvider.Folder)
+            elif path_type == "URL":
+                icon = icon_provider.icon(QtWidgets.QFileIconProvider.Network)
+            elif path_type in ext_map:
+                icon = icon_provider.icon(QtCore.QFileInfo(ext_map[path_type]))
+            else:
+                icon = icon_provider.icon(QtWidgets.QFileIconProvider.File)
+            title_item = model.item(row_idx, 1)
+            if title_item:
+                title_item.setIcon(icon)
+
+    def DT_report_file_table_context_menu(self,pos):
+        index = self.ui.DT_report_file_table.indexAt(pos)
+        if not index.isValid():
+            return 
+        menu = QtWidgets.QMenu()
+        action_open = menu.addAction(QtGui.QIcon(resource_path("Icons\\Open.ico")), "Open")
+        action_rename = menu.addAction(QtGui.QIcon(resource_path("Icons\\rename.ico")), "Rename")
+        action_update = menu.addAction(QtGui.QIcon(resource_path("Icons\\Update_doc.ico")), "Update File")
+        menu.addSeparator()
+        action_delete = menu.addAction(QtGui.QIcon(resource_path("Icons\\delete.ico")), "Delete")
+        action = menu.exec_(self.ui.DT_report_file_table.viewport().mapToGlobal(pos))
+
+        if action == action_open:
+            self.DT_open_report(index)
+        elif action == action_rename:
+            self.DT_rename_report(index)
+        elif action == action_update:
+            self.DT_update_report(index)
+        elif action == action_delete:
+            self.DT_delete_report(index)
+    
+    def DT_open_report(self, index):
+        report_id = int(self.DT_report_file_model.item(index.row(), 0).text())
+        report_path = self.DT_report_file_data_frame.loc[self.DT_report_file_data_frame["report_id"] == report_id, "report_file_path"].values[0]
+        os.startfile(os.path.normpath(report_path))
+
+    def DT_update_report(self, index):
+        print("Update report at row:", index.row())
+
+    def DT_rename_report(self, index):
+        print("Rename report at row:", index.row())
+    
+    def DT_delete_report(self, index):
+        print("Delete report at row:", index.row())
+
+    def New_report_input(self):
+        try:
+            new_report_dialog = New_Report_Input(parent=self, database=self.database_process,callback = self.icon_from_path)
+            new_report_dialog.exec_()
+            if new_report_dialog.result() == QtWidgets.QDialog.Accepted:
+                self.DT_report_file_tree_clicked(self.ui.DT_report_file_tree.currentIndex())
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to create new report: {e}")
 #==========================================================================================================================
 
 
@@ -7292,6 +7472,97 @@ class RotatedAxisItem(pg.AxisItem):
                 p.translate(-offset_rect.center())
                 p.drawText(offset_rect, flags , text)
                 p.restore()
+
+class New_Report_Input(QtWidgets.QDialog):
+    def __init__(self, parent = None, database = None, callback = None):
+        super().__init__(parent)
+        self.parent = parent
+        self.database = database
+        self.callback = callback
+        self.ui = Ui_ReportInput()
+        self.ui.setupUi(self)
+        self.ui.dateEdit.setDate(QtCore.QDate.currentDate())
+        self.setWindowTitle("New Report Input")
+        self.setup_drop_area()
+        self.ui.group_cbb.addItems([row[0] for row in self.parent.group])
+        self.ui.group_cbb.setCurrentText(self.parent.login_info['department'])
+        try:
+            lines = self.database.query(sql = '''   SELECT line_name FROM `production_lines` as pl
+                                                    JOIN `departments` as d
+                                                    ON pl.department_id = d.department_id
+                                                    WHERE d.department_name = :department 
+                                                    ORDER BY pl.line_name ASC;''', params = {'department': self.parent.login_info['department']})
+            if lines:
+                self.ui.line_cbb.addItems([""] + [row[0] for row in lines])
+            report_types = self.database.query(sql = ''' SELECT report_type_name FROM `report_types` ''')
+            if report_types:
+                self.ui.report_type_cbb.addItems([row[0] for row in report_types])
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to fetch lines: {e}")
+        self.setup_signals()
+    
+    def setup_signals(self):
+        self.ui.Cancel_btn.clicked.connect(self.reject)
+        self.ui.Confirm_btn.clicked.connect(self.confirm_report)
+        self.ui.group_cbb.currentIndexChanged.connect(self.load_lines)
+        
+    def setup_drop_area(self):
+        self.ui.drop_file_area_toolbtn.setAcceptDrops(True)
+        self.ui.drop_file_area_toolbtn.dragEnterEvent = self.dragEnterEvent
+        self.ui.drop_file_area_toolbtn.dragMoveEvent = self.dragMoveEvent
+        self.ui.drop_file_area_toolbtn.dropEvent = self.dropEvent
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            file_path = event.mimeData().urls()[0].toLocalFile()
+            self.file_path = file_path
+            file_name = file_path.split("/")[-1]
+            file_extension = file_name.split(".")[-1].upper() if "." in file_name else ""
+            self.ui.drop_file_area_toolbtn.setText(file_name)
+            self.ui.drop_file_area_toolbtn.setToolTip(file_path)
+            self.ui.drop_file_area_toolbtn.setStyleSheet("""
+                #drop_file_area_toolbtn {
+                    background-color: rgba(0, 255, 0, 0.07);
+                    border: none;
+                    border-top: 1px solid rgba(0, 255, 0, 1);
+                    border-bottom: 1px solid rgba(0, 255, 0, 1);
+                }
+            """)
+            icon = self.callback(file_extension = file_extension)
+            self.ui.drop_file_area_toolbtn.setIcon(icon)
+            self.ui.drop_file_area_toolbtn.setIconSize(QtCore.QSize(42, 42))
+            event.acceptProposedAction()
+        else:
+            super().dropEvent(event)
+    
+    def load_lines(self):
+        try:
+            lines = self.database.query(sql = ''' SELECT line_name FROM `production_lines` as pl
+                                                    JOIN `departments` as d
+                                                    ON pl.department_id = d.department_id
+                                                    WHERE d.department_name = :department 
+                                                    ORDER BY pl.line_name ASC;''', params = {'department': self.ui.group_cbb.currentText()})
+            if lines:
+                self.ui.line_cbb.clear()
+                self.ui.line_cbb.addItems([""] + [row[0] for row in lines])
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self,"Error", f"Failed to fetch lines: {e}")
+
+    def confirm_report(self):
+        return
+
 
 def main():
     try:
