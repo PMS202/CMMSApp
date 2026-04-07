@@ -560,16 +560,16 @@ QToolBox::tab:selected {
 	color:rgb(81,72,65);
 	background-color: #ffffff;
 }
-#Maintenance_table {
+#Maintenance_table, #DT_report_file_table {
     gridline-color: transparent;
 }
 
-#Maintenance_table::item {
+#Maintenance_table::item , #DT_report_file_table::item {
     border-bottom: 1px solid #dcdcdc;
     border-right: none;
 }
 
-#Maintenance_table::item:selected {
+#Maintenance_table::item:selected, #DT_report_file_table::item:selected {
     background-color: #ffffff;
     color: #000000;
 }

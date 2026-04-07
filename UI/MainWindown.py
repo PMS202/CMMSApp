@@ -1195,6 +1195,8 @@ class Ui_MainWindow(object):
                 self.horizontalLayout_80.addWidget(self.DT_report_file_tree)
                 self.DT_report_file_table = QtWidgets.QTableView(self.frame_108)
                 self.DT_report_file_table.setObjectName(u"DT_report_file_table")
+                self.DT_report_file_table.setStyleSheet(qss)
+                self.DT_report_file_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
                 self.horizontalLayout_80.addWidget(self.DT_report_file_table)
                 self.verticalLayout_54.addWidget(self.frame_108)
                 self.verticalLayout_53.addWidget(self.frame_90)

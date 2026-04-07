@@ -1026,7 +1026,7 @@
            <item>
             <widget class="QStackedWidget" name="DT_stacked_widget">
              <property name="currentIndex">
-              <number>3</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="DT_Dashboard_widget">
               <layout class="QHBoxLayout" name="horizontalLayout_67">
@@ -2032,7 +2032,35 @@
                </item>
               </layout>
              </widget>
-             <widget class="QWidget" name="DT_detail_data_page"/>
+             <widget class="QWidget" name="DT_detail_data_page">
+              <layout class="QVBoxLayout" name="verticalLayout_55">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QFrame" name="frame_109">
+                 <property name="frameShape">
+                  <enum>QFrame::StyledPanel</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
              <widget class="QWidget" name="DT_import_data_page">
               <layout class="QHBoxLayout" name="horizontalLayout_68">
                <property name="spacing">
