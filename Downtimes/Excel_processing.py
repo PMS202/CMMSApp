@@ -58,7 +58,6 @@ class Downtime_Excel_Processor:
             self.working_time = self.working_time.fillna(0)
             self.working_time["Date"] = self.working_time["Date"].dt.strftime("%Y-%m-%d")
 
-
             self.data = pd.read_excel(excel_file, sheet_name=self.sheet_name, skiprows=4, 
                                       header=None, usecols=[0,1,2,3,4,9,10,17], dtype={10: str, 17: str})
             self.data = self.data.rename(columns={0: "date", 1: "line", 2: "start_time", 3: "technical_start_time", 4: "finish_time", 9: "technical_name", 10: "error_code", 17: "machine_code"})

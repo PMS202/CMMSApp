@@ -3031,11 +3031,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_Dashboard_widget)
         if self.ui.DT_area_cbb.count() > 0:
             return
+        self.DT_calendar_widget = self.ui.DT_date_edit_2.calendarWidget()
+        self.table_view_of_DTcalendar = self.DT_calendar_widget.findChild(QtWidgets.QTableView)
         try:
-            areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
+            self.areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
                                                                                 FROM `downtime_areas`;''')]
             self.ui.DT_area_cbb.clear()
-            self.ui.DT_area_cbb.addItems(areas)
+            self.ui.DT_area_cbb.addItems(self.areas)
             self.DT_silde_bar_animation = QtCore.QPropertyAnimation(self.ui.frame_106, b"maximumWidth")
             self.DT_silde_bar_animation.setDuration(310)
             self.safe_connect(self.ui.DT_show_sorting_btn.clicked, self.show_sorting_filter_Downtime)
@@ -3074,16 +3076,19 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         if view_by == "day":
             filer_scripts = "Date = :object"
             filter_scripts_wt =  f"lot.operation_date = :object AND YEAR(lot.operation_date) = {year}"
+            filer_scripts_report = f"pr.report_date = :object AND YEAR(pr.report_date) = {year}"
         elif view_by == "week":
             filer_scripts = f"Working_Week = :object AND YEAR(Date) = {year}" #{self.year_num}
             filter_scripts_wt =  f''' lot.operation_date IN (SELECT DISTINCT Date FROM downtime_report 
                                         WHERE Downtime_Area = :area_name AND YEAR(Date) = {year} AND `Working_Week` = :object
                                         ORDER BY Date)'''
+            filer_scripts_report = f"get_working_week(pr.report_date) = :object AND YEAR(pr.report_date) = {year}"
         elif view_by == "month":
             filer_scripts = f"MONTH(Date) = :object AND YEAR(Date) = {year}"
             filter_scripts_wt =  f''' lot.operation_date IN (SELECT DISTINCT Date FROM downtime_report 
                                         WHERE Downtime_Area = :area_name AND YEAR(Date) = {year} AND `Working_Month` = :object
                                         ORDER BY Date)'''
+            filer_scripts_report = f"MONTH(pr.report_date) = :object AND YEAR(pr.report_date) = {year}"
         try: 
             data = self.database_process.query(sql = f'''SELECT Date ,Start_Time, Start_Repair_Time, End_Time, 
                                                             Total_Loss, Wait_Technical, Staff_Name, Error_Code, Machine_Code, Line_Name
@@ -3095,6 +3100,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                 JOIN downtime_areas as da ON dapl.downtime_area_id = da.downtime_area_id
                                                                 JOIN production_lines as pl ON lot.line_id = pl.line_id
                                                                 WHERE da.downtime_area_name = :area_name AND {filter_scripts_wt};''', params={"area_name": area_name, "object": target})
+            problem_report = self.database_process.query(sql = f'''SELECT pr.report_id, pr.report_title, pr.report_date, pr.reported_by, pr.issue_description, pr.corrective_action, pr.report_file_path, pr.path_type 
+                                                                    FROM `problem_reports` as pr
+                                                                    JOIN `downtime_areas` da ON pr.department_id = da.department_id
+                                                                    WHERE da.downtime_area_name = :area_name AND {filer_scripts_report};''', params={"area_name": area_name, "object": target})
             if not data and not working_time:
                 QtWidgets.QMessageBox.information(self, "No data", "No downtime records found for the selected area and date.")
                 return
@@ -3151,7 +3160,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             MTTR_perhours = pd.DataFrame(columns=["Date_time", "MTTR"])
             MTTR_perhours["Date_time"] = self.data["Actual_datetime"].dt.floor("h")
             MTTR_perhours["MTTR"] = self.data["Total Loss Time"]
-            MTTR_perhours["Date_time"] = MTTR_perhours["Date_time"].dt.floor("h")
             MTTR_perhours = (
                 MTTR_perhours
                 .groupby("Date_time")["MTTR"]
@@ -3160,13 +3168,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 .rename_axis("Date_time")
                 .reset_index()
             )
-            MTBF_perhours = pd.DataFrame(columns=["Date_time", "MTBF"])
-            MTBF_perhours["Date_time"] = self.data["Actual_datetime"].dt.floor("h")
-            MTBF_perhours["MTBF"] =  MTBF_perhours["Date_time"].diff().dt.total_seconds().div(60).fillna(0)
-            MTBF_perhours["Date_time"] = MTBF_perhours["Date_time"].dt.floor("h")
+            actual_sorted = self.data["Actual_datetime"].sort_values()
+            MTBF_perhours = pd.DataFrame({
+                "Date_time": actual_sorted.dt.floor("h"),
+                "MTBF": actual_sorted.diff().dt.total_seconds().div(60).fillna(0)
+            })
             MTBF_perhours = (
                 MTBF_perhours
-                .dropna(subset=["MTBF"])
                 .groupby("Date_time")["MTBF"]
                 .mean()
                 .reindex(full_hours, fill_value=0)
@@ -3180,6 +3188,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.Sparkline_chart(self.ui.DEvent_chart, Event_hourly_df["count_event"].tolist(), (165, 201, 229), "Downtime Events Over Time")
             self.Sparkline_chart(self.ui.MTTR_chart, MTTR_perhours["MTTR"].tolist(), (165, 201, 229), "MTTR Over Time")
             self.Sparkline_chart(self.ui.MTBF_chart, MTBF_perhours["MTBF"].tolist(), (165, 201, 229), "MTBF Over Time")
+            self.DT_problem_report_listwidget_show(problem_report)
             self.safe_connect(self.ui.DT_detail_chart_line_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line"))
             self.safe_connect(self.ui.DT_detail_chart_machine_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Machine Code", value_col="Total Loss Time", data=self.data, title="Downtime By Machine"))
             self.safe_connect(self.ui.DT_detail_chart_error_btn.clicked, lambda: self.DT_detail_chart_drawing(group_col="Error Code", value_col="Total Loss Time", data=self.data, title="Downtime By Error Code"))
@@ -3224,7 +3233,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         y = np.array(data, dtype=float)
 
         if len(y) > 100:
-            y_smooth = gaussian_filter1d(y, sigma=len(y) / 80)
+            y_smooth = gaussian_filter1d(y, sigma=len(y) / 90)
             y_smooth = np.clip(y_smooth, 0, None) 
         else:
             y_smooth = y
@@ -3290,6 +3299,94 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.DT_table.setUpdatesEnabled(True)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load summary data: {e}")
+
+    def DT_problem_report_listwidget_show(self, data):
+        self.ui.DT_problem_listwidget.clear()
+        if data is None or len(data) == 0:
+            return
+        try:
+            self.ui.DT_problem_listwidget.setSpacing(4)
+            for report in data:
+                icon = self.icon_from_path(file_extension=report[7])
+                pixmap = icon.pixmap(32, 32)
+
+                report_date = report[2].strftime("%Y-%m-%d") if hasattr(report[2], 'strftime') else str(report[2])
+                reported_by = report[3] if report[3] else "N/A"
+                description = report[4] if report[4] else ""
+                if len(description) > 80:
+                    description = description[:80] + "..."
+
+                widget = QtWidgets.QWidget()
+                widget.setCursor(QtCore.Qt.PointingHandCursor)
+                widget.setStyleSheet("""
+                    QWidget#report_card {
+                        background: #ffffff;
+                        border: 1px solid #e0e0e0;
+                        border-radius: 8px;
+                        border-left: 4px solid #007acc;
+                    }
+                    QWidget#report_card:hover {
+                        background: #f0f7ff;
+                        border: 1px solid #007acc;
+                        border-left: 4px solid #007acc;
+                    }
+                """)
+                widget.setObjectName("report_card")
+
+                layout = QtWidgets.QHBoxLayout(widget)
+                layout.setContentsMargins(10, 8, 10, 8)
+                layout.setSpacing(10)
+
+                icon_label = QtWidgets.QLabel()
+                icon_label.setPixmap(pixmap)
+                icon_label.setFixedSize(32,32)
+                icon_label.setAlignment(QtCore.Qt.AlignCenter)
+                layout.addWidget(icon_label)
+
+                info_layout = QtWidgets.QVBoxLayout()
+                info_layout.setSpacing(2)
+
+                title_label = QtWidgets.QLabel(f"<b style='color:#1a1a1a; font-size:10px;'>{report[1]}</b>")
+                title_label.setWordWrap(True)
+                info_layout.addWidget(title_label)
+
+                if description:
+                    desc_label = QtWidgets.QLabel(f"<span style='color:#666; font-size:8px;'>{description}</span>")
+                    desc_label.setWordWrap(True)
+                    info_layout.addWidget(desc_label)
+
+                meta_html = (f"<span style='color:#999; font-size:8px;'>"
+                             f"&#128197; {report_date} &nbsp;&nbsp; &#128100; {reported_by} &nbsp;&nbsp;"
+                             f"</span>")
+                meta_label = QtWidgets.QLabel(meta_html)
+                info_layout.addWidget(meta_label)
+
+                layout.addLayout(info_layout, 1)
+
+                item = QtWidgets.QListWidgetItem()
+                item.setData(QtCore.Qt.UserRole, report)
+                item.setSizeHint(widget.sizeHint() + QtCore.QSize(0, 10))
+                self.ui.DT_problem_listwidget.addItem(item)
+                self.ui.DT_problem_listwidget.setItemWidget(item, widget)
+
+            self.ui.DT_problem_listwidget.itemDoubleClicked.disconnect()
+        except TypeError:
+            pass
+        self.safe_connect(self.ui.DT_problem_listwidget.itemDoubleClicked, self.DT_problem_report_open)
+
+    @QtCore.pyqtSlot(QtWidgets.QListWidgetItem)
+    def DT_problem_report_open(self, item):
+        report = item.data(QtCore.Qt.UserRole)
+        if report is None:
+            return
+        try:
+            file_path = report[6]
+            if file_path and os.path.exists(os.path.normpath(file_path)):
+                os.startfile(os.path.normpath(file_path))
+            else:
+                QtWidgets.QMessageBox.warning(self, "Warning", "File path not found or not available.")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to open report: {e}")
 
     @QtCore.pyqtSlot()
     def DT_detail_chart_drawing(self,group_col,value_col, data, title=""):
@@ -3462,6 +3559,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.ui.frame_91.setMaximumWidth(0)
                 self.ui.frame_87.setEnabled(True)
                 self.ui.frame_87.setMaximumWidth(200)
+                if self.table_view_of_DTcalendar:
+                    self.table_view_of_DTcalendar.show()
+                self.DT_calendar_widget.setFixedSize(270, 183) 
                 self.ui.DT_date_edit_2.setDisplayFormat("dd-MMM-yyyy")
                 self.safe_connect(self.ui.DT_date_edit_2.dateChanged, lambda: self.DT_filtering(changed_object = "date_range"))
                 try:
@@ -3490,11 +3590,22 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     self.ui.frame_87.setEnabled(True)
                     self.ui.frame_87.setMaximumWidth(200)
                 self.ui.DT_date_edit_2.setDisplayFormat("MMM-yyyy")
+                if self.table_view_of_DTcalendar:
+                    self.table_view_of_DTcalendar.hide()
+                self.DT_calendar_widget.setFixedSize(250, 30) 
+                self.DT_calendar_widget.currentPageChanged.connect(lambda year, month: self.update_date_from_calendar(year, month, self.ui.DT_date_edit_2))
                 target = self.ui.DT_date_edit_2.date().month()
+
             self.Dashboard_Downtime_page_refresh(area_name=area_name, target=target, view_by=changed_object)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to filter data: {e}")
     
+    @QtCore.pyqtSlot(int, int , object)
+    def update_date_from_calendar(self,year, month, object=None):
+        new_date = QtCore.QDate(year, month, 1)
+        if object:
+            object.setDate(new_date)
+
     @QtCore.pyqtSlot()
     def DT_filtering(self, changed_object = None):
         if changed_object == None:
@@ -3504,10 +3615,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 area_name = self.ui.DT_area_cbb.currentText()
                 date = self.ui.DT_date_edit_2.date().toString("yyyy-MM-dd")
                 self.Dashboard_Downtime_page_refresh(area_name, date, view_by="day")
-            if changed_object == "week_range":
+            elif changed_object == "week_range":
                 area_name = self.ui.DT_area_cbb.currentText()
                 week_num = int(self.ui.DT_week_cbb_2.currentText())
                 self.Dashboard_Downtime_page_refresh(area_name, week_num, view_by="week")
+            elif changed_object == "month_range":
+                area_name = self.ui.DT_area_cbb.currentText()
+                month_num = self.ui.DT_date_edit_2.date().month()
+                self.Dashboard_Downtime_page_refresh(area_name, month_num, view_by="month")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to filter data: {e}")
 
@@ -3621,7 +3736,156 @@ class OEEAppWindow(QtWidgets.QMainWindow):
     def Data_Downtime_page(self):
         self.style_button_with_shadow((self.ui.DT_data_btn,self.ui.DT_import_data_btn,self.ui.DT_problem_report_btn,self.ui.DT_dashboard_btn))
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_detail_data_page)
-    
+        self.style_button_with_shadow((self.ui.DT_DD_error_chart_btn,self.ui.DT_DD_line_chart_btn,self.ui.DT_DD_machine_chart_btn))
+        if self.ui.DT_DD_area_cbb.count() > 0:
+            return
+        try:
+            headers = ["ID","Date", "Line", "Start\nTime","Technical\nStart","Finish\nTime","Total Loss\nTime","Wait\nTechnical","Technical\nName", "Failure\nCode","Failure\nDescription","Reason","Recommendation", "Machine Code"]
+            self.DT_detail_model = QtGui.QStandardItemModel(0, len(headers))
+            self.DT_detail_model.setHorizontalHeaderLabels(headers)
+            self.ui.DT_DD_record_table.setUpdatesEnabled(False)
+            self.ui.DT_DD_record_table.setSortingEnabled(False)
+            self.ui.DT_DD_record_table.resizeColumnsToContents()
+            self.ui.DT_summary_table.setUpdatesEnabled(False)
+            self.ui.DT_summary_table.setSortingEnabled(False)
+            self.ui.DT_DD_record_table.setModel(self.DT_detail_model)
+            vetical_header = ["Area", "Total Failure", "Total Loss", "MTTR", "MTBF","Machine with Most Failure", "Failure Code Most Frequent"]
+            self.DT_DD_summary_model = QtGui.QStandardItemModel(len(vetical_header), 2)
+            for i in range(len(vetical_header)):
+                item = QtGui.QStandardItem(vetical_header[i])
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                self.DT_DD_summary_model.setItem(i, 0, item)
+            self.ui.DT_DD_summary_table.setModel(self.DT_DD_summary_model)
+            self.ui.DT_DD_summary_table.horizontalScrollBar().setVisible(False)
+            self.ui.DT_DD_summary_table.setColumnWidth(0,180)
+            self.ui.DT_DD_summary_table.setColumnWidth(1,self.ui.DT_DD_summary_table.width()-179)
+            self.ui.DT_DD_summary_table.setUpdatesEnabled(True)
+            self.ui.DT_DD_summary_table.setSortingEnabled(True)
+            self.ui.DT_DD_record_table.setColumnHidden(0, True)
+            self.ui.DT_DD_record_table.setUpdatesEnabled(True)
+            self.ui.DT_DD_record_table.setSortingEnabled(True)
+            self.ui.DT_DD_date_edit.setDisplayFormat("MMM-yyyy")
+            self.DT_calendar_widget = self.ui.DT_DD_date_edit.calendarWidget()
+            self.table_view_of_DTcalendar = self.DT_calendar_widget.findChild(QtWidgets.QTableView)
+            if self.table_view_of_DTcalendar:
+                self.table_view_of_DTcalendar.hide()
+            self.DT_calendar_widget.setFixedSize(250, 30) 
+            self.DT_calendar_widget.currentPageChanged.connect(lambda year, month: self.update_date_from_calendar(year, month, self.ui.DT_DD_date_edit))
+            self.ui.DT_DD_area_cbb.addItems(self.areas)
+            self.Load_production_line_base_area()
+            self.ui.DT_DD_date_edit.setDate(self.ui.today)
+            self.safe_connect(self.ui.DT_DD_area_cbb.currentTextChanged,self.Load_production_line_base_area)
+            self.safe_connect(self.ui.DT_DD_machine_code_lnedit.textChanged,lambda text: self.filter_suggestion(target = self.ui.DT_DD_machine_code_lnedit,
+                                                                                        text = "DISTINCT ( m.machine_code )",table = "`downtime_records` as dr",
+                                                                                        where = f""" JOIN `machines` as m
+                                                                                                        ON dr.machine_id = m.machine_id
+                                                                                                        JOIN `production_lines` as pl
+                                                                                                        ON dr.line_id = pl.line_id
+                                                                                                        WHERE {f'pl.line_name = "{self.ui.DT_DD_line_cbb.currentText()}" AND' if self.ui.DT_DD_line_cbb.currentText() != "All Lines" else ""} 
+                                                                                                        m.machine_code LIKE '%{text}%' AND MONTH(dr.downtime_date) = {self.ui.DT_DD_date_edit.date().month()} 
+                                                                                                        AND YEAR(dr.downtime_date) = {self.ui.DT_DD_date_edit.date().year()} """))
+            self.safe_connect(self.ui.DT_DD_load_btn.clicked, lambda: self.Load_Downtime_data(area_name=self.ui.DT_DD_area_cbb.currentText(),
+                                                                                                    line_name=self.ui.DT_DD_line_cbb.currentText(),
+                                                                                                    machine_code=self.ui.DT_DD_machine_code_lnedit.text(),
+                                                                                                    date=self.ui.DT_DD_date_edit.date().toString("yyyy-MM-dd")))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to initialize data table: {e}")
+            return
+
+    @QtCore.pyqtSlot()
+    def Load_production_line_base_area(self):
+        area_name = self.ui.DT_DD_area_cbb.currentText()
+        try:
+            result = self.database_process.query(sql='''SELECT pl.line_name
+                                                            FROM `production_lines` pl
+                                                            JOIN `downtime_areas_production_lines` dapl ON pl.line_id = dapl.line_id
+                                                            JOIN `downtime_areas` da ON dapl.downtime_area_id = da.downtime_area_id
+                                                            WHERE da.downtime_area_name = :area_name;''', params={'area_name': area_name})
+            
+            self.ui.DT_DD_line_cbb.clear()
+            self.ui.DT_DD_line_cbb.addItem("All Lines")
+            line_names = [row[0] for row in result]
+            self.ui.DT_DD_line_cbb.addItems(line_names)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load production lines: {e}")
+
+    @QtCore.pyqtSlot()
+    def Load_Downtime_data(self, area_name, line_name, machine_code, date):
+        try:
+            query = f'''SELECT dr.Downtime_ID,dr.Date, dr.Line_Name, dr.Start_Time, dr.Start_Repair_Time, dr.End_Time, dr.Total_Loss, dr.Wait_Technical, dr.Staff_Name, dr.Error_Code, er.error_description, er.reason, er.recommended_action, dr.Machine_Code
+                        FROM `downtime_report` as dr
+                        JOIN `error_codes_list` as er ON dr.Error_Code = er.error_code
+                        WHERE dr.Downtime_Area = :area_name AND dr.Working_Month = MONTH(:date) AND YEAR(dr.Date) = YEAR(:date)'''
+            query_wt = f'''SELECT lot.line_id, lot.operation_date, lot.operation_hours
+                            FROM `line_operation_times` as lot
+                            JOIN `downtime_areas_production_lines` as dapl ON lot.line_id = dapl.line_id
+                            JOIN `downtime_areas` as da ON dapl.downtime_area_id = da.downtime_area_id
+                            JOIN `production_lines` as pl ON lot.line_id = pl.line_id
+                            WHERE da.downtime_area_name = :area_name AND MONTH(lot.operation_date) = MONTH(:date) AND YEAR(lot.operation_date) = YEAR(:date)'''
+            params = {'area_name': area_name, 'date': date}
+            if line_name != "All Lines":
+                query += " AND dr.Line_Name = :line_name"
+                query_wt += " AND pl.Line_Name = :line_name"
+                params['line_name'] = line_name
+            if machine_code:
+                query += " AND dr.Machine_Code LIKE :machine_code"
+                params['machine_code'] = f"%{machine_code}%"
+            query += " ORDER BY dr.Date DESC, dr.Start_Time DESC"
+            working_time = self.database_process.query(sql=query_wt, params=params)
+            working_time = pd.DataFrame(working_time, columns=["line_id", "Date", "operation_hours"])
+            result = self.database_process.query(sql=query, params=params)
+            self.ui.DT_DD_record_table.setUpdatesEnabled(False)
+            self.ui.DT_DD_record_table.setSortingEnabled(False)
+            self.DT_detail_model.removeRows(0, self.DT_detail_model.rowCount())
+            self.DT_detail_model.setRowCount(len(result))
+            column_names = [
+                            "id", "date", "line", "start_time", "technical_start_time", 
+                            "finish_time", "total_loss_time", "wait_technical", 
+                            "technical_name", "error_code", "error_description", 
+                            "reason", "recommended_action", "machine_code"
+                        ]
+            dataframe_for_sumary_table = pd.DataFrame(result)
+            dataframe_for_sumary_table.columns = column_names
+            for r in range(len(result)):
+                for c in range(len(result[0])):
+                    item = QtGui.QStandardItem(str(result[r][c]))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                    self.DT_detail_model.setItem(r, c, item)
+            self.ui.DT_DD_record_table.setEditTriggers(QtWidgets.QAbstractItemView.DoubleClicked | QtWidgets.QAbstractItemView.EditKeyPressed)
+            self.ui.DT_DD_record_table.setUpdatesEnabled(True)
+            self.ui.DT_DD_record_table.setSortingEnabled(True)
+            self.ui.DT_DD_record_table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+            self.DT_summary_table_show(table = self.ui.DT_DD_summary_table,model = self.DT_DD_summary_model,area = area_name, data_frame=dataframe_for_sumary_table , working_time=working_time[["Date", "operation_hours"]])
+            self.DT_summary_chart_show()
+            self.safe_connect(self.ui.DT_DD_insert_btn.clicked, lambda: self.insert_row_QTableview(self.DT_detail_model, self.ui.DT_DD_record_table))
+            self.safe_connect(self.ui.DT_DD_record_table.customContextMenuRequested, lambda pos: self.table_context_menu(pos, self.ui.DT_DD_record_table,actions = ["edit","separator", "delete"],
+                                                                                                                       functions_dict={
+                                                                                                                                        "edit": lambda idx:print(f"Edit row {idx.row()} column {idx.column()}"),
+                                                                                                                                        "delete": lambda idx: self.DT_detail_model.removeRow(idx.row()),
+                                                                                                                                    }))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load downtime data: {e}")
+
+    @QtCore.pyqtSlot()
+    def insert_row_QTableview(self,model,table):
+        try:
+            new_row = []
+            for _ in range(model.columnCount()):
+                item = QtGui.QStandardItem("")
+                item.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable)
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                new_row.append(item)
+            model.appendRow(new_row)
+            source_index = model.index(model.rowCount() - 1, 0)
+            proxy = table.model()
+            view_index = proxy.mapFromSource(source_index) if proxy is not model else source_index
+            table.scrollTo(view_index)
+            table.setCurrentIndex(view_index)
+            table.edit(view_index)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to insert new row: {e}")
+
     @QtCore.pyqtSlot()
     def Import_data_Downtime_page(self):
         self.style_button_with_shadow((self.ui.DT_import_data_btn,self.ui.DT_problem_report_btn,self.ui.DT_dashboard_btn,self.ui.DT_data_btn))
@@ -3685,7 +3949,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                             self.DT_model.setItem(r, c, item)
                     self.ui.DT_data_table.setUpdatesEnabled(True)
                     self.ui.DT_data_table.setSortingEnabled(True)
-                    self.DT_summary_table_show(area_name, self.DT_data, self.working_time)
+                    self.DT_summary_table_show(self.ui.DT_summary_table, self.DT_summary_model, area_name, self.DT_data, self.working_time)
                     self.DT_summary_chart_show("error", self.DT_data)
                     self.safe_connect(self.ui.DT_error_chart_btn.clicked, lambda: self.DT_summary_chart_show("error", self.DT_data))
                     self.safe_connect(self.ui.DT_line_chart_btn.clicked, lambda: self.DT_summary_chart_show("line", self.DT_data))
@@ -3694,25 +3958,26 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Error", f"Failed to upload data: {e}")
 
-    def DT_summary_table_show(self,area,data_frame, working_time):
+    def DT_summary_table_show(self,table,model,area,data_frame, working_time):
         try:
             area_lbl = area
             total_failure = data_frame.shape[0]
             total_loss = data_frame["total_loss_time"].sum()
             total_working_time = working_time.drop(columns=["Date"]).apply(pd.to_numeric, errors="coerce").fillna(0).to_numpy().sum()
+            print(total_working_time)
             mttr = round(total_loss/total_failure,2) if total_failure > 0 else 0
             mtbf = round((total_working_time*60 - total_loss)/total_failure,2) if total_failure > 0 else 0
             machine_most_failure = data_frame["machine_code"].mode()[0] if not data_frame["machine_code"].mode().empty else "N/A"
             failure_code_most_frequent = data_frame["error_code"].mode()[0] if not data_frame["error_code"].mode().empty else "N/A"
             summary_data = [area_lbl, f"{total_failure} times", f"{total_loss} mins", f"{mttr} mins", f"{mtbf} mins", machine_most_failure, failure_code_most_frequent]
-            self.ui.DT_summary_table.setUpdatesEnabled(False)
-            self.ui.DT_summary_table.setSortingEnabled(False)
+            table.setUpdatesEnabled(False)
+            table.setSortingEnabled(False)
             for i in range(len(summary_data)):
                 item = QtGui.QStandardItem(str(summary_data[i]))
                 item.setTextAlignment(QtCore.Qt.AlignCenter)
-                self.DT_summary_model.setItem(i, 1, item)
-            self.ui.DT_summary_table.setUpdatesEnabled(True)
-            self.ui.DT_summary_table.setSortingEnabled(True)
+                model.setItem(i, 1, item)
+            table.setUpdatesEnabled(True)
+            table.setSortingEnabled(True)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to calculate summary: {e}")
     
@@ -3731,15 +3996,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         try:
             if chart_type == "error":
                 self.style_button_with_shadow((self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn))
-                error_counts = data_frame["error_code"].value_counts()
                 self.DT_chart_drawing(data_frame, "error_code", "total_loss_time", "Top 10 Error Codes by Loss Time", "Error Code", "Total Loss Time (mins)")
             elif chart_type == "line":
                 self.style_button_with_shadow((self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn,self.ui.DT_error_chart_btn))
-                line_counts = data_frame["line"].value_counts()
                 self.DT_chart_drawing(data_frame, "line", "total_loss_time", "Top 10 Lines by Loss Time", "Line", "Total Loss Time (mins)")
             elif chart_type == "machine":
                 self.style_button_with_shadow((self.ui.DT_machine_chart_btn,self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn))
-                machine_counts = data_frame["machine_code"].value_counts()
                 self.DT_chart_drawing(data_frame, "machine_code", "total_loss_time", "Top 10 Machines by Loss Time", "Machine", "Total Loss Time (mins)")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to show chart: {e}")
@@ -3937,7 +4199,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.ui.DT_report_file_table.setAlternatingRowColors(True)
         self.ui.DT_report_file_table.verticalHeader().setMinimumSectionSize(40)
         self.ui.DT_report_file_table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.safe_connect(self.ui.DT_report_file_table.customContextMenuRequested, self.DT_report_file_table_context_menu)
+        self.safe_connect(self.ui.DT_report_file_table.customContextMenuRequested, lambda pos: self.table_context_menu(pos, self.ui.DT_report_file_table,actions = ["open", "rename", "update", "delete"],
+                                                                                                                       functions_dict={
+                                                                                                                                        "open": lambda idx: self.DT_open_report(idx),
+                                                                                                                                    }))
         self.safe_connect(self.ui.DT_new_report_btn.clicked, self.New_report_input)
 
     def DT_report_file_tree_clicked(self, index):
@@ -4013,26 +4278,39 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             if title_item:
                 title_item.setIcon(icon)
 
-    def DT_report_file_table_context_menu(self,pos):
-        index = self.ui.DT_report_file_table.indexAt(pos)
+    def table_context_menu(self, pos, table, actions, functions_dict=None):
+        index = table.indexAt(pos)
         if not index.isValid():
-            return 
-        menu = QtWidgets.QMenu()
-        action_open = menu.addAction(QtGui.QIcon(resource_path("Icons\\Open.ico")), "Open")
-        action_rename = menu.addAction(QtGui.QIcon(resource_path("Icons\\rename.ico")), "Rename")
-        action_update = menu.addAction(QtGui.QIcon(resource_path("Icons\\Update_doc.ico")), "Update File")
-        menu.addSeparator()
-        action_delete = menu.addAction(QtGui.QIcon(resource_path("Icons\\delete.ico")), "Delete")
-        action = menu.exec_(self.ui.DT_report_file_table.viewport().mapToGlobal(pos))
+            return
+        default_config = {
+            "open":   (resource_path("Icons\\Open.ico"),       "Open",        self.DT_open_report),
+            "rename": (resource_path("Icons\\rename.ico"),     "Rename",      self.DT_rename_report),
+            "update": (resource_path("Icons\\Update_doc.ico"), "Update File", self.DT_update_report),
+            "edit":   (resource_path("Icons\\new_register.ico"), "Edit",      None),
+            "delete": (resource_path("Icons\\delete.ico"),     "Delete",      self.DT_delete_report),
+        }
+        if functions_dict:
+            for k, fn in functions_dict.items():
+                if k in default_config:
+                    icon_path, label, _ = default_config[k]
+                    default_config[k] = (icon_path, label, fn)
 
-        if action == action_open:
-            self.DT_open_report(index)
-        elif action == action_rename:
-            self.DT_rename_report(index)
-        elif action == action_update:
-            self.DT_update_report(index)
-        elif action == action_delete:
-            self.DT_delete_report(index)
+        menu = QtWidgets.QMenu()
+        action_map = {}
+        for name in actions:
+            if name == "separator":
+                menu.addSeparator()
+                continue
+            if name not in default_config:
+                continue
+            icon_path, label, fn = default_config[name]
+            qa = menu.addAction(QtGui.QIcon(icon_path), label)
+            if fn:
+                action_map[qa] = fn
+
+        chosen = menu.exec_(table.viewport().mapToGlobal(pos))
+        if chosen and chosen in action_map:
+            action_map[chosen](index)
     
     def DT_open_report(self, index):
         report_id = int(self.DT_report_file_model.item(index.row(), 0).text())
@@ -6192,6 +6470,7 @@ class Form_Modification(QtWidgets.QDialog):
     def insert_row(self , isupdate = False):
         current_row = self.ui.apply_machine_table.rowCount()
         self.ui.apply_machine_table.insertRow(current_row)
+        self.ui.apply_machine_table.scrollTo(self.ui.apply_machine_table.model().index(current_row, 0))
         editor = QtWidgets.QLineEdit()
         editor.setStyleSheet(''' border: none;''')
         editor.textChanged.connect(
@@ -7560,8 +7839,50 @@ class New_Report_Input(QtWidgets.QDialog):
         except Exception as e:
             QtWidgets.QMessageBox.critical(self,"Error", f"Failed to fetch lines: {e}")
 
+    def check_before_update(self):
+        if not self.ui.report_title_lnedit.text():
+            QtWidgets.QMessageBox.warning(self, "Warning", "Report Title cannot be empty.")
+            return False
+        if not self.ui.group_cbb.currentText():
+            QtWidgets.QMessageBox.warning(self, "Warning", "Group cannot be empty.")
+            return False
+        if not self.ui.report_type_cbb.currentText():
+            QtWidgets.QMessageBox.warning(self, "Warning", "Report Type cannot be empty.")
+            return False
+        if not self.file_path:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please upload a file.")
+            return False
+        if not self.ui.report_by_lnedit.text():
+            QtWidgets.QMessageBox.warning(self, "Warning", "Report By cannot be empty.")
+            return False
+        return True
+    
     def confirm_report(self):
-        return
+        try:
+            if not self.check_before_update():
+                return
+            values_scripts = f'''   "{self.ui.report_title_lnedit.text()}",
+                                    "{self.ui.dateEdit.date().toString("yyyy-MM-dd")}",
+                                    "{self.ui.issue_descrip_text.toPlainText() if self.ui.issue_descrip_text.toPlainText() else None}",
+                                    "{self.ui.correct_act_text.toPlainText() if self.ui.correct_act_text.toPlainText() else None}",
+                                    "{self.ui.notes_text.toPlainText() if self.ui.notes_text.toPlainText() else None}",
+                                    "{self.file_path}",
+                                    "Finish",'''
+            values_scripts += f'''(SELECT staff_id FROM staff WHERE staff_name = "{self.ui.report_by_lnedit.text()}"),'''
+            values_scripts += f'''(SELECT department_id FROM departments WHERE department_name = "{self.ui.group_cbb.currentText()}"),'''
+            values_scripts += f'''(SELECT line_id FROM production_lines WHERE line_name = "{self.ui.line_cbb.currentText()}"),''' if self.ui.line_cbb.currentText() else "NULL,"
+            values_scripts += f'''(SELECT machine_id FROM machines WHERE machine_code = "{self.ui.machine_code.text()}"),''' if self.ui.machine_code.text() else "NULL,"
+            values_scripts += f'''(SELECT report_type_id FROM report_types WHERE report_type_name = "{self.ui.report_type_cbb.currentText()}"))'''
+            self.database.query(sql = ''' INSERT INTO `problem_reports` (report_title, report_date,issue_description, corrective_action,
+                                                                         notes, report_file_path, status,reported_by,
+                                                                        department_id, line_id, machine_id, report_type_id)
+                                        VALUES (''' + values_scripts)
+            QtWidgets.QMessageBox.information(self, "Success", "Report submitted successfully.")
+            self.accept()           
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(self, "Warning", str(e))
+            return
+
 
 
 def main():

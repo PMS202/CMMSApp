@@ -873,7 +873,7 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton">
+             <widget class="QPushButton" name="Confirm_btn">
               <property name="font">
                <font>
                 <family>Rockwell</family>
@@ -898,7 +898,7 @@
              </spacer>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="Cancel_btn">
               <property name="font">
                <font>
                 <family>Rockwell</family>
