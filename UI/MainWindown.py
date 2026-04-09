@@ -437,6 +437,17 @@ class Ui_MainWindow(object):
                 self.DT_date_edit_2.setAccelerated(False)
                 self.DT_date_edit_2.setProperty("showGroupSeparator", False)
                 self.DT_date_edit_2.setCalendarPopup(True)
+                calendar_widget = self.DT_date_edit_2.calendarWidget()
+                calendar_widget.setStyleSheet("""
+                                                QCalendarWidget QWidget#qt_calendar_navigationbar {
+                                                        background-color: #0066cc; /* Màu xanh nền */
+                                                }
+                                                QCalendarWidget QToolButton {
+                                                        color: white;
+                                                        font-weight: bold;
+                                                        background-color: transparent;
+                                                }
+                                                """)
 
                 self.horizontalLayout_77.addWidget(self.DT_date_edit_2)
 
@@ -896,6 +907,12 @@ class Ui_MainWindow(object):
                 self.DT_problem_listwidget.setObjectName(u"DT_problem_listwidget")
                 sizePolicy1.setHeightForWidth(self.DT_problem_listwidget.sizePolicy().hasHeightForWidth())
                 self.DT_problem_listwidget.setSizePolicy(sizePolicy1)
+                self.DT_problem_listwidget.setStyleSheet("""
+                        QListWidget { background: transparent; border: none; }
+                        QListWidget::item { background: transparent; border: none; padding: 0px; }
+                        QListWidget::item:selected { background: transparent; }
+                        QListWidget::item:hover { background: transparent; }
+                """)
                 self.verticalLayout_48.addWidget(self.DT_problem_listwidget)
                 self.horizontalLayout_61.addWidget(self.frame_94)
                 self.verticalLayout_41.addWidget(self.frame_75)
@@ -904,6 +921,287 @@ class Ui_MainWindow(object):
 
                 self.DT_detail_data_page = QtWidgets.QWidget()
                 self.DT_detail_data_page.setObjectName(u"DT_detail_data_page")
+                self.horizontalLayout_94 = QtWidgets.QHBoxLayout(self.DT_detail_data_page)
+                self.horizontalLayout_94.setSpacing(0)
+                self.horizontalLayout_94.setObjectName(u"horizontalLayout_94")
+                self.horizontalLayout_94.setContentsMargins(0, 0, 5, 0)
+                self.frame_109 = QtWidgets.QFrame(self.DT_detail_data_page)
+                self.frame_109.setObjectName(u"frame_109")
+                self.frame_109.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_109.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.verticalLayout_56 = QtWidgets.QVBoxLayout(self.frame_109)
+                self.verticalLayout_56.setSpacing(0)
+                self.verticalLayout_56.setObjectName(u"verticalLayout_56")
+                self.verticalLayout_56.setContentsMargins(0, 0, 0, 0)
+                self.frame_110 = QtWidgets.QFrame(self.frame_109)
+                self.frame_110.setObjectName(u"frame_110")
+                self.frame_110.setMinimumSize(QtCore.QSize(0, 50))
+                self.frame_110.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_110.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_88 = QtWidgets.QHBoxLayout(self.frame_110)
+                self.horizontalLayout_88.setObjectName(u"horizontalLayout_88")
+                self.horizontalLayout_88.setContentsMargins(0, 0, 0, 0)
+                self.frame_116 = QtWidgets.QFrame(self.frame_110)
+                self.frame_116.setObjectName(u"frame_116")
+                self.frame_116.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_116.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_89 = QtWidgets.QHBoxLayout(self.frame_116)
+                self.horizontalLayout_89.setObjectName(u"horizontalLayout_89")
+                self.horizontalLayout_89.setContentsMargins(0, 0, 0, 0)
+                self.label_73 = QtWidgets.QLabel(self.frame_116)
+                self.label_73.setObjectName(u"label_73")
+
+                self.horizontalLayout_89.addWidget(self.label_73)
+
+                self.DT_DD_area_cbb = QtWidgets.QComboBox(self.frame_116)
+                self.DT_DD_area_cbb.setObjectName(u"DT_DD_area_cbb")
+
+                self.horizontalLayout_89.addWidget(self.DT_DD_area_cbb)
+
+
+                self.horizontalLayout_88.addWidget(self.frame_116)
+
+                self.frame_117 = QtWidgets.QFrame(self.frame_110)
+                self.frame_117.setObjectName(u"frame_117")
+                self.frame_117.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_117.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_90 = QtWidgets.QHBoxLayout(self.frame_117)
+                self.horizontalLayout_90.setObjectName(u"horizontalLayout_90")
+                self.horizontalLayout_90.setContentsMargins(0, 0, 0, 0)
+                self.label_74 = QtWidgets.QLabel(self.frame_117)
+                self.label_74.setObjectName(u"label_74")
+
+                self.horizontalLayout_90.addWidget(self.label_74)
+
+                self.DT_DD_date_edit = QtWidgets.QDateEdit(self.frame_117)
+                self.DT_DD_date_edit.setObjectName(u"DT_DD_date_edit")
+                self.DT_DD_date_edit.setCalendarPopup(True)
+                calendar_widget = self.DT_DD_date_edit.calendarWidget()
+                calendar_widget.setStyleSheet("""
+                                                QCalendarWidget QWidget#qt_calendar_navigationbar {
+                                                        background-color: #0066cc; /* Màu xanh nền */
+                                                }
+                                                QCalendarWidget QToolButton {
+                                                        color: white;
+                                                        font-weight: bold;
+                                                        background-color: transparent;
+                                                }
+                                                """)
+                self.horizontalLayout_90.addWidget(self.DT_DD_date_edit)
+
+
+                self.horizontalLayout_88.addWidget(self.frame_117)
+
+                self.frame_118 = QtWidgets.QFrame(self.frame_110)
+                self.frame_118.setObjectName(u"frame_118")
+                self.frame_118.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_118.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_91 = QtWidgets.QHBoxLayout(self.frame_118)
+                self.horizontalLayout_91.setObjectName(u"horizontalLayout_91")
+                self.horizontalLayout_91.setContentsMargins(0, 0, 0, 0)
+                self.label_75 = QtWidgets.QLabel(self.frame_118)
+                self.label_75.setObjectName(u"label_75")
+
+                self.horizontalLayout_91.addWidget(self.label_75)
+
+                self.DT_DD_line_cbb = QtWidgets.QComboBox(self.frame_118)
+                self.DT_DD_line_cbb.setObjectName(u"DT_DD_line_cbb")
+
+                self.horizontalLayout_91.addWidget(self.DT_DD_line_cbb)
+
+
+                self.horizontalLayout_88.addWidget(self.frame_118)
+
+                self.frame_119 = QtWidgets.QFrame(self.frame_110)
+                self.frame_119.setObjectName(u"frame_119")
+                self.frame_119.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_119.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_92 = QtWidgets.QHBoxLayout(self.frame_119)
+                self.horizontalLayout_92.setObjectName(u"horizontalLayout_92")
+                self.horizontalLayout_92.setContentsMargins(0, 0, 0, 0)
+                self.label_76 = QtWidgets.QLabel(self.frame_119)
+                self.label_76.setObjectName(u"label_76")
+
+                self.horizontalLayout_92.addWidget(self.label_76)
+
+                self.DT_DD_machine_code_lnedit = QtWidgets.QLineEdit(self.frame_119)
+                self.DT_DD_machine_code_lnedit.setObjectName(u"DT_DD_machine_code_lnedit")
+                sizePolicy4 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+                sizePolicy4.setHorizontalStretch(0)
+                sizePolicy4.setVerticalStretch(0)
+                sizePolicy4.setHeightForWidth(self.DT_DD_machine_code_lnedit.sizePolicy().hasHeightForWidth())
+                self.DT_DD_machine_code_lnedit.setSizePolicy(sizePolicy4)
+
+                self.horizontalLayout_92.addWidget(self.DT_DD_machine_code_lnedit)
+
+
+                self.horizontalLayout_88.addWidget(self.frame_119)
+
+                self.DT_DD_load_btn = QtWidgets.QPushButton(self.frame_110)
+                self.DT_DD_load_btn.setObjectName(u"DT_DD_load_btn")
+                self.DT_DD_load_btn.setMinimumSize(QtCore.QSize(100, 30))
+
+                self.horizontalLayout_88.addWidget(self.DT_DD_load_btn)
+
+                self.horizontalSpacer_8 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+
+                self.horizontalLayout_88.addItem(self.horizontalSpacer_8)
+
+
+                self.verticalLayout_56.addWidget(self.frame_110)
+
+                self.DT_DD_record_table = QtWidgets.QTableView(self.frame_109)
+                self.DT_DD_record_table.setObjectName(u"DT_DD_record_table")
+                self.DT_DD_record_table.setAlternatingRowColors(True)
+                self.DT_DD_record_table.setShowGrid(False)
+                sizePolicy5 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+                sizePolicy5.setHorizontalStretch(0)
+                sizePolicy5.setVerticalStretch(0)
+                sizePolicy5.setHeightForWidth(self.DT_DD_record_table.sizePolicy().hasHeightForWidth())
+                self.DT_DD_record_table.setSizePolicy(sizePolicy5)
+
+                self.verticalLayout_56.addWidget(self.DT_DD_record_table)
+
+                self.frame_111 = QtWidgets.QFrame(self.frame_109)
+                self.frame_111.setObjectName(u"frame_111")
+                self.frame_111.setMinimumSize(QtCore.QSize(0, 50))
+                self.frame_111.setMaximumSize(QtCore.QSize(16777215, 50))
+                self.frame_111.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_111.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_87 = QtWidgets.QHBoxLayout(self.frame_111)
+                self.horizontalLayout_87.setSpacing(0)
+                self.horizontalLayout_87.setObjectName(u"horizontalLayout_87")
+                self.horizontalLayout_87.setContentsMargins(0, 0, 0, 0)
+                self.horizontalSpacer_9 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+
+                self.horizontalLayout_87.addItem(self.horizontalSpacer_9)
+
+                self.DT_DD_insert_btn = QtWidgets.QPushButton(self.frame_111)
+                self.DT_DD_insert_btn.setObjectName(u"DT_DD_insert_btn")
+                self.DT_DD_insert_btn.setMinimumSize(QtCore.QSize(200, 30))
+
+                self.horizontalLayout_87.addWidget(self.DT_DD_insert_btn)
+
+                self.horizontalSpacer_6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+
+                self.horizontalLayout_87.addItem(self.horizontalSpacer_6)
+
+                # self.DT_DD_delete_btn = QtWidgets.QPushButton(self.frame_111)
+                # self.DT_DD_delete_btn.setObjectName(u"DT_DD_delete_btn")
+                # self.DT_DD_delete_btn.setMinimumSize(QtCore.QSize(0, 30))
+                # self.horizontalLayout_87.addWidget(self.DT_DD_delete_btn)
+                # self.horizontalSpacer_7 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+                # self.horizontalLayout_87.addItem(self.horizontalSpacer_7)
+
+                self.DT_DD_upload_btn = QtWidgets.QPushButton(self.frame_111)
+                self.DT_DD_upload_btn.setObjectName(u"DT_DD_upload_btn")
+                self.DT_DD_upload_btn.setMinimumSize(QtCore.QSize(200, 30))
+
+                self.horizontalLayout_87.addWidget(self.DT_DD_upload_btn)
+
+                self.horizontalSpacer_10 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
+
+                self.horizontalLayout_87.addItem(self.horizontalSpacer_10)
+
+
+                self.verticalLayout_56.addWidget(self.frame_111)
+
+
+                self.horizontalLayout_94.addWidget(self.frame_109)
+                self.frame_122 = QtWidgets.QFrame(self.DT_detail_data_page)
+                self.frame_122.setObjectName(u"frame_122")
+                self.frame_122.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_122.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.verticalLayout_57 = QtWidgets.QVBoxLayout(self.frame_122)
+                self.verticalLayout_57.setObjectName(u"verticalLayout_57")
+                self.verticalLayout_57.setContentsMargins(0, 10, 5, 0)
+                self.verticalSpacer_2 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+
+                self.verticalLayout_57.addItem(self.verticalSpacer_2)
+                self.frame_120 = QtWidgets.QFrame(self.frame_122)
+                self.frame_120.setObjectName(u"frame_120")
+                self.frame_120.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_120.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.frame_120.setStyleSheet(qss)
+                self.verticalLayout_55 = QtWidgets.QVBoxLayout(self.frame_120)
+                self.verticalLayout_55.setObjectName(u"verticalLayout_55")
+                self.label_77 = QtWidgets.QLabel(self.frame_120)
+                self.label_77.setObjectName(u"label_77")
+                sizePolicy6 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+                sizePolicy6.setHorizontalStretch(0)
+                sizePolicy6.setVerticalStretch(0)
+                sizePolicy6.setHeightForWidth(self.label_77.sizePolicy().hasHeightForWidth())
+                self.label_77.setSizePolicy(sizePolicy6)
+                self.label_77.setMaximumSize(QtCore.QSize(16777215, 30))
+                font4 = QtGui.QFont()
+                font4.setFamily(u"Rockwell")
+                font4.setPointSize(12)
+                font4.setBold(True)
+                font4.setItalic(True)
+                font4.setWeight(75)
+                self.label_77.setFont(font4)
+                self.label_77.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_55.addWidget(self.label_77)
+
+                self.DT_DD_summary_table = QtWidgets.QTableView(self.frame_120)
+                self.DT_DD_summary_table.setObjectName(u"DT_DD_summary_table")
+                sizePolicy2.setHeightForWidth(self.DT_DD_summary_table.sizePolicy().hasHeightForWidth())
+                self.DT_DD_summary_table.setSizePolicy(sizePolicy2)
+                self.DT_DD_summary_table.setMinimumSize(QtCore.QSize(0, 0))
+                self.DT_DD_summary_table.setMaximumSize(QtCore.QSize(16777215, 230))
+                self.DT_DD_summary_table.setFrameShape(QtWidgets.QFrame.NoFrame)
+                self.DT_DD_summary_table.setWordWrap(True)
+                self.DT_DD_summary_table.horizontalHeader().setVisible(False)
+                self.DT_DD_summary_table.horizontalHeader().setHighlightSections(False)
+                self.DT_DD_summary_table.verticalHeader().setVisible(False)
+                self.DT_DD_summary_table.verticalHeader().setHighlightSections(False)
+                self.DT_DD_summary_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+                self.DT_DD_summary_table.setAlternatingRowColors(True)
+                self.DT_DD_summary_table.setStyleSheet(qss)
+
+                self.verticalLayout_55.addWidget(self.DT_DD_summary_table)
+
+                self.frame_121 = QtWidgets.QFrame(self.frame_120)
+                self.frame_121.setObjectName(u"frame_121")
+                self.frame_121.setMaximumSize(QtCore.QSize(16777215, 35))
+                self.frame_121.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_121.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_93 = QtWidgets.QHBoxLayout(self.frame_121)
+                self.horizontalLayout_93.setSpacing(0)
+                self.horizontalLayout_93.setObjectName(u"horizontalLayout_93")
+                self.horizontalLayout_93.setContentsMargins(0, 10, 0, 0)
+                self.DT_DD_error_chart_btn = QtWidgets.QPushButton(self.frame_121)
+                self.DT_DD_error_chart_btn.setObjectName(u"DT_DD_error_chart_btn")
+                self.DT_DD_error_chart_btn.setFlat(True)
+
+                self.horizontalLayout_93.addWidget(self.DT_DD_error_chart_btn)
+
+                self.DT_DD_line_chart_btn = QtWidgets.QPushButton(self.frame_121)
+                self.DT_DD_line_chart_btn.setObjectName(u"DT_DD_line_chart_btn")
+                self.DT_DD_line_chart_btn.setFlat(True)
+
+                self.horizontalLayout_93.addWidget(self.DT_DD_line_chart_btn)
+
+                self.DT_DD_machine_chart_btn = QtWidgets.QPushButton(self.frame_121)
+                self.DT_DD_machine_chart_btn.setObjectName(u"DT_DD_machine_chart_btn")
+                self.DT_DD_machine_chart_btn.setFlat(True)
+
+                self.horizontalLayout_93.addWidget(self.DT_DD_machine_chart_btn)
+
+
+                self.verticalLayout_55.addWidget(self.frame_121)
+
+                self.DT_DD_summary_chart_widget = QtWidgets.QWidget(self.frame_120)
+                self.DT_DD_summary_chart_widget.setObjectName(u"DT_DD_summary_chart_widget")
+
+                self.verticalLayout_55.addWidget(self.DT_DD_summary_chart_widget)
+
+
+                self.verticalLayout_57.addWidget(self.frame_120)
+
+                self.horizontalLayout_94.addWidget(self.frame_122)
+
                 self.DT_stacked_widget.addWidget(self.DT_detail_data_page)
                 self.DT_import_data_page = QtWidgets.QWidget()
                 self.DT_import_data_page.setObjectName(u"DT_import_data_page")
@@ -1070,12 +1368,9 @@ class Ui_MainWindow(object):
                 self.DT_summary_table.setMinimumSize(QtCore.QSize(0, 0))
                 self.DT_summary_table.setMaximumSize(QtCore.QSize(16777215,230))
                 self.DT_summary_table.setFrameShape(QtWidgets.QFrame.NoFrame)
-                # self.DT_summary_table.setShowGrid(True)
-                # self.DT_summary_table.setWordWrap(True)
                 self.DT_summary_table.horizontalHeader().setVisible(False)
                 self.DT_summary_table.horizontalHeader().setHighlightSections(False)
                 self.DT_summary_table.verticalHeader().setVisible(False)
-                # self.DT_summary_table.verticalHeader().setHighlightSections(False)
                 self.DT_summary_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
                 self.DT_summary_table.setAlternatingRowColors(True)
                 self.DT_summary_table.setStyleSheet(qss)
@@ -3492,6 +3787,17 @@ class Ui_MainWindow(object):
                 self.DT_search_report_btn.setText(_translate("MainWindow", u"Search", None))
                 self.DT_filter_report_btn.setText(_translate("MainWindow", u"Filter", None))
                 self.DT_reload_report_btn.setText(_translate("MainWindow", u"Reload", None))
+                self.label_73.setText(_translate("MainWindow", u"Area", None))
+                self.label_74.setText(_translate("MainWindow", u"Period", None))
+                self.label_75.setText(_translate("MainWindow", u"Line", None))
+                self.label_76.setText(_translate("MainWindow", u"Machine code", None))
+                self.DT_DD_load_btn.setText(_translate("MainWindow", u"Load", None))
+                self.DT_DD_insert_btn.setText(_translate("MainWindow", u"Insert", None))
+                self.DT_DD_upload_btn.setText(_translate("MainWindow", u"Upload", None))
+                self.label_77.setText(_translate("MainWindow", u"SUMMARY REPORT", None))
+                self.DT_DD_error_chart_btn.setText(_translate("MainWindow", u"Error chart", None))
+                self.DT_DD_line_chart_btn.setText(_translate("MainWindow", u"Line chart", None))
+                self.DT_DD_machine_chart_btn.setText(_translate("MainWindow", u"Machine chart", None))
 
         def company_week_number(self,date: datetime.date) -> int:
                 year_start = datetime.date(date.year, 1, 1)

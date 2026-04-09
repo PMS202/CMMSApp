@@ -697,7 +697,7 @@ QToolBox::tab:selected {
 						border-bottom: 1px solid rgba(0, 0, 255, 1);
                         } 
 
-#frame_8,#frame_103 {
+#frame_8,#frame_103, #frame_120 {
         border: 1px solid rgb(179, 179, 179);
         border-radius: 10px;
     }
@@ -822,16 +822,16 @@ QToolBox::tab:selected {
         border: 1px solid rgb(179, 179, 179);
         border-radius: 10px;
 }
-#KPI_table,#DT_summary_table {
+#KPI_table,#DT_summary_table, #DT_DD_summary_table {
     gridline-color: transparent;
 }
 
-#KPI_table::item, #DT_summary_table::item {
+#KPI_table::item, #DT_summary_table::item, #DT_DD_summary_table::item {
     border-bottom: 1px solid #dcdcdc;
     border-right: none;
 }
 
-#KPI_table::item:selected, #DT_summary_table::item:selected {
+#KPI_table::item:selected, #DT_summary_table::item:selected, #DT_DD_summary_table::item:selected {
     background-color: rgba(255, 255, 255, 0.7);
     color: #000000;
 }

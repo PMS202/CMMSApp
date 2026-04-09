@@ -1,78 +1,60 @@
 import sys
-import numpy as np
-import pyqtgraph as pg
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-from PyQt5.QtCore import Qt
-from scipy.ndimage import gaussian_filter1d
+from PyQt5 import QtWidgets, QtCore, QtGui
 
-class ShiftDensityChart(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Biểu đồ mật độ máy hư theo giờ")
-        self.resize(1000, 450)
+class MonthYearPicker(QtWidgets.QDateEdit):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # 1. Định dạng chỉ hiển thị Tháng và Năm
+        self.setDisplayFormat("MMM-yyyy")
+        self.setCalendarPopup(True)
+        self.setDate(QtCore.QDate.currentDate())
 
-        # Cấu hình Widget chính
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
+        # 2. Lấy đối tượng Calendar và tùy biến
+        self.cal = self.calendarWidget()
+        
+        # Ẩn bảng ngày bên dưới
+        table_view = self.cal.findChild(QtWidgets.QTableView)
+        if table_view:
+            table_view.hide()
 
-        # Khởi tạo GraphicsLayoutWidget của pyqtgraph
-        self.win = pg.GraphicsLayoutWidget()
-        self.win.setBackground('w') # Nền trắng
-        layout.addWidget(self.win)
+        # 3. Ép kích thước Popup chỉ vừa bằng thanh tiêu đề (Thanh màu xanh)
+        # Thông thường thanh này cao khoảng 40-50px
+        self.cal.setFixedSize(250, 45) 
 
-        # Dữ liệu mô phỏng cho 3 ca (mỗi ca 8 tiếng, độ phân giải 1000 điểm cho mượt)
-        # Bạn có thể thay thế np.random bằng dữ liệu thực tế đã nội suy
-        data_s1 = self.generate_super_smooth_data()
-        data_s2 = self.generate_super_smooth_data()
-        data_s3 = self.generate_super_smooth_data()
-        print(data_s1.shape, data_s2.shape, data_s3.shape)  # Kiểm tra kích thước dữ liệu
+        # 4. Cập nhật giá trị ngay khi bấm mũi tên chuyển tháng/năm
+        self.cal.currentPageChanged.connect(self.update_date_from_calendar)
 
-        # Vẽ từng ca
-        self.create_shift_plot(0, "Shift 1", data_s1, "6h", "14h")
-        self.create_shift_plot(1, "Shift 2", data_s2, "14h", "22h")
-        self.create_shift_plot(2, "Shift 3", data_s3, "22h", "6h")
+        # 5. Style Sheet để giống hình mẫu của bạn
+        self.cal.setStyleSheet("""
+            QCalendarWidget QWidget#qt_calendar_navigationbar {
+                background-color: #0066cc; /* Màu xanh nền */
+            }
+            QCalendarWidget QToolButton {
+                color: white;
+                font-weight: bold;
+                background-color: transparent;
+            }
+        """)
 
-    def generate_super_smooth_data(self):
-        # 1. Tạo dữ liệu thô
-        x = np.linspace(0, 10, 1000)
-        raw_data = np.sin(x) + np.sin(x*0.5) + np.random.normal(0, 0.2, 1000)
-        
-        # 2. Áp dụng bộ lọc Gaussian để làm mịn các đỉnh nhọn
-        # sigma càng cao, màu chuyển càng chậm và mượt
-        smooth_data = gaussian_filter1d(raw_data, sigma=20) 
-        
-        # 3. Chuẩn hóa
-        data = (smooth_data - smooth_data.min()) / (smooth_data.max() - smooth_data.min())
-        return data.reshape(-1, 1)
+    def update_date_from_calendar(self, year, month):
+        # Khi người dùng bấm mũi tên, cập nhật lại ngày vào QDateEdit
+        # Ta lấy ngày 1 của tháng đó làm mặc định
+        new_date = QtCore.QDate(year, month, 1)
+        self.setDate(new_date)
 
-    def create_shift_plot(self, row, title, data, start_label, end_label):
-        p = self.win.addPlot(row=row, col=0)
-        
-        # Tạo dải màu 1024 bước
-        colors = [(224, 243, 255), (0, 91, 150), (179, 229, 252)]
-        cmap = pg.ColorMap(pos=[0.0, 0.5, 1.0], color=colors)
-        lut = cmap.getLookupTable(start=0.0, stop=1.0, nPts=1024)
-        
-        img = pg.ImageItem()
-        img.setImage(data)
-        img.setLookupTable(lut)
-        
-        # Quan trọng: Ép kiểu dữ liệu về float để gradient tính toán chính xác
-        img.setImage(data.astype(float)) 
-        
-        p.addItem(img)
-        
-        # Cố định khung hình theo chiều ngang
-        p.setXRange(0, 1000, padding=0)
-        p.setYRange(0, 1, padding=0)
-        
-        # Ẩn các chi tiết thừa để trông giống "thanh mật độ"
-        p.hideAxis('left')
-        p.getAxis('bottom').setTicks([[(0, start_label), (1000, end_label)]])
-
+# --- Chạy thử ứng dụng ---
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = ShiftDensityChart()
+    app = QtWidgets.QApplication(sys.argv)
+    
+    window = QtWidgets.QWidget()
+    window.setWindowTitle("Month Year Only")
+    layout = QtWidgets.QVBoxLayout(window)
+
+    picker = MonthYearPicker()
+    layout.addWidget(picker)
+    layout.addWidget(QtWidgets.QLabel("Widget này đã ẩn hoàn toàn bảng chọn ngày."))
+
+    window.resize(300, 100)
     window.show()
     sys.exit(app.exec_())
