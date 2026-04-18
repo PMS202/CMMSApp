@@ -14,7 +14,7 @@ from UI.Sync_missing_data import Ui_Sync_Missing_Data
 from UI.Downtime_input_window import Ui_DowntimeInputWindow
 from UI.Group_choose import Ui_Group_choose
 from UI.Error_code_management import Ui_Error_Code_Management
-from Calculation.OEE_cal_result import OEE_result
+from OEE.OEE_cal_result import OEE_result
 from Database.MariaDB import Database_process
 from Stock_control.stock_delegate import StockItemDelegate,ImageCache
 from Stock_control.image_loader import ImageLoaderRunnable
@@ -23,11 +23,6 @@ from Maintenance.scan_qrcode import Scan_record_process
 from Maintenance.attached_equipment import DynamicSuggestion
 from Downtimes.Excel_processing import Downtime_Excel_Processor
 from UI.Report_input import Ui_ReportInput
-# import plotly.graph_objects as go
-# from plotly.subplots import make_subplots
-# from PyQt5.QtWebEngineWidgets import QWebEngineView
-# from PyQt5.QtWebChannel import QWebChannel
-# from PyQt5 import QtWebEngineWidgets
 import pyqtgraph as pg
 import numpy as np
 import sys
@@ -45,7 +40,7 @@ import re
 from dateutil.relativedelta import relativedelta
 from pyqtspinner.spinner import WaitingSpinner
 from sqlalchemy import text
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d,PchipInterpolator
 from scipy.ndimage import gaussian_filter1d
 import calendar
 import subprocess
@@ -95,15 +90,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         # self.ui.Downtime_btn.setEnabled(False)
 
     def setup_signals(self):
-        self.ui.Show_file_bt_FG.clicked.connect(
-            lambda: self.handle_df_show(self.ui.Text_FG))
-        self.ui.Show_file_bt_NG.clicked.connect(
-            lambda: self.handle_df_show(self.ui.Text_NG))
-        self.ui.Setting_bt.clicked.connect(self.Open_Setting_windown)
-        self.ui.Data_process_bt.clicked.connect(self.Data_process)
-        self.ui.Export_Excel_bt.clicked.connect(
-            lambda: self.Choose_export_machine(file_export=None, where="Excel"))
-        self.ui.View_data_bt.clicked.connect(self.Open_View_result_windown)
         self.ui.Home_btn.clicked.connect(self.Home_page)
         self.ui.OEE_btn.clicked.connect(self.OEE_page)
         self.ui.Maintenance_btn.clicked.connect(self.Maintenance_page)
@@ -387,48 +373,66 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         except Exception as e:
             pass
     
+#==========================Function of OEE page ====================================================================================
+#==========================Function of OEE page ====================================================================================
+#==========================Function of OEE page ==================================================================================== 
     @QtCore.pyqtSlot()
     def OEE_page(self):
         self.ui.main_stacked.setCurrentWidget(self.ui.OEE_page)
         self.set_stylesheet_change_page((self.ui.OEE_btn,self.ui.Home_btn,self.ui.Maintenance_btn,self.ui.Order_btn, self.ui.Stock_btn,self.ui.Downtime_btn))
-        if self.is_expanded:
-            self.is_expanded = False
+        self.set_stylesheet_change_page((self.ui.OEE_dashboard_btn,self.ui.OEE_data_btn,self.ui.OEE_import_data_btn))
+        if not self.is_expanded:
+            self.is_expanded = True
             self.expand_windown_animation(self.is_expanded)
-        self.list_df_coil_result = None
         try:
-            self.machine_info = self.database_process.query(sql='''SELECT `Production_Lines`.line_name,`Machines`.machine_name,`Machine_CycleTime`.machine_id,`Machine_CycleTime`.cycletime 
-                                        FROM `Machine_CycleTime`
-                                        JOIN `Machines` ON `Machines`.machine_id = `Machine_CycleTime`.machine_id
-                                        JOIN `Production_Lines` ON `Production_Lines`.line_id = `Machines`.line_id;''', params=None)
-            self.machine_info = pd.DataFrame(self.machine_info)
+            if not hasattr(self, "areas") or not self.areas:
+                self.areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
+                                                                                    FROM `downtime_areas`;''')]
+            OEE_model = self.database_process.query(sql = '''SELECT model_name 
+                                                            FROM `product_models_oee` as pmo
+                                                            JOIN `departments` as d
+                                                            ON pmo.department_id = d.department_id
+                                                            JOIN downtime_areas as da
+                                                            ON da.department_id = d.department_id
+                                                            WHERE da.downtime_area_name = :area_name;''' , params = {"area_name": self.areas[0]})
+            lines = self.database_process.query(sql = '''SELECT DISTINCT pl.line_name
+                                                            FROM `production_lines` as pl
+                                                            JOIN `production_output` as po
+                                                            ON pl.line_id = po.line_id
+                                                            WHERE po.model_name = :model_name AND MONTH(po.production_date) = :month AND YEAR(po.production_date) = :year;''', params = {"model_name": OEE_model[0][0], "month": 12, "year": 2025})
+            process = self.database_process.query(sql = '''SELECT mor.process 
+                                                            FROM `machine_OEE_register` as mor
+                                                            JOIN `machines` as m ON mor.machine_id = m.machine_id
+                                                            JOIN `production_lines` as pl ON m.line_id = pl.line_id
+                                                            JOIN `product_models_oee` as pmo ON mor.model_id = pmo.model_id
+                                                            WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params = {"line_name": lines[0][0], "model_name": OEE_model[0][0]})
+            self.ui.OEE_area_cbb.clear()
+            self.ui.OEE_area_cbb.addItems(self.areas)
+            self.ui.OEE_period_edit.setDate(QtCore.QDate(self.ui.today.year, self.ui.today.month-1, 1))
+            self.ui.OEE_model_cbb.clear()
+            self.ui.OEE_model_cbb.addItems([model[0] for model in OEE_model])
+            self.ui.OEE_model_cbb.view().setMinimumWidth(self.ui.OEE_model_cbb.view().sizeHintForColumn(0)+50)
+            self.ui.OEE_line_cbb.clear()
+            self.ui.OEE_line_cbb.addItems([line[0] for line in lines])
+            self.ui.OEE_process_cbb.clear()
+            self.ui.OEE_process_cbb.addItems([proc[0] for proc in process])
+            self.safe_connect(self.ui.OEE_calendar_widget.currentPageChanged, lambda year, month: self.update_date_from_calendar(year, month, self.ui.OEE_period_edit))
         except Exception as e:
-            if hasattr(self, 'database_process'):
-                self.database_process.close()
-            QtWidgets.QMessageBox.critical(self, "Error", str(e))
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load OEE page: {e}")
+
+    def refesh_OEE_page(self,area_name, model_name, month, year,line,process):
         try:
-            self.model = OEE_result(self.machine_info)
-            self.model.default_setting()
-            self.params = {
-                "NG_Coil_Sheetname": self.model.default_NG_Coil_Sheetname,
-                "date_col_NG_Coil": self.model.default_date_col_NG_Coil,
-                "begin_NG_coil": self.model.default_begin_NG_coil,
-                "end_NG_coil": self.model.default_end_NG_coil,
-                "NG_Molding_Sheetname": self.model.default_NG_Molding_Sheetname,
-                "date_col_NG_Molding": self.model.default_date_col_NG_Molding,
-                "begin_NG_Molding": self.model.default_begin_NG_Molding,
-                "end_NG_Molding": self.model.default_end_NG_Molding,
-                "month": self.model.default_month,
-                "year": self.model.default_year,
-                "FG_sheet_name": self.model.default_FG_sheet_name,
-                "FG_date_col": self.model.default_FG_date_col,
-                "FG_line_col": self.model.default_FG_line_col,
-                "Molding_lt_sheet_name": self.model.default_Molding_lt_sheet_name,
-                "Coil_lt_sheet_name": self.model.default_Coil_lt_sheet_name,
-                "lt_date_col": self.model.default_lt_date_col
-            }
+            self.database_process.query(sql = '''SELECT OK_qty, NG_qty, ''')
+        
         except Exception as e:
-            pass
-    
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to refresh OEE page: {e}")
+#==========================Function of OEE page ====================================================================================END
+#==========================Function of OEE page ====================================================================================END
+#==========================Function of OEE page ====================================================================================END        
+
+#==========================Function of Maintenance page =============================================================================BEGIN
+#==========================Function of Maintenance page =============================================================================BEGIN
+#==========================Function of Maintenance page =============================================================================BEGIN
     @QtCore.pyqtSlot()
     def Maintenance_page(self):
         self.spinner.start()
@@ -569,7 +573,11 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         if suggestions:
             self.completer = QtWidgets.QCompleter(suggestions, self)
             self.completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-            self.completer.popup().setAlternatingRowColors(True)
+            popup = self.completer.popup()
+            popup.setAlternatingRowColors(True)
+            fm = popup.fontMetrics()
+            max_width = max(fm.horizontalAdvance(s) for s in suggestions) + 30
+            popup.setMinimumWidth(max_width)
             target.setCompleter(self.completer)
     
     @QtCore.pyqtSlot()
@@ -1367,7 +1375,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         target.removeRow(current_row)
     
     @QtCore.pyqtSlot()
-    def print_record(self):
+    def print_record(self): # đang có lỗi ở đây, cần kiểm tra lại sẽ xuất hiện tình trạng không insert vào db máy đính kèm nhưng vẫn in được form
         role, dep = self.login_info['role_level'], self.login_info['department']
         if role not in ["Admin", "Manager"] and dep != self.department_print_record:
             QtWidgets.QMessageBox.information(self, "Permission denied", "You don't have permission to print maintenance record")
@@ -1750,7 +1758,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.add_data_to_model(result,self.ui.Main_pending_table,self.data_model)
     
     @QtCore.pyqtSlot()  
-    def update_record(self):
+    def update_record(self): # đang có lỗi ở đây, cần kiểm tra lại: xuất hiện tình trạng đã insert vào db và delete record pending nhưng ko có file đc lưu vào folder
         if self.login_info['role_level'] not in ["Secretary","Manager","Admin"]:
             QtWidgets.QMessageBox.information(self,"Permission denied","Your don't have permission update maintenance record")
             return
@@ -1950,7 +1958,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 "technical": result[0][4],
                 "maintenance_date": str(result[0][5]),
                 "attached_machine": result[0][6].split(",") if result[0][6] else "",
-                "page_num": page_num}
+                "page_num": page_num }
             self.scan_QRcode_link.append([self.scan_QRcode.path[0],scan_result_dict])
             for col in range(self.ui.Main_scan_result_table.columnCount()):
                 self.add_item_to_scan_result(row,col,scan_result_dict)                                                                                                                                                            
@@ -2767,183 +2775,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
 #==========================Function of Stock control page ==================================================================================END
 
 
-#==========================Function of OEE page ====================================================================================
-#==========================Function of OEE page ====================================================================================
-#==========================Function of OEE page ====================================================================================
-    def Show_windown(self, windown_attr, ui_Window, data=None) : 
-        if getattr(self, windown_attr) is not None:
-            getattr(self, windown_attr).close()
-            getattr(self, windown_attr).deleteLater()
-        setattr(self, windown_attr, QtWidgets.QMainWindow())
-        UI_windown = ui_Window()
-        if data is None:
-            UI_windown.setupUi(getattr(self, windown_attr))
-        else:
-            UI_windown.setupUi(getattr(self, windown_attr), data)
-        getattr(self, windown_attr).setWindowFlags(
-            getattr(self, windown_attr).windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
-        getattr(self, windown_attr).show()
-        getattr(self, windown_attr).raise_()
-        getattr(self, windown_attr).activateWindow()
-        return
-
-    def textbox_read(self, textbox):
-        file_path = textbox.toPlainText().strip()
-        file_path = file_path.replace("file:///", "")
-        file_path = file_path.replace("file:", "")
-
-        if not file_path:
-            QtWidgets.QMessageBox.warning(
-                self, "Thiếu thông tin", "Vui lòng nhập đường dẫn file Excel.")
-            return
-
-        if not os.path.exists(file_path):
-            QtWidgets.QMessageBox.critical(
-                self, "Lỗi đường dẫn", "Đường dẫn file không tồn tại.")
-            return
-
-        try:
-            self.df = pd.read_excel(file_path)
-        except Exception as e:
-            error_message = f"Không thể đọc file. Vui lòng kiểm tra định dạng file.\nChi tiết: {e}"
-            QtWidgets.QMessageBox.critical(self, "Lỗi đọc file", error_message)
-            return
-        return file_path
-    
-    @QtCore.pyqtSlot()
-    def handle_df_show(self, textbox):
-        self.textbox_read(textbox)
-        if self.df is None:
-            return
-        self.Show_windown('df_windown', df_show, self.df)
-        return
-    
-    @QtCore.pyqtSlot()
-    def Open_Setting_windown(self):
-        if self.Setting_windown is not None:
-            self.Setting_windown.close()
-            self.Setting_windown.deleteLater()
-        self.Setting_windown = Setting_windown(parent=self,  model=self.model)
-        self.Setting_windown.show()
-        return
-    
-    @QtCore.pyqtSlot()
-    def Open_View_result_windown(self):
-        if self.View_result_windown is not None:
-            self.View_result_windown.close()
-            self.View_result_windown.deleteLater()
-        self.View_result_windown = View_result_windown(parent=self)
-        self.View_result_windown.show()
-        return
-    
-    @QtCore.pyqtSlot()
-    def Data_process(self):
-        self.link_NG = self.textbox_read(self.ui.Text_NG)
-        self.link_FG = self.textbox_read(self.ui.Text_FG)
-        # self.link_FG = r"Excel_data\Molding daily Mar-25.xlsx"
-        # self.link_NG = r"Excel_data\Tong hop so luong NG OK 3-25.xls"
-        # self.link_FG = r"C:\Users\2173452100291\Documents\Excel_data\Molding daily Mar-25.xlsx"
-        # self.link_NG = r"C:\Users\2173452100291\Documents\Excel_data\Tong hop so luong NG OK 3-25.xls"
-        self.list_df_molding_result, self.list_df_molding_monthly_result, self.list_df_coil_result, self.list_df_coil_monthly_result = None, None, None, None
-        if self.link_NG is None or self.link_FG is None:
-            return
-        try:
-            self.Flag_data_process = True
-            self.list_df_molding_result, self.list_df_molding_monthly_result, self.list_df_coil_result, self.list_df_coil_monthly_result = self.model.OEE_cal_result(
-                FG_file=self.link_FG, NG_file=self.link_NG)
-            QtWidgets.QMessageBox.information(
-                self, "Hoàn tất", "Xử lý dữ liệu thành công")
-        except Exception as e:
-            error_message = f"Không thể xử lý dữ liệu. Vui lòng kiểm tra lại.\nChi tiết: {e}"
-            QtWidgets.QMessageBox.critical(
-                self, "Lỗi xử lý dữ liệu", error_message)
-            return
-
-    def Export_Excel(self, file_export=None, machine=None):
-        if self.Flag_data_process is False:
-            QtWidgets.QMessageBox.warning(
-                self, "Chưa xử lý dữ liệu", "Vui lòng xử lý dữ liệu trước khi xuất file Excel.")
-            return
-        if machine == "Molding":
-            self.export_list = self.list_df_molding_result
-        elif machine == "Coil":
-            self.export_list = self.list_df_coil_result
-        save_path = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Chọn thư mục lưu file", "")
-        if not save_path:
-            QtWidgets.QMessageBox.warning(
-                self, "Thiếu thông tin", "Vui lòng chọn thư mục để lưu file.")
-            return
-
-        try:
-            if file_export == None:
-                for line, df in self.export_list:
-                    df["Day"] = df.index
-                    df.to_excel(os.path.join(
-                        save_path, f"OEE_{machine}_result_{line}.xlsx"), index=False)
-            else:
-                self.file_export = file_export
-                for line, df in self.export_list:
-                    if line in self.file_export:
-                        df["Day"] = df.index
-                        df.to_excel(os.path.join(
-                            save_path, f"OEE_{machine}_result_{line}.xlsx"), index=False)
-            QtWidgets.QMessageBox.information(
-                self, "Thành công", "File Excel đã được lưu thành công.")
-            self.Flag_data_process = True
-        except Exception as e:
-            error_message = f"Không thể lưu file. Vui lòng kiểm tra lại.\nChi tiết: {e}"
-            QtWidgets.QMessageBox.critical(self, "Lỗi lưu file", error_message)
-    
-    @QtCore.pyqtSlot()
-    def Choose_export_machine(self, file_export, where=None):
-        dialog = QtWidgets.QDialog(self)
-        dialog.setWindowTitle("Choose Export Option")
-        dialog.setMinimumSize(300, 200)
-        layout = QtWidgets.QVBoxLayout(dialog)
-        label = QtWidgets.QLabel("Select the type of machine to export:")
-        font = QtGui.QFont()
-        font.setFamily("Comic Sans MS")
-        font.setPointSize(16)
-        label.setFont(font)
-        layout.addWidget(label)
-
-        button_molding = QtWidgets.QPushButton("Molding")
-        button_molding.setMinimumSize(200, 50)
-        button_molding.setFont(font)
-
-        button_coil = QtWidgets.QPushButton("Coil")
-        button_coil.setMinimumSize(200, 50)
-        button_coil.setFont(font)
-
-        layout.addWidget(button_molding)
-        layout.addWidget(button_coil)
-        self.flag_return = False
-        if where == "Excel":
-            button_molding.clicked.connect(
-                lambda: self.return_choose(type="Excel", machine="Molding", file_export=file_export))
-            button_coil.clicked.connect(
-                lambda: self.return_choose(type="Excel", machine="Coil", file_export=file_export))
-            dialog.exec_()
-        elif where == "DB":
-            button_molding.clicked.connect(
-                lambda: self.return_choose(type="DB", machine="Molding", file_export=file_export))
-            button_coil.clicked.connect(
-                lambda: self.return_choose(type="DB", machine="Coil", file_export=file_export))
-            dialog.show()
-            while not self.flag_return:
-                QtWidgets.QApplication.processEvents()
-            dialog.close()
-    
-    @QtCore.pyqtSlot() 
-    def return_choose(self, type=None, machine=None, file_export=None):
-        if type == "Excel":
-            return self.Export_Excel(file_export=file_export, machine=machine)
-        elif type == "DB":
-            self.machine_type_for_db = "Molding" if machine == "Molding" else "Coil"
-            self.flag_return = True
-            return
-
     def closeEvent(self, event):
         if hasattr(self, "database_process") and self.database_process:
             try:
@@ -2960,7 +2791,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
 
         painter = QtGui.QPainter(pixmap)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        # Gradient hình nón (conical), tâm ở giữa hình tròn
         gradient = QtGui.QConicalGradient(x + r/2, y + r/2,127)  
         
         gradient.setColorAt(0.0, QtGui.QColor(color[0], color[1], color[2], 20))    
@@ -2969,8 +2799,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         gradient.setColorAt(0.75, QtGui.QColor(color[0], color[1], color[2], 127)) 
         gradient.setColorAt(1.0, QtGui.QColor(color[0], color[1], color[2], 20))   
 
-        # Gán gradient làm bút vẽ
-        pen = QtGui.QPen(QtGui.QBrush(gradient), 20)  # brush chứa gradient, độ dày 20
+        pen = QtGui.QPen(QtGui.QBrush(gradient), 20)
         painter.setPen(pen)
 
         painter.drawEllipse(int(x), int(y), int(r), int(r))
@@ -3034,8 +2863,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.DT_calendar_widget = self.ui.DT_date_edit_2.calendarWidget()
         self.table_view_of_DTcalendar = self.DT_calendar_widget.findChild(QtWidgets.QTableView)
         try:
-            self.areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
-                                                                                FROM `downtime_areas`;''')]
+            if not hasattr(self, "areas") or not self.areas:
+                self.areas = [area[0] for area in self.database_process.query(sql = '''SELECT downtime_area_name
+                                                                                    FROM `downtime_areas`;''')]
             self.ui.DT_area_cbb.clear()
             self.ui.DT_area_cbb.addItems(self.areas)
             self.DT_silde_bar_animation = QtCore.QPropertyAnimation(self.ui.frame_106, b"maximumWidth")
@@ -3222,6 +3052,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             new_layout.setSpacing(0)
             widget.setLayout(new_layout)
         plot = pg.PlotWidget()
+        plot.setAntialiasing(True)
         plot.setFixedSize(140, 100)
         plot.setBackground(None)
         plot.hideAxis('left')
@@ -3501,6 +3332,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             cum = np.cumsum(total) / np.sum(total) * 100
             vb2 = pg.ViewBox()
             plot.scene().addItem(vb2)
+            vb2.setZValue(plot.getViewBox().zValue() + 10)
             plot.getAxis('bottom').setTicks([list(zip(x, categories))])
             plot.getAxis('bottom').setStyle(tickTextOffset=20)
             plot.getAxis('right').linkToView(vb2)
@@ -3525,15 +3357,29 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                             + f"\nCumulative: {cum[index] - cum[index-1] if index > 0 else cum[index]:.2f} %"
                         )
             plot.getViewBox().sigResized.connect(update_views)
-            self.line_item = pg.PlotCurveItem(
-                x=x, y=cum,
-                pen=pg.mkPen((231, 76, 60), width=3),
-                symbol='o',
-                symbolBrush=(231, 76, 60),
-                symbolSize=0
-            )
+            if len(x) >= 3:
+                x_smooth = np.linspace(x.min(), x.max(), 300)
+                pchip = PchipInterpolator(x, cum)
+                cum_smooth = np.clip(pchip(x_smooth), 0, 100)
+            else:
+                x_smooth = x
+                cum_smooth = cum
 
+            self.line_item = pg.PlotCurveItem(
+                x=x_smooth, y=cum_smooth,
+                pen=pg.mkPen((231, 76, 60), width=3),
+                antialias=True
+            )
+            dot_item = pg.ScatterPlotItem(
+                x=x, y=cum,
+                size=8,
+                pen=pg.mkPen((231, 76, 60), width=1.5),
+                brush=pg.mkBrush(240, 240, 240),
+                symbol='o',
+                antialias=True
+            )
             vb2.addItem(self.line_item)
+            vb2.addItem(dot_item)
             vb2.setYRange(0, 100)
             update_views()
             y_min = 0
@@ -3593,7 +3439,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 if self.table_view_of_DTcalendar:
                     self.table_view_of_DTcalendar.hide()
                 self.DT_calendar_widget.setFixedSize(250, 30) 
-                self.DT_calendar_widget.currentPageChanged.connect(lambda year, month: self.update_date_from_calendar(year, month, self.ui.DT_date_edit_2))
+                self.safe_connect(self.DT_calendar_widget.currentPageChanged, lambda year, month: self.update_date_from_calendar(year, month, self.ui.DT_date_edit_2))
                 target = self.ui.DT_date_edit_2.date().month()
 
             self.Dashboard_Downtime_page_refresh(area_name=area_name, target=target, view_by=changed_object)
@@ -3857,8 +3703,11 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.DT_DD_record_table.setSortingEnabled(True)
             self.ui.DT_DD_record_table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
             self.DT_summary_table_show(table = self.ui.DT_DD_summary_table,model = self.DT_DD_summary_model,area = area_name, data_frame=dataframe_for_sumary_table , working_time=working_time[["Date", "operation_hours"]])
-            self.DT_summary_chart_show()
+            self.DT_summary_chart_show(self.ui.DT_DD_summary_chart_widget, "error", dataframe_for_sumary_table, (self.ui.DT_DD_error_chart_btn,self.ui.DT_DD_line_chart_btn,self.ui.DT_DD_machine_chart_btn))
             self.safe_connect(self.ui.DT_DD_insert_btn.clicked, lambda: self.insert_row_QTableview(self.DT_detail_model, self.ui.DT_DD_record_table))
+            self.safe_connect(self.ui.DT_DD_error_chart_btn.clicked, lambda: self.DT_summary_chart_show(self.ui.DT_DD_summary_chart_widget, "error", dataframe_for_sumary_table, (self.ui.DT_DD_error_chart_btn,self.ui.DT_DD_line_chart_btn,self.ui.DT_DD_machine_chart_btn)))
+            self.safe_connect(self.ui.DT_DD_line_chart_btn.clicked, lambda: self.DT_summary_chart_show(self.ui.DT_DD_summary_chart_widget, "line", dataframe_for_sumary_table, (self.ui.DT_DD_line_chart_btn,self.ui.DT_DD_error_chart_btn,self.ui.DT_DD_machine_chart_btn)))
+            self.safe_connect(self.ui.DT_DD_machine_chart_btn.clicked, lambda: self.DT_summary_chart_show(self.ui.DT_DD_summary_chart_widget, "machine", dataframe_for_sumary_table, (self.ui.DT_DD_machine_chart_btn,self.ui.DT_DD_error_chart_btn,self.ui.DT_DD_line_chart_btn)))
             self.safe_connect(self.ui.DT_DD_record_table.customContextMenuRequested, lambda pos: self.table_context_menu(pos, self.ui.DT_DD_record_table,actions = ["edit","separator", "delete"],
                                                                                                                        functions_dict={
                                                                                                                                         "edit": lambda idx:print(f"Edit row {idx.row()} column {idx.column()}"),
@@ -3950,10 +3799,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     self.ui.DT_data_table.setUpdatesEnabled(True)
                     self.ui.DT_data_table.setSortingEnabled(True)
                     self.DT_summary_table_show(self.ui.DT_summary_table, self.DT_summary_model, area_name, self.DT_data, self.working_time)
-                    self.DT_summary_chart_show("error", self.DT_data)
-                    self.safe_connect(self.ui.DT_error_chart_btn.clicked, lambda: self.DT_summary_chart_show("error", self.DT_data))
-                    self.safe_connect(self.ui.DT_line_chart_btn.clicked, lambda: self.DT_summary_chart_show("line", self.DT_data))
-                    self.safe_connect(self.ui.DT_machine_chart_btn.clicked, lambda: self.DT_summary_chart_show("machine", self.DT_data))
+                    self.DT_summary_chart_show(self.ui.DT_summary_chart_widget, "error", self.DT_data, (self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn))
+                    self.safe_connect(self.ui.DT_error_chart_btn.clicked, lambda: self.DT_summary_chart_show(self.ui.DT_summary_chart_widget, "error", self.DT_data, (self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn)))
+                    self.safe_connect(self.ui.DT_line_chart_btn.clicked, lambda: self.DT_summary_chart_show(self.ui.DT_summary_chart_widget, "line", self.DT_data, (self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn,self.ui.DT_error_chart_btn)))
+                    self.safe_connect(self.ui.DT_machine_chart_btn.clicked, lambda: self.DT_summary_chart_show(self.ui.DT_summary_chart_widget, "machine", self.DT_data,(self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn)))
                     self.safe_connect(self.ui.DT_import_database_btn.clicked, lambda: self.DT_import_database(self.working_time))
             except Exception as e:
                 QtWidgets.QMessageBox.critical(self, "Error", f"Failed to upload data: {e}")
@@ -3964,7 +3813,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             total_failure = data_frame.shape[0]
             total_loss = data_frame["total_loss_time"].sum()
             total_working_time = working_time.drop(columns=["Date"]).apply(pd.to_numeric, errors="coerce").fillna(0).to_numpy().sum()
-            print(total_working_time)
             mttr = round(total_loss/total_failure,2) if total_failure > 0 else 0
             mtbf = round((total_working_time*60 - total_loss)/total_failure,2) if total_failure > 0 else 0
             machine_most_failure = data_frame["machine_code"].mode()[0] if not data_frame["machine_code"].mode().empty else "N/A"
@@ -3982,32 +3830,22 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to calculate summary: {e}")
     
     @QtCore.pyqtSlot()
-    def DT_summary_chart_show(self, chart_type, data_frame):
-        layout = self.ui.DT_summary_chart_widget.layout()
-        if layout is not None:
-            while layout.count():
-                child = layout.takeAt(0)
-                if child.widget():
-                    child.widget().deleteLater()
-        else:
-            layout = QtWidgets.QVBoxLayout(self.ui.DT_summary_chart_widget)
-            self.ui.DT_summary_chart_widget.setLayout(layout)
-        
+    def DT_summary_chart_show(self,chart_widget, chart_type, data_frame,button_set):
         try:
             if chart_type == "error":
-                self.style_button_with_shadow((self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn))
-                self.DT_chart_drawing(data_frame, "error_code", "total_loss_time", "Top 10 Error Codes by Loss Time", "Error Code", "Total Loss Time (mins)")
+                self.style_button_with_shadow(button_set)
+                self.DT_chart_drawing(chart_widget,data_frame, "error_code", "total_loss_time", "Top 10 Error Codes by Loss Time", "Error Code", "Total Loss Time (mins)")
             elif chart_type == "line":
-                self.style_button_with_shadow((self.ui.DT_line_chart_btn,self.ui.DT_machine_chart_btn,self.ui.DT_error_chart_btn))
-                self.DT_chart_drawing(data_frame, "line", "total_loss_time", "Top 10 Lines by Loss Time", "Line", "Total Loss Time (mins)")
+                self.style_button_with_shadow(button_set)
+                self.DT_chart_drawing(chart_widget,data_frame, "line", "total_loss_time", "Top 10 Lines by Loss Time", "Line", "Total Loss Time (mins)")
             elif chart_type == "machine":
-                self.style_button_with_shadow((self.ui.DT_machine_chart_btn,self.ui.DT_error_chart_btn,self.ui.DT_line_chart_btn))
-                self.DT_chart_drawing(data_frame, "machine_code", "total_loss_time", "Top 10 Machines by Loss Time", "Machine", "Total Loss Time (mins)")
+                self.style_button_with_shadow(button_set)
+                self.DT_chart_drawing(chart_widget,data_frame, "machine_code", "total_loss_time", "Top 10 Machines by Loss Time", "Machine", "Total Loss Time (mins)")
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to show chart: {e}")
 
-    def DT_chart_drawing(self,data_frame, group_by_col, value_col, title, x_label, y_label):
-        layout = self.ui.DT_summary_chart_widget.layout()
+    def DT_chart_drawing(self,chart_widget,data_frame, group_by_col, value_col, title, x_label, y_label):
+        layout = chart_widget.layout()
         if layout is not None:
             while layout.count():
                 child = layout.takeAt(0) 
@@ -4015,14 +3853,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     child.widget().deleteLater()
             layout.setContentsMargins(0, 0, 0, 0)
         else:
-            layout = QtWidgets.QVBoxLayout(self.ui.DT_summary_chart_widget)
+            layout = QtWidgets.QVBoxLayout(chart_widget)
             layout.setContentsMargins(0, 0, 0, 0)
-            self.ui.DT_summary_chart_widget.setLayout(layout)
-
+            chart_widget.setLayout(layout)
         try:
             error_loss_time = data_frame.groupby(group_by_col)[value_col].sum().sort_values(ascending=False).head(10)
-            widget_w = self.ui.DT_summary_chart_widget.width() - 10
-            widget_h = self.ui.DT_summary_chart_widget.height() - 10
+            widget_w = chart_widget.width() - 10
+            widget_h = chart_widget.height() - 10
             dpi = 100
             fig_w = widget_w / dpi
             fig_h = widget_h / dpi
@@ -4334,1304 +4171,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.DT_report_file_tree_clicked(self.ui.DT_report_file_tree.currentIndex())
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to create new report: {e}")
-#==========================================================================================================================
 
-
-#==========================================================================================================================
-
-
-#==========================================================================================================================
-class Setting_windown(QtWidgets.QDialog):
-    def __init__(self, parent=None, model=None):
-        super().__init__(parent)
-        self.parent = parent
-        self.model = model
-        self.ui = Ui_SettingWindown()
-        self.ui.setupUi(self)
-        self.setup_signals()
-        self.show_setting_value()
-
-    def setup_signals(self):
-        self.ui.default_btn.clicked.connect(self.default)
-        self.ui.save_btn.clicked.connect(self.save)
-        self.ui.cancel_btn.clicked.connect(self.close)
-    
-    @QtCore.pyqtSlot() 
-    def close(self):
-        super().close()
-    
-    @QtCore.pyqtSlot() 
-    def default(self):
-        self.model.default_setting()
-        self.parent.params = {
-            "NG_Coil_Sheetname": self.model.default_NG_Coil_Sheetname,
-            "date_col_NG_Coil": self.model.default_date_col_NG_Coil,
-            "begin_NG_coil": self.model.default_begin_NG_coil,
-            "end_NG_coil": self.model.default_end_NG_coil,
-            "NG_Molding_Sheetname": self.model.default_NG_Molding_Sheetname,
-            "date_col_NG_Molding": self.model.default_date_col_NG_Molding,
-            "begin_NG_Molding": self.model.default_begin_NG_Molding,
-            "end_NG_Molding": self.model.default_end_NG_Molding,
-            "month": self.model.default_month,
-            "year": self.model.default_year,
-            "FG_sheet_name": self.model.default_FG_sheet_name,
-            "FG_date_col": self.model.default_FG_date_col,
-            "FG_line_col": self.model.default_FG_line_col,
-            "Molding_lt_sheet_name": self.model.default_Molding_lt_sheet_name,
-            "Coil_lt_sheet_name": self.model.default_Coil_lt_sheet_name,
-            "lt_date_col": self.model.default_lt_date_col
-        }
-        self.show_setting_value()
-
-    def show_setting_value(self):
-        self.ui.NG_coil_sh_currLine.setText(
-            self.parent.params["NG_Coil_Sheetname"])
-        self.ui.begin_row_coilNG_currLine.setText(
-            str(self.parent.params["begin_NG_coil"]))
-        self.ui.end_row_coilNG_currLine.setText(
-            str(self.parent.params["end_NG_coil"]))
-        self.ui.date_col_coilNG_currLine.setText(
-            str(self.parent.params["date_col_NG_Coil"]))
-        self.ui.NG_Molding_sh_currLine.setText(
-            self.parent.params["NG_Molding_Sheetname"])
-        self.ui.begin_row_MoldingNG_currLine.setText(
-            str(self.parent.params["begin_NG_Molding"]))
-        self.ui.end_row_MoldingNG_currLine.setText(
-            str(self.parent.params["end_NG_Molding"]))
-        self.ui.date_col_MoldingNG_currLine.setText(
-            str(self.parent.params["date_col_NG_Molding"]))
-        self.ui.FG_Molding_sh_currLine.setText(
-            self.parent.params["FG_sheet_name"])
-        self.ui.line_col_MoldingFG_currLine.setText(
-            str(self.parent.params["FG_line_col"]))
-        self.ui.date_col_MoldingFG_currLine.setText(
-            str(self.parent.params["FG_date_col"]))
-        self.ui.lt_Molding_sh_currLine.setText(
-            self.parent.params["Molding_lt_sheet_name"])
-        self.ui.lt_Coil_sh_currLine.setText(
-            self.parent.params["Coil_lt_sheet_name"])
-        self.ui.lt_date_col_currLine.setText(
-            str(self.parent.params["lt_date_col"]))
-        self.ui.date_current.setDateTime(QtCore.QDateTime(
-            QtCore.QDate(self.parent.params["year"], self.parent.params["month"], 1), QtCore.QTime(0, 0, 0)))
-        self.ui.NG_coil_sh_adjLine.setText(
-            self.parent.params["NG_Coil_Sheetname"])
-        self.ui.begin_row_coilNG_adjLine.setText(
-            str(self.parent.params["begin_NG_coil"]))
-        self.ui.end_row_coilNG_adjLine.setText(
-            str(self.parent.params["end_NG_coil"]))
-        self.ui.date_col_coilNG_adjLine.setText(
-            str(self.parent.params["date_col_NG_Coil"]))
-        self.ui.NG_Molding_sh_adjLine.setText(
-            self.parent.params["NG_Molding_Sheetname"])
-        self.ui.begin_row_MoldingNG_adjLine.setText(
-            str(self.parent.params["begin_NG_Molding"]))
-        self.ui.end_row_MoldingNG_adjLine.setText(
-            str(self.parent.params["end_NG_Molding"]))
-        self.ui.date_col_MoldingNG_adjLine.setText(
-            str(self.parent.params["date_col_NG_Molding"]))
-        self.ui.FG_Molding_sh_adjLine.setText(
-            self.parent.params["FG_sheet_name"])
-        self.ui.line_col_MoldingFG_adjLine.setText(
-            str(self.parent.params["FG_line_col"]))
-        self.ui.date_col_MoldingFG_adjLine.setText(
-            str(self.parent.params["FG_date_col"]))
-        self.ui.lt_Molding_sh_adjLine.setText(
-            self.parent.params["Molding_lt_sheet_name"])
-        self.ui.lt_Coil_sh_adjLine.setText(
-            self.parent.params["Coil_lt_sheet_name"])
-        self.ui.lt_date_col_adjLine.setText(
-            str(self.parent.params["lt_date_col"]))
-        self.ui.date_adj.setDateTime(QtCore.QDateTime(
-            QtCore.QDate(self.parent.params["year"], self.parent.params["month"], 1), QtCore.QTime(0, 0, 0)))
-    
-    @QtCore.pyqtSlot() 
-    def save(self):
-        self.model.NG_Coil_Sheetname = self.ui.NG_coil_sh_adjLine.text()
-        self.model.begin_NG_coil = int(self.ui.begin_row_coilNG_adjLine.text())
-        self.model.end_NG_coil = int(self.ui.end_row_coilNG_adjLine.text())
-        self.model.date_col_NG_Coil = int(
-            self.ui.date_col_coilNG_adjLine.text())
-        self.model.NG_Molding_Sheetname = self.ui.NG_Molding_sh_adjLine.text()
-        self.model.begin_NG_Molding = int(
-            self.ui.begin_row_MoldingNG_adjLine.text())
-        self.model.end_NG_Molding = int(
-            self.ui.end_row_MoldingNG_adjLine.text())
-        self.model.date_col_NG_Molding = int(
-            self.ui.date_col_MoldingNG_adjLine.text())
-        self.model.FG_sheet_name = self.ui.FG_Molding_sh_adjLine.text()
-        self.model.FG_line_col = int(self.ui.line_col_MoldingFG_adjLine.text())
-        self.model.FG_date_col = int(self.ui.date_col_MoldingFG_adjLine.text())
-        self.model.Molding_lt_sheet_name = self.ui.lt_Molding_sh_adjLine.text()
-        self.model.Coil_lt_sheet_name = self.ui.lt_Coil_sh_adjLine.text()
-        self.model.lt_date_col = int(self.ui.lt_date_col_adjLine.text())
-        self.model.month = int(self.ui.date_adj.date().month())
-        self.parent.params = {
-            "NG_Coil_Sheetname": self.model.NG_Coil_Sheetname,
-            "date_col_NG_Coil": self.model.date_col_NG_Coil,
-            "begin_NG_coil": self.model.begin_NG_coil,
-            "end_NG_coil": self.model.end_NG_coil,
-            "NG_Molding_Sheetname": self.model.NG_Molding_Sheetname,
-            "date_col_NG_Molding": self.model.date_col_NG_Molding,
-            "begin_NG_Molding": self.model.begin_NG_Molding,
-            "end_NG_Molding": self.model.end_NG_Molding,
-            "month": self.model.month,
-            "year": self.model.default_year,
-            "FG_sheet_name": self.model.FG_sheet_name,
-            "FG_date_col": self.model.FG_line_col,
-            "FG_line_col": self.model.FG_date_col,
-            "Molding_lt_sheet_name": self.model.Molding_lt_sheet_name,
-            "Coil_lt_sheet_name": self.model.Coil_lt_sheet_name,
-            "lt_date_col": self.model.lt_date_col
-        }
-
-        self.change_aftersave()
-
-    def change_aftersave(self):
-        self.ui.NG_coil_sh_currLine.setText(
-            self.ui.NG_coil_sh_adjLine.text())
-        self.ui.begin_row_coilNG_currLine.setText(
-            self.ui.begin_row_coilNG_adjLine.text())
-        self.ui.end_row_coilNG_currLine.setText(
-            self.ui.end_row_coilNG_adjLine.text())
-        self.ui.date_col_coilNG_currLine.setText(
-            self.ui.date_col_coilNG_adjLine.text())
-        self.ui.NG_Molding_sh_currLine.setText(
-            self.ui.NG_Molding_sh_adjLine.text())
-        self.ui.begin_row_MoldingNG_currLine.setText(
-            self.ui.begin_row_MoldingNG_adjLine.text())
-        self.ui.end_row_MoldingNG_currLine.setText(
-            self.ui.end_row_MoldingNG_adjLine.text())
-        self.ui.date_col_MoldingNG_currLine.setText(
-            self.ui.date_col_MoldingNG_adjLine.text())
-        self.ui.FG_Molding_sh_currLine.setText(
-            self.ui.FG_Molding_sh_adjLine.text())
-        self.ui.line_col_MoldingFG_currLine.setText(
-            self.ui.line_col_MoldingFG_adjLine.text())
-        self.ui.date_col_MoldingFG_currLine.setText(
-            self.ui.date_col_MoldingFG_adjLine.text())
-        self.ui.lt_Molding_sh_currLine.setText(
-            self.ui.lt_Molding_sh_adjLine.text())
-        self.ui.lt_Coil_sh_currLine.setText(
-            self.ui.lt_Coil_sh_adjLine.text())
-        self.ui.lt_date_col_currLine.setText(
-            self.ui.lt_date_col_adjLine.text())
-        self.ui.date_current.setDate(self.ui.date_adj.date())
-
-
-#==========================================================================================================================
-
-
-#==========================================================================================================================
-
-
-#==========================================================================================================================
-
-
-class View_result_windown(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.parent = parent
-        self.database_process = self.parent.database_process
-        self.ui = Ui_View_result()
-        self.ui.setupUi(self)
-        self.list_df = None
-        self.machine_code_adjust = None
-        self.line_adjust = None
-        self.machine_type_adjust = None
-        self.setting_condition_flag = {
-            "Line": True,
-            "Date": True
-        }
-        try:
-            self.department = self.database_process.query(
-                sql='''SELECT department_name FROM Departments''', params=None)
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self, "Error", f"Failed to fetch data: {str(e)}")
-            super.close()
-
-        self.ui.date_start.setDateTime(QtCore.QDateTime(
-            QtCore.QDate(self.parent.params["year"], self.parent.params["month"], 1), QtCore.QTime(0, 0, 0)))
-        self.ui.date_end.setDateTime(QtCore.QDateTime(
-            QtCore.QDate(self.parent.params["year"], self.parent.params["month"], 1), QtCore.QTime(0, 0, 0)))
-
-        self.ui.type_data_cbb.addItems(["Detail", "Total"])
-        self.mode = self.ui.type_data_cbb.currentIndex()
-        self.ui.department_cbb.addItems([dep[0] for dep in self.department])
-        self.ui.department_cbb.setCurrentText("PE3")
-        self.export_line()
-        self.ui.line_end_cbb.setCurrentIndex(self.ui.line_end_cbb.count() - 1)
-        self.add_widget()
-        self.setup_signals()
-
-    def setup_signals(self):
-        self.ui.Cancel_btn.clicked.connect(self.close)
-        self.ui.Export_all.clicked.connect(self.Export_select)
-        self.ui.department_cbb.currentTextChanged.connect(self.export_line)
-        self.ui.import_into_DB_btn.clicked.connect(self.import_into_DB)
-        self.ui.Query_btn.clicked.connect(lambda: self.view_report(where="DB"))
-        self.ui.DBExport_btn.clicked.connect(self.export_from_DB)
-        self.ui.line_begin_cbb.currentTextChanged.connect(lambda _: self.check_setting_condition(
-            begin=self.split_text_number(
-                self.ui.line_begin_cbb.currentText())[0],
-            end=self.split_text_number(self.ui.line_end_cbb.currentText())[0],
-            button="Line"))
-        self.ui.line_end_cbb.currentTextChanged.connect(lambda _: self.check_setting_condition(
-            begin=self.split_text_number(
-                self.ui.line_begin_cbb.currentText())[0],
-            end=self.split_text_number(self.ui.line_end_cbb.currentText())[0],
-            button="Line"))
-        self.ui.date_start.dateChanged.connect(lambda _: self.check_setting_condition(
-            begin=int(self.ui.date_start.date().toString("yyyyMMdd")),
-            end=int(self.ui.date_end.date().toString("yyyyMMdd")),
-            button="Date"))
-        self.ui.type_data_cbb.currentTextChanged.connect(self.mode_change)
-
-    def close(self):
-        super().close()
-
-    def get_checked_items(self):
-        self.checked_items = []
-        for i, checkbox_container in enumerate(self.check_box_list):
-            checkbox = checkbox_container.layout().itemAt(0).widget()
-            if checkbox.checkState() == QtCore.Qt.Checked:
-                line_edit = self.ui.n.cellWidget(
-                    i, 0).layout().itemAt(0).widget()
-                self.checked_items.append(line_edit.text())
-
-    @QtCore.pyqtSlot()
-    def Export_select(self):
-        self.get_checked_items()
-        if self.checked_items:
-            self.parent.Choose_export_machine(
-                file_export=self.checked_items, where="Excel")
-        else:
-            self.parent.Choose_export_machine(file_export=None, where="Excel")
-        self.checked_items = None
-
-    def add_widget(self):
-        if self.parent.list_df_molding_result is not None:
-            self.ui.Result_table.setRowCount(24)
-            self.ui.Result_table.setColumnCount(3)
-            self.view_report_btn_list = []
-            self.check_box_list = []
-            for i in range(len(self.parent.list_df_molding_result)):
-                self.ui.Result_table.setCellWidget(
-                    i, 0, self.create_Textbox(self.parent.list_df_molding_result[i][0]))
-                self.check_box = self.create_checkbox_widget()
-                self.ui.Result_table.setCellWidget(
-                    i, 1, self.check_box)
-                view_report_btn = self.create_button_widget(
-                    "View report", lambda _, row=i: self.view_report(row, where=None))
-                self.ui.Result_table.setCellWidget(i, 2, view_report_btn)
-                self.view_report_btn_list.append(view_report_btn)
-                self.check_box_list.append(self.check_box)
-            return
-        self.ui.Export_all.setEnabled(False)
-        self.ui.import_into_DB_btn.setEnabled(False)
-        QtWidgets.QMessageBox.warning(
-            self, "warning", "Chưa có dữ liệu, hãy nhấn Data process trước")
-
-    def create_checkbox_widget(self):
-        checkbox = QtWidgets.QCheckBox()
-        checkbox.setCheckState(QtCore.Qt.Unchecked)
-        checkbox.stateChanged.connect(self.export_state)
-        return self.wrap_widget(checkbox)
-
-    def create_button_widget(self, text, callback):
-        button = QtWidgets.QPushButton(text)
-        button.clicked.connect(callback)
-        return button
-
-    def create_Textbox(self, text):
-        textbox = QtWidgets.QLabel(text=text)
-        return self.wrap_widget(textbox)
-
-    def wrap_widget(self, widget):
-        container = QtWidgets.QWidget()
-        layout = QtWidgets.QHBoxLayout(container)
-        layout.addWidget(widget)
-        layout.setAlignment(QtCore.Qt.AlignCenter)
-        layout.setContentsMargins(0, 0, 0, 0)
-        container.setLayout(layout)
-        return container
-    
-    @QtCore.pyqtSlot()
-    def view_report(self, row=None, where=None):
-        if where is None:
-            self.list_df = [self.parent.list_df_molding_result,
-                            self.parent.list_df_coil_result]
-            self.list_df_monthly = [self.parent.list_df_molding_monthly_result,
-                                    self.parent.list_df_coil_monthly_result]
-            self.show_report_no = row
-            self.month = self.parent.params["month"]
-            self.year = self.parent.params["year"]
-        else:
-            if self.mode == 0:
-                self.query_data_DB(table="OEE_Daily")
-            else:
-                self.query_data_DB(table="OEE_Monthly")
-            if self.Query_data_result is None or self.Query_data_result.empty:
-                QtWidgets.QMessageBox.warning(
-                    self, "warning", "Chưa có dữ liệu, hãy kiểm tra lại")
-                return
-        # self.windown = ReportWindown(parent=self, where=where)
-        # self.windown.exec_()
-    
-    @QtCore.pyqtSlot()
-    def export_state(self):
-        for i, checkbox_container in enumerate(self.check_box_list):
-            checkbox = checkbox_container.layout().itemAt(0).widget()
-            if checkbox.checkState() == QtCore.Qt.Checked:
-                self.ui.Export_all.setMaximumWidth(150)
-                self.ui.Export_all.setText("Export Select")
-                return
-        self.ui.Export_all.setMaximumWidth(100)
-        self.ui.Export_all.setText("Export All")
-    
-    @QtCore.pyqtSlot()
-    def export_line(self):
-        self.ui.line_begin_cbb.clear()
-        self.ui.line_end_cbb.clear()
-        self.dep = self.ui.department_cbb.currentText()
-        try:
-            self._result = self.database_process.query(sql='''SELECT line_name 
-                                                FROM Production_Lines 
-                                                JOIN Departments ON Production_Lines.department_id = Departments.department_id
-                                                WHERE Departments.department_name =:department_name ''', params={"department_name": f"{self.dep}"})
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self, "Error", f"Failed to fetch data: {str(e)}")
-        self.ui.line_begin_cbb.addItems([ln[0] for ln in self._result])
-        self.ui.line_end_cbb.addItems([ln[0] for ln in self._result])
-
-    def default_dict(self):
-        self.data_export_A = {
-            "line_id": [],
-            "month_year_id": [],
-            "machine_id": []
-        }
-        self.data_export_B = {
-            "Day": [],
-            "Working_shift": [],
-            "Net_avaiable_runtime": [],
-            "Downtime": [],
-            "Other_stop": [],
-            "Runtime": [],
-            "FGs": [],
-            "Defect": [],
-            "A": [],
-            "P": [],
-            "Q": [],
-            "OEE": []
-        }
-        self.data_export_B_monthly = {
-            "Working_shift": [],
-            "Net_avaiable_runtime": [],
-            "Downtime": [],
-            "Other_stop": [],
-            "Runtime": [],
-            "FGs": [],
-            "Defect": [],
-            "A": [],
-            "P": [],
-            "Q": [],
-            "OEE": []
-        }
-    
-    @QtCore.pyqtSlot()
-    def import_into_DB(self):
-        self.final_data = pd.DataFrame()
-        self.final_data_monthly = pd.DataFrame()
-        self.get_checked_items()
-        self.parent.Choose_export_machine(file_export=None,  where="DB")
-        # if self.Flag_edit_data is False:
-        if self.parent.machine_type_for_db == "Molding":
-            temp_list = self.parent.list_df_molding_result.copy()
-            temp_list_monthly = self.parent.list_df_molding_monthly_result.copy()
-        elif self.parent.machine_type_for_db == "Coil":
-            temp_list = self.parent.list_df_coil_result
-            temp_list_monthly = self.parent.list_df_coil_monthly_result
-        else:
-            QtWidgets.QMessageBox.warning(
-                self, "Error", "Invalid machine target selected.")
-            return
-
-        if len(self.checked_items) == 0:
-            self.checked_items = [temp_list[i][0]
-                                  for i in range(len(temp_list))]
-        for line_name in self.checked_items:
-            for i in range(len(temp_list)):
-                if temp_list[i][0] == line_name:
-                    self.default_dict()
-                    temp_list[i][1]["Day"] = temp_list[i][1].index
-                    temp_list[i][1].reset_index(drop=True, inplace=True)
-                    try:
-                        self.data_export_A["line_id"].append(self.database_process.query('''SELECT  line_id FROM Production_Lines
-                                                            WHERE line_name = :linename''', params={"linename": line_name})[0][0])
-
-                        self.data_export_A["month_year_id"].append(self.database_process.query('''SELECT  month_year_id FROM Months_Years
-                                                            WHERE month = :month and year = :year''', params={"month": self.parent.params["month"], "year": self.parent.params["year"]})[0][0])
-
-                        machine_id = self.database_process.query('''SELECT machine_id FROM Machines
-                                                            JOIN Production_Lines ON Machines.line_id = Production_Lines.line_id
-                                                            WHERE line_name = :linename AND machine_name = :machinename
-                                                            ''', params={"linename": line_name, "machinename": "Molding" if self.parent.machine_type_for_db == "Molding" else "Coil"})
-                    except Exception as e:
-                        QtWidgets.QMessageBox.critical(
-                            self, "Error", f"Failed to fetch data: {str(e)}")
-                        return
-                    try:
-                        if (line_name in self.line_adjust) and (self.machine_type_adjust[self.line_adjust.index(line_name)] == self.parent.machine_type_for_db):
-                            self.data_export_A["machine_id"] = self.machine_code_adjust[self.line_adjust.index(
-                                line_name)]
-                    except Exception as e:
-                        self.data_export_A["machine_id"] = machine_id[0][0]
-                    self.data_df_A = pd.DataFrame(self.data_export_A)
-                    self.data_export_B = pd.DataFrame(self.data_export_B)
-                    self.data_export_B = temp_list[i][1]
-                    self.data_export_B_monthly = temp_list_monthly[i][1]
-                    self.data_export_monthly = pd.concat(
-                        [self.data_df_A, self.data_export_B_monthly], axis=1)
-                    self.data_df_A = self.data_df_A.loc[np.repeat(
-                        self.data_df_A.index, len(self.data_export_B["Day"]))].reset_index(drop=True)
-                    self.data_export = pd.concat(
-                        [self.data_df_A, self.data_export_B], axis=1)
-                    temp_list.pop(i)
-                    temp_list_monthly.pop(i)
-                    break
-            self.final_data = pd.concat(
-                [self.final_data, self.data_export], ignore_index=True)
-            self.final_data_monthly = pd.concat(
-                [self.final_data_monthly, self.data_export_monthly], ignore_index=True)
-        self.final_data = self.final_data.drop_duplicates()
-        self.final_data = self.final_data.reset_index(drop=True)
-        self.final_data_monthly = self.final_data_monthly.drop_duplicates()
-        self.final_data_monthly = self.final_data_monthly.reset_index(
-            drop=True)
-        check_data_empty = self.check_duplicate_from_DB(
-            data=self.final_data, what_table="OEE_Daily")
-        check_data_data_monthly_empty = self.check_duplicate_from_DB(
-            data=self.final_data_monthly, what_table="OEE_Monthly")
-        if check_data_empty.empty or check_data_data_monthly_empty.empty:
-            reply = QtWidgets.QMessageBox.question(
-                self, "warning", "Dữ liệu đã tồn tại trong DB, bạn có muốn cập nhật lại không?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-            if reply == QtWidgets.QMessageBox.No:
-                return
-            else:
-                self.final_data = self.check_duplicate_from_DB(
-                    data=self.final_data, what_table="OEE_Daily", check_alternate=True)
-                self.final_data_monthly = self.check_duplicate_from_DB(
-                    data=self.final_data_monthly, what_table="OEE_Monthly", check_alternate=True)
-                return
-        try:
-            with self.database_process.engine.begin() as conn:
-                if self.final_data is not None:
-                    self.final_data.to_sql(
-                        "OEE_Daily", conn, if_exists="append", index=False)
-                if self.final_data_monthly is not None:
-                    self.final_data_monthly.to_sql(
-                        "OEE_Monthly", conn, if_exists="append", index=False)
-            QtWidgets.QMessageBox.information(
-                self, "Success", "Data imported successfully.")
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self, "Error", f"Failed to import data: {str(e)}")
-        finally:
-            self.checked_items = None
-
-    def check_duplicate_from_DB(self, data=None, what_table=None , check_alternate=False):
-        if not check_alternate:
-            try:
-                existing_records = self.database_process.query(f'''
-                                                            SELECT line_id, month_year_id, machine_id
-                                                            FROM {what_table}
-                                                        ''', params=None)
-                existing_set = set(existing_records)
-                data_no_duplicate = data.loc[~data.set_index(
-                    ['line_id', 'month_year_id', 'machine_id']).index.isin(existing_set)].reset_index(drop=True)
-                if data_no_duplicate.empty:
-                    QtWidgets.QMessageBox.information(
-                        self, "Dữ liệu đã tồn tại", "Dữ liệu đã tồn tại trong DB")
-                return data_no_duplicate
-            except Exception as e:
-                QtWidgets.QMessageBox.critical(
-                    self, "Error", f"Failed to import data: {str(e)}")
-                return data_no_duplicate.empty
-        else:
-            try:
-                if what_table == "OEE_Daily":
-                    existing_records = self.database_process.query(f'''
-                                                                SELECT line_id, month_year_id, machine_id, Day ,OEE
-                                                                FROM {what_table}
-                                                            ''', params=None)
-                    existing_set = pd.MultiIndex.from_tuples(existing_records, names=['line_id', 'month_year_id', 'machine_id', 'Day', 'OEE'])
-                    data_no_duplicate = data.loc[~data.set_index(
-                        ['line_id', 'month_year_id', 'machine_id','Day','OEE']).index.isin(existing_set)].reset_index(drop=True)
-                else:
-                    existing_records = self.database_process.query(f'''
-                                                                SELECT line_id, month_year_id, machine_id ,OEE
-                                                                FROM {what_table}
-                                                            ''', params=None)
-                    existing_set = pd.MultiIndex.from_tuples(existing_records, names=['line_id', 'month_year_id', 'machine_id', 'OEE'])
-                    data_no_duplicate = data.loc[~data.set_index(
-                        ['line_id', 'month_year_id', 'machine_id','OEE']).index.isin(existing_set)].reset_index(drop=True)
-                if data_no_duplicate.empty:
-                    QtWidgets.QMessageBox.information(
-                        self, "Không có dữ liệu mới", "Dữ liệu đã tồn tại trong DB")
-                else:
-                    update_query = f'''
-                            UPDATE {what_table}
-                            SET Working_shift = :Working_shift,
-                            Net_avaiable_runtime = :Net_avaiable_runtime,
-                            Downtime = :Downtime,
-                            Other_stop = :Other_stop,
-                            Runtime = :Runtime,
-                            FGs = :FGs,
-                            Defect = :Defect,
-                            A = :A,
-                            P = :P, 
-                            Q = :Q,
-                            OEE = :OEE
-                            WHERE line_id = :line_id AND month_year_id = :month_year_id AND machine_id = :machine_id AND Day = :Day
-                        '''
-                    params = [
-                            {
-                                "Working_shift": row["Working_shift"],
-                                "Net_avaiable_runtime": row["Net_avaiable_runtime"],
-                                "Downtime": row["Downtime"],
-                                "Other_stop": row["Other_stop"],
-                                "Runtime": row["Runtime"],
-                                "FGs": row["FGs"],
-                                "Defect": row["Defect"],
-                                "A": row["A"],
-                                "P": row["P"],
-                                "Q": row["Q"],
-                                "OEE": row["OEE"],
-                                "line_id": row["line_id"],
-                                "month_year_id": row["month_year_id"],
-                                "machine_id": row["machine_id"],
-                                "Day": row["Day"]
-                            }
-                        for _, row in data_no_duplicate.iterrows()
-                            ]
-                    self.database_process.query(update_query, params)
-            except Exception as e:
-                QtWidgets.QMessageBox.critical(
-                    self, "Error", f"Failed to import data: {str(e)}")
-                return
-    
-    @QtCore.pyqtSlot() 
-    def check_setting_condition(self, begin=None, end=None, button=None):
-        if begin == "" or end == "" or begin > end:
-            QtWidgets.QMessageBox.warning(
-                self, "warning", f"Dữ liệu chọn tại {button} sai, hãy kiểm tra lại")
-            self.setting_condition_flag[button] = False
-            self.ui.Query_btn.setEnabled(False)
-            self.ui.DBExport_btn.setEnabled(False)
-            return
-        else:
-            self.setting_condition_flag[button] = True
-            if all(self.setting_condition_flag.values()):
-                self.ui.Query_btn.setEnabled(True)
-                self.ui.DBExport_btn.setEnabled(True)
-            else:
-                self.ui.Query_btn.setEnabled(False)
-                self.ui.DBExport_btn.setEnabled(False)
-    
-    @QtCore.pyqtSlot()
-    def mode_change(self):
-        self.mode = self.ui.type_data_cbb.currentIndex()
-
-    def query_data_DB(self, table=None):
-        line_begin = self.ui.line_begin_cbb.currentText()
-        line_end = self.ui.line_end_cbb.currentText()
-        start_month = self.ui.date_start.date().toString("MM")
-        start_year = self.ui.date_start.date().toString("yyyy")
-        end_month = self.ui.date_end.date().toString("MM")
-        end_year = self.ui.date_end.date().toString("yyyy")
-        line_begin, line_letter = self.split_text_number(line_begin)
-        line_end, _ = self.split_text_number(line_end)
-        self.line_list = [f"{line_letter}0{i}" if i <
-                          10 else f"{line_letter}{i}" for i in range(line_begin, line_end+1)]
-        self.month_list = [month for month in range(
-            int(start_month), int(end_month)+1)]
-        self.year_list = [year for year in range(
-            int(start_year), int(end_year)+1)]
-        line_placeholders = ', '.join(
-            [f":line_{i}" for i in range(len(self.line_list))])
-        month_placeholders = ', '.join(
-            [f":month_{i}" for i in range(len(self.month_list))])
-        year_placeholders = ', '.join(
-            [f":year_{i}" for i in range(len(self.year_list))])
-        params = {f"line_{i}": line for i, line in enumerate(self.line_list)}
-        params.update({f"month_{i}": month for i,
-                      month in enumerate(self.month_list)})
-        params.update({f"year_{i}": year for i,
-                      year in enumerate(self.year_list)})
-        try:
-            if table == "OEE_Daily":
-                self.Query_data_result = pd.DataFrame(self.database_process.query(f'''SELECT PL.line_name, MC.machine_name, MC.machine_id, MY.year, MY.month, OEE.Day, OEE.Working_shift, OEE.Net_avaiable_runtime, OEE.Downtime, OEE.Other_stop, OEE.Runtime, OEE.FGs, OEE.Defect, OEE.A, OEE.P, OEE.Q, OEE.OEE 
-                                                                                        FROM {table} as OEE
-                                                                                        JOIN `Months_Years` as MY ON OEE.month_year_id = MY.month_year_id
-                                                                                        JOIN `Production_Lines` as PL ON OEE.line_id = PL.line_id
-                                                                                        JOIN `Machines` as MC ON OEE.machine_id = MC.machine_id
-                                                                                        WHERE PL.line_name IN ({line_placeholders}) AND MY.month IN ({month_placeholders}) AND MY.year IN ({year_placeholders})
-                                                                                        ORDER BY MY.month ASC, MY.year ASC, OEE.line_id;''', params))
-                self.Query_data_result.columns = [
-                    'Line', 'Machine_Name', 'Machine_Code', 'Year', 'Month', 'Day', "Working_shift", "Net_avaiable_runtime", "Downtime", "Other_stop", "Runtime", "FGs", "Defect", 'A', 'P', 'Q', 'OEE']
-            else:
-                self.Query_data_result = pd.DataFrame(self.database_process.query(f'''SELECT PL.line_name, MC.machine_name, MC.machine_id, MY.year, MY.month, OEE.Working_shift, OEE.Net_avaiable_runtime, OEE.Downtime, OEE.Other_stop, OEE.Runtime, OEE.FGs, OEE.Defect, OEE.A, OEE.P, OEE.Q, OEE.OEE 
-                                                                                        FROM {table} as OEE
-                                                                                        JOIN `Months_Years` as MY ON OEE.month_year_id = MY.month_year_id
-                                                                                        JOIN `Production_Lines` as PL ON OEE.line_id = PL.line_id
-                                                                                        JOIN `Machines` as MC ON OEE.machine_id = MC.machine_id
-                                                                                        WHERE PL.line_name IN ({line_placeholders}) AND MY.month IN ({month_placeholders}) AND MY.year IN ({year_placeholders})
-                                                                                        ORDER BY MY.month ASC, MY.year ASC, OEE.line_id;''', params))
-
-                self.Query_data_result.columns = [
-                    'Line', 'Machine_Name', 'Machine_Code', 'Year', 'Month', "Working_shift", "Net_avaiable_runtime", "Downtime", "Other_stop", "Runtime", "FGs", "Defect", 'A', 'P', 'Q', 'OEE']
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self, "Error", f"Failed to fetch data: {str(e)}")
-            return
-
-    def split_text_number(self, text):
-        if not text:
-            self.ui.Query_btn.setEnabled(False)
-            self.ui.DBExport_btn.setEnabled(False)
-            return 0, ''
-        letter_part = ''.join(filter(str.isalpha, text))
-        number_part = int(''.join(filter(str.isdigit, text)))
-        return number_part, letter_part
-    
-    @QtCore.pyqtSlot()
-    def export_from_DB(self):
-        if self.ui.type_data_cbb.currentText() == "Detail":
-            self.query_data_DB(table="OEE_Daily")
-        if self.ui.type_data_cbb.currentText() == "Total":
-            self.query_data_DB(table="OEE_Monthly")
-        if self.Query_data_result is None or self.Query_data_result.empty:
-            QtWidgets.QMessageBox.warning(
-                self, "warning", "Chưa có dữ liệu, hãy kiểm tra lại")
-            return
-        self.parent.Choose_export_machine(file_export=None, where="DB")
-        self.parent.machine_type_for_db = "Molding" if self.parent.machine_type_for_db == "Molding" else "Coil"
-        save_path = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Chọn thư mục lưu file", "")
-        if not save_path:
-            QtWidgets.QMessageBox.warning(
-                self, "Thiếu thông tin", "Vui lòng chọn thư mục để lưu file.")
-            return
-        try:
-            for line_name in self.line_list:
-                for year in self.year_list:
-                    for month in self.month_list:
-                        export_frame = self.Query_data_result.query(
-                            f"Line == '{line_name}' and Machine_Name == '{self.parent.machine_type_for_db}' and Year == {year} and Month == {month}")
-                        if not export_frame.empty:
-                            export_frame.to_excel(os.path.join(
-                                save_path, f"OEE_{self.parent.machine_type_for_db}_result_{line_name}_{year}_{month}.xlsx"), index=False)
-                        else:
-                            QtWidgets.QMessageBox.warning(
-                                self, "warning", f"Không có dữ liệu cho {line_name} trong tháng {month} năm {year} của máy {self.parent.machine_type_for_db}.")
-            QtWidgets.QMessageBox.information(
-                self, "Hoàn tất", "File Excel đã được lưu hoàn tất.")
-        except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self, "Error", "Lỗi khi lưu file: {e}.")
-            return
-
-    def receivers(self, machine_code_adjust=None, machine_type_adjust=None, line_adjust=None, data_receivers = None):
-        self.machine_code_adjust = machine_code_adjust
-        self.machine_type_adjust = machine_type_adjust
-        self.line_adjust = line_adjust
-        # self.list_df
-
-#==========================================================================================================================
-
-
-#==========================================================================================================================
-
-
-#==========================================================================================================================
-
-# class ReportWindown(QtWidgets.QDialog):
-#     def __init__(self, parent=None, where=None):
-#         super().__init__(parent)
-#         self.parent = parent
-#         self.machine_info = self.parent.parent.machine_info
-#         self.where = where
-#         self.database_process = self.parent.database_process
-#         self.setWindowTitle("Report ")
-#         self.ui = Ui_Result_chart()
-#         self.ui.setupUi(self)
-#         self.mode = self.parent.mode
-#         self.show_flag = False
-#         self.Flag_data_change = False
-#         self.Flag_view_type = False
-#         self.machine_code_adjust = []
-#         self.line_adjust = []
-#         self.machine_type_adjust = []
-#         self.data_update = None
-#         if self.parent.machine_code_adjust is not None:
-#             self.machine_code_adjust = self.parent.machine_code_adjust
-#             self.line_adjust = self.parent.line_adjust
-#             self.machine_type_adjust = self.parent.machine_type_adjust
-#         if self.mode == 0:
-#             self.ui.Mode_btn.setStyleSheet("QPushButton {\n"
-#                                            "    background-color: qlineargradient(\n"
-#                                            "        x1: 0, y1: 0, x2: 1, y2: 1,\n"
-#                                            "        stop: 0 #83f3ff,\n"
-#                                            "        stop: 1 #eeeeee\n"
-#                                            "    );\n"
-#                                            "    border: 2px solid #009dac;;\n"
-#                                            "    border-radius: 25px;\n"
-#                                            "    padding: 5px 10px;\n"
-#                                            "    font-size: 14px;\n"
-#                                            "}")
-#         else:
-#             self.ui.Mode_btn.setText("Total Mode")
-#             self.ui.Mode_btn.setStyleSheet("QPushButton {\n"
-#                                            "    background-color: qlineargradient(\n"
-#                                            "        x1: 0, y1: 0, x2: 1, y2: 1,\n"
-#                                            "        stop: 0 #71ff99,\n"
-#                                            "        stop: 1 #eeeeee\n"
-#                                            "    );\n"
-#                                            "    border: 2px solid #009329;\n"
-#                                            "    border-radius: 25px;\n"
-#                                            "    padding: 5px 10px;\n"
-#                                            "    font-size: 14px;\n"
-#                                            "}")
-#         if self.where == "DB":
-#             self.ui.Mode_btn.setEnabled(False)
-#             self.ui.edit_btn.setEnabled(False)
-#             self.ui.machine_code_edit.setEnabled(False)
-#             self.ui.edit_btn.hide()
-#             self.ui.save_btn.hide()
-#         self.webview = QWebEngineView()
-#         self.ui.machine_cbb.addItems(["Molding", "Coil"])
-#         self.ui.machine_cbb.setCurrentIndex(0)
-#         self.ui.result_data_frame.hide()
-#         self.ui.result_data_frame.setMinimumWidth(0)
-#         self.ui.result_data_frame.setMaximumWidth(0)
-#         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
-#                            QtWidgets.QSizePolicy.Expanding)
-#         self.adjustSize()
-
-#         if self.where is None:
-#             self.ui.date.setDateTime(QtCore.QDateTime(
-#                 QtCore.QDate(self.parent.year, self.parent.month, 1), QtCore.QTime(0, 0, 0)))
-#             self.ui.line_cbb.addItems(
-#                 self.parent.list_df[0][i][0] for i in range(len(self.parent.list_df[0]))
-#             )
-#             self.ui.line_cbb.setCurrentIndex(self.parent.show_report_no)
-#             self.update_chart(line=self.parent.show_report_no)
-#         else:
-#             self.ui.line_cbb.addItems(
-#                 self.parent.Query_data_result["Line"].drop_duplicates().values.tolist())
-#             self.ui.date.setDateTime(QtCore.QDateTime(
-#                 QtCore.QDate(self.parent.Query_data_result["Year"].iloc[0], self.parent.Query_data_result["Month"].iloc[0], 1), QtCore.QTime(0, 0, 0)))
-#             self.update_chart()
-#         self.ui.chart_layout.addWidget(self.webview)
-#         self.channel = QWebChannel()
-#         self.channel.registerObject("bridge", self)
-#         self.webview.page().setWebChannel(self.channel)
-#         self.ui.save_btn.setEnabled(False)
-#         self.setup_signals()
-
-#     def setup_signals(self):
-#         self.ui.line_cbb.currentTextChanged.connect(
-#             lambda: self.update_chart(line=None))
-#         self.ui.machine_cbb.currentTextChanged.connect(
-#             lambda: self.update_chart(line=None))
-#         self.ui.back_btn.clicked.connect(
-#             lambda: self.change_chart(button=self.ui.back_btn))
-#         self.ui.next_btn.clicked.connect(
-#             lambda: self.change_chart(button=self.ui.next_btn))
-#         self.ui.date.dateChanged.connect(lambda: self.update_chart(line=None))
-#         self.ui.Mode_btn.clicked.connect(self.change_mode)
-#         self.ui.machine_code_edit.textChanged.connect(
-#             self.adjust_machinne_code)
-#         self.ui.edit_btn.clicked.connect(self.change_view)
-#         self.ui.table_widget.itemChanged.connect(self.update_data_frame)
-#         self.ui.save_btn.clicked.connect(self.save_data_frame)
-    
-#     @QtCore.pyqtSlot()
-#     def update_chart(self, line = None, df = None):
-#         self.df = None
-#         if df is None:
-#             if self.data_update is not None:
-#                 reply = QtWidgets.QMessageBox.question(
-#                     self,
-#                     "Xác nhận",
-#                     "Bạn có muốn lưu data đã chỉnh sửa không?",
-#                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-#                     QtWidgets.QMessageBox.No
-#                 )
-#                 if reply == QtWidgets.QMessageBox.Yes:
-#                     self.save_data_frame()
-#                 else:
-#                     self.data_update = None
-#             self.df = self._get_chart_data(line)
-#         else:
-#             self.df = df
-#         if self.df.empty:
-#             return
-#         if self.where == "DB" and self.mode == 1:
-#             self.ui.machine_code_edit.setText(
-#                 str(self.parent.Query_data_result["Machine_Code"].iloc[0]))
-#             if self.show_flag:
-#                 pie_chart_fig = self._create_pie_chart(self.df)
-#                 pie_chart_fig.update_layout(
-#                     margin=dict(l=50, r=50, t=50, b=50))
-#                 pie_chart_html = self._wrap_html_with_qt_channel(
-#                     pie_chart_fig.to_html(include_plotlyjs="cdn", full_html=False))
-#                 self.pie_chart_view.setHtml(
-#                     pie_chart_html, QtCore.QUrl("qrc:///"))
-#                 bar_chart_fig = self._create_bar_chart(
-#                     self.parent.Query_data_result)
-#                 bar_chart_fig.update_layout(
-#                     margin=dict(l=50, r=50, t=50, b=50))
-#                 bar_chart_html = self._wrap_html_with_qt_channel(
-#                     bar_chart_fig.to_html(include_plotlyjs="cdn", full_html=False))
-#                 self.bar_chart_view.setHtml(
-#                     bar_chart_html, QtCore.QUrl("qrc:///"))
-#                 return
-#             split_layout = QtWidgets.QVBoxLayout()
-#             self.pie_chart_view = QWebEngineView()
-#             self.bar_chart_view = QWebEngineView()
-#             self.pie_chart_view.setMaximumHeight(300)
-#             self.bar_chart_view.setMaximumHeight(300)
-#             split_layout.addWidget(self.pie_chart_view)
-#             split_layout.addWidget(self.bar_chart_view)
-#             split_layout.setAlignment(QtCore.Qt.AlignBottom)
-#             self.ui.chart_layout.addLayout(split_layout)
-#             pie_chart_fig = self._create_pie_chart(self.df)
-#             bar_chart_fig = self._create_bar_chart(
-#                 self.parent.Query_data_result)
-#             pie_chart_fig.update_layout(margin=dict(l=50, r=50, t=50, b=50))
-#             bar_chart_fig.update_layout(margin=dict(l=50, r=50, t=50, b=50))
-#             pie_chart_html = self._wrap_html_with_qt_channel(
-#                 pie_chart_fig.to_html(include_plotlyjs="cdn", full_html=False))
-#             self.pie_chart_view.setHtml(pie_chart_html, QtCore.QUrl("qrc:///"))
-#             bar_chart_html = self._wrap_html_with_qt_channel(
-#                 bar_chart_fig.to_html(include_plotlyjs="cdn", full_html=False))
-#             self.bar_chart_view.setHtml(bar_chart_html, QtCore.QUrl("qrc:///"))
-#         else:
-#             self.query_machine_id()
-#             if self.mode == 0:
-#                 fig = self._create_bar_chart(self.df)
-#             else:
-#                 fig = self._create_pie_chart(self.df)
-#             fig.update_layout(margin=dict(l=50, r=50, t=50, b=50))
-#             html = self._wrap_html_with_qt_channel(
-#                 fig.to_html(include_plotlyjs="cdn", full_html=False))
-#             self.webview.setHtml(html, QtCore.QUrl("qrc:///"))
-
-#     def _get_chart_data(self, line):
-#         if self.where is None:
-#             if self.mode == 0:
-#                 self.line = self.ui.line_cbb.currentIndex() if line is None else line
-#                 self.machine_type = self.ui.machine_cbb.currentIndex()
-
-#                 if self.ui.date.date() == QtCore.QDate(self.parent.year, self.parent.month, 1):
-#                     return self.parent.list_df[0][self.line][1] if not self.machine_type else self.parent.list_df[1][self.line][1]
-#                 else:
-#                     return self.query_data(table="OEE_Daily")
-#             else:
-#                 self.line = self.ui.line_cbb.currentIndex() if line is None else line
-#                 self.machine_type = self.ui.machine_cbb.currentIndex()
-
-#                 if self.ui.date.date() == QtCore.QDate(self.parent.year, self.parent.month, 1):
-#                     return self.parent.list_df_monthly[0][self.line][1] if not self.machine_type else self.parent.list_df_monthly[1][self.line][1]
-#                 else:
-#                     return self.query_data(table="OEE_Monthly")
-#         else:
-#             result = self.parent.Query_data_result[
-#                 (self.parent.Query_data_result["Line"] == self.ui.line_cbb.currentText()) &
-#                 (self.parent.Query_data_result["Machine_Name"] == self.ui.machine_cbb.currentText()) &
-#                 (self.parent.Query_data_result["Year"] == self.ui.date.date().year()) &
-#                 (self.parent.Query_data_result["Month"] == self.ui.date.date().month())]
-#             self.line = self.ui.line_cbb.currentIndex() if line is None else line
-#             self.machine_type = self.ui.machine_cbb.currentIndex()
-#             return result
-
-#     def _create_bar_chart(self, df=None):
-#         if self.where == "DB" and self.mode == 1:
-#             fig = go.Figure()
-#             df_fixed = pd.DataFrame({'Month': range(1, 13)})
-#             df_merged = df_fixed.merge(df[(df["Line"] == self.ui.line_cbb.currentText()) & (
-#                 df["Machine_Name"] == self.ui.machine_cbb.currentText())], on='Month', how='left').fillna(0)
-#             df_merged["OEE"] = df_merged["OEE"].clip(lower=0, upper=1.5)
-#             fig.add_trace(go.Bar(
-#                 x=df_merged["Month"], y=df_merged["OEE"], name="OEE", marker_color='royalblue'))
-#             fig.update_yaxes(range=[0, 1.5], fixedrange=True)
-#             fig.update_layout(title_text="OEE Breakdown Over Year",
-#                               height=300, width=1530, showlegend=False)
-#             self.show_flag = True
-#         else:
-#             if self.where is None:
-#                 df["Day"] = df.index
-#             fig = make_subplots(rows=2, cols=2,
-#                                 subplot_titles=(
-#                                     "OEE", "A (Availability)", "P (Performance)", "Q (Quality)"),
-#                                 vertical_spacing=0.15, horizontal_spacing=0.1)
-
-#             metrics = ['OEE', 'A', 'P', 'Q']
-#             colors = ['royalblue', 'seagreen', 'firebrick', 'mediumpurple']
-#             df[metrics] = df[metrics].clip(lower=0, upper=1.5)
-
-#             for i, (metric, color) in enumerate(zip(metrics, colors)):
-#                 row, col = i // 2 + 1, i % 2 + 1
-#                 fig.add_trace(go.Bar(
-#                     x=df["Day"], y=df[metric], name=metric, marker_color=color), row=row, col=col)
-#                 fig.update_yaxes(
-#                     range=[0, 1.5], fixedrange=True, row=row, col=col)
-#             fig.update_layout(title_text="OEE Breakdown Over Days",
-#                               height=650, width=1530, showlegend=False)
-#         return fig
-
-#     def _create_pie_chart(self, df):
-#         if df.empty:
-#             return go.Figure()
-
-#         last_row = df.iloc[-1]
-#         metrics = ['OEE', 'A', 'P', 'Q']
-#         titles = ['OEE', 'Availability (A)', 'Performance (P)', 'Quality (Q)']
-
-#         fig = make_subplots(
-#             rows=1, cols=4,
-#             specs=[[{'type': 'domain'}, {'type': 'domain'},
-#                     {'type': 'domain'}, {'type': 'domain'}]],
-#             subplot_titles=titles
-#         )
-#         color_map = {
-#             'OEE': '#636EFA',        # Xanh dương
-#             'A': '#00CC96',          # Xanh lá
-#             'P': '#AB63FA',          # Tím
-#             'Q': '#FFA15A',           # Cam
-#         }
-#         remaining_color = '#EF553B'
-#         for i, metric in enumerate(metrics):
-#             value = last_row.get(metric, 0)
-#             remainder = max(1 - value, 0)
-#             fig.add_trace(go.Pie(
-#                 labels=[metric, "Remaining"],
-#                 values=[value, remainder],
-#                 hole=0.4,
-#                 name=metric,
-#                 textinfo='percent',
-#                 showlegend=True,
-#                 sort=False,
-#                 marker=dict(colors=[color_map.get(
-#                     metric, '#CCCCCC'), remaining_color])
-#             ), row=1, col=i + 1)
-#         if self.where == "DB" and self.mode == 1:
-#             fig.update_layout(
-#                 title_text=None,
-#                 height=300, width=1530)
-#             for annotation in fig['layout']['annotations']:
-#                 annotation['y'] += 0.1
-#         else:
-#             fig.update_layout(
-#                 title_text="OEE Breakdowns",
-#                 height=650, width=1530
-#             )
-#         return fig
-
-#     def _wrap_html_with_qt_channel(self, plot_html):
-#         return f"""
-#         <html>
-#         <head>
-#             <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
-#         </head>
-#         <body>
-#             {plot_html}
-#             <script>
-#             new QWebChannel(qt.webChannelTransport, function(channel) {{
-#                 const bridge = channel.objects.bridge;
-#                 const plot = document.getElementsByClassName('plotly-graph-div')[0];
-#                 plot.on('plotly_click', function(data) {{
-#                     const point = data.points[0];
-#                     const info = JSON.stringify({{
-#                         x: point.x,
-#                         y: point.y,
-#                         series: point.data.name
-#                     }});
-#                     bridge.bar_clicked(info);
-#                 }});
-#             }});
-#             </script>
-#         </body>
-#         </html>
-#         """
-    
-#     @QtCore.pyqtSlot()
-#     def change_chart(self, button=None):
-#         if button == self.ui.back_btn:
-#             if self.ui.line_cbb.currentIndex() == 0:
-#                 self.ui.line_cbb.setCurrentIndex(self.ui.line_cbb.count()-1)
-#             else:
-#                 self.ui.line_cbb.setCurrentIndex(
-#                     self.ui.line_cbb.currentIndex()-1)
-#         else:
-#             if self.ui.line_cbb.currentIndex() == (self.ui.line_cbb.count()-1):
-#                 self.ui.line_cbb.setCurrentIndex(0)
-#             else:
-#                 self.ui.line_cbb.setCurrentIndex(
-#                     self.ui.line_cbb.currentIndex()+1)
-    
-#     @QtCore.pyqtSlot()
-#     def change_mode(self):
-#         if not self.mode:
-#             self.ui.edit_btn.setEnabled(False)
-#             self.ui.Mode_btn.setText("Total Mode")
-#             self.ui.Mode_btn.setStyleSheet("QPushButton {\n"
-#                                            "    background-color: qlineargradient(\n"
-#                                            "        x1: 0, y1: 0, x2: 1, y2: 1,\n"
-#                                            "        stop: 0 #71ff99,\n"
-#                                            "        stop: 1 #eeeeee\n"
-#                                            "    );\n"
-#                                            "    border: 2px solid #009329;\n"
-#                                            "    border-radius: 25px;\n"
-#                                            "    padding: 5px 10px;\n"
-#                                            "    font-size: 14px;\n"
-#                                            "}")
-#             self.mode = 1
-#         else:
-#             self.ui.edit_btn.setEnabled(True)
-#             self.ui.Mode_btn.setText("Detail Mode")
-#             self.ui.Mode_btn.setStyleSheet("QPushButton {\n"
-#                                            "    background-color: qlineargradient(\n"
-#                                            "        x1: 0, y1: 0, x2: 1, y2: 1,\n"
-#                                            "        stop: 0 #83f3ff,\n"
-#                                            "        stop: 1 #eeeeee\n"
-#                                            "    );\n"
-#                                            "    border: 2px solid #009dac;\n"
-#                                            "    border-radius: 25px;\n"
-#                                            "    padding: 5px 10px;\n"
-#                                            "    font-size: 14px;\n"
-#                                            "}")
-#             self.mode = 0
-#         self.update_chart(line=None)
-
-#     def query_data(self, table=None):
-#         _year = self.ui.date.date().toString("yyyy")
-#         _month = self.ui.date.date().toString("MM")
-#         try:
-#             if table == "OEE_Daily":
-#                 change_date_data_query = pd.DataFrame(self.database_process.query(f'''SELECT Day, A, P, Q, OEE FROM {table}
-#                                                                 JOIN Production_Lines ON {table}.line_id = Production_Lines.line_id
-#                                                                 JOIN Months_Years ON {table}.month_year_id = Months_Years.month_year_id
-#                                                                 JOIN Machines ON {table}.machine_id = Machines.machine_id
-#                                                                 WHERE month = :month AND year = :year AND line_name = :linename AND machine_name = :machinename''', params={"month": _month, "year": _year, "linename": self.ui.line_cbb.currentText(), "machinename": self.ui.machine_cbb.currentText()}))
-
-#                 change_date_data_query.columns = ['Day', 'A', 'P', 'Q', 'OEE']
-#             else:
-#                 change_date_data_query = pd.DataFrame(self.database_process.query(f'''SELECT month, A, P, Q, OEE FROM {table}
-#                                                                 JOIN Production_Lines ON {table}.line_id = Production_Lines.line_id
-#                                                                 JOIN Months_Years ON {table}.month_year_id = Months_Years.month_year_id
-#                                                                 JOIN Machines ON {table}.machine_id = Machines.machine_id
-#                                                                 WHERE month = ? AND year = ? AND line_name = ? AND machine_name = ?''', params={"month": _month, "year": _year, "linename": self.ui.line_cbb.currentText(), "machinename": self.ui.machine_cbb.currentText()}))
-#                 change_date_data_query.columns = [
-#                     'Month', 'A', 'P', 'Q', 'OEE']
-#         except Exception as e:
-#             QtWidgets.QMessageBox.critical(
-#                 self, "Error", f"Fail to query: {str(e)}")
-#             return
-#         return change_date_data_query
-
-#     def query_machine_id(self):
-#         self.ui.machine_code_edit.clear()
-#         if self.ui.line_cbb.currentText() in self.line_adjust:
-#             self.ui.machine_code_edit.setStyleSheet(
-#                 "QLineEdit { background-color: rgb(255,162,98); }")
-#             self.ui.machine_code_edit.setText(
-#                 self.machine_code_adjust[self.line_adjust.index(self.ui.line_cbb.currentText())])
-#             return
-#         else:
-#             self.ui.machine_code_edit.setStyleSheet(
-#                 "QLineEdit { background-color: rgb(255,255,255); }")
-#         try:
-#             self.machine_code = self.database_process.query('''SELECT machine_id FROM Machines
-#                                                             JOIN Production_Lines ON Machines.line_id = Production_Lines.line_id
-#                                                             WHERE line_name = :linename AND machine_name = :machinename
-#                                                             ''', params={"linename": self.ui.line_cbb.itemText(self.line), "machinename": self.ui.machine_cbb.itemText(self.machine_type)})
-#             self.ui.machine_code_edit.setPlaceholderText(
-#                 ' + '.join(str(code[0]) for code in self.machine_code)
-#             )
-#         except Exception as e:
-#             QtWidgets.QMessageBox.critical(
-#                 self, "Error", f"Failed to fetch machine names: {e}")
-#             self.ui.machine_code_edit.setPlaceholderText("")
-
-#     @QtCore.pyqtSlot()
-#     def adjust_machinne_code(self):
-#         suggestions = []
-#         self.machine_code = []
-#         try:
-#             self.machine_code = self.database_process.query('''SELECT machine_id FROM Machines
-#                                                             JOIN Production_Lines ON Production_Lines.line_id = Machines.line_id
-#                                                             JOIN Departments ON Departments.department_id = Production_Lines.department_id
-#                                                             WHERE  department_name = :department AND machine_name = :machinename LIMIT 5
-#                                                             ''', params={"department": self.parent.ui.department_cbb.currentText(), "machinename": self.ui.machine_cbb.itemText(self.machine_type)})
-#             suggestions = [str(name[0]) for name in self.machine_code]
-#         except Exception as e:
-#             QtWidgets.QMessageBox.critical(
-#                 self, "Error", f"Failed to fetch machine names: {e}")
-#         completer = QtWidgets.QCompleter(suggestions, self)
-#         completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-#         self.ui.machine_code_edit.setCompleter(completer)
-#         if (self.ui.machine_code_edit.text() != self.ui.machine_code_edit.placeholderText()) and (self.ui.machine_code_edit.text() in suggestions):
-#             self.line_adjust.append(self.ui.line_cbb.currentText())
-#             self.machine_type_adjust.append(self.ui.machine_cbb.currentText())
-#             self.machine_code_adjust.append(self.ui.machine_code_edit.text())
-#             self.ui.machine_code_edit.setStyleSheet(
-#                 "QLineEdit { background-color: rgb(255,162,98); }")
-    
-#     @QtCore.pyqtSlot()
-#     def change_view(self):
-#         if self.ui.widget.isHidden():
-#             self.ui.edit_btn.setText("Data")
-#             self.ui.widget_2.hide()
-#             self.ui.widget.show()
-#             self.ui.next_btn.setEnabled(False)
-#             self.ui.back_btn.setEnabled(False)
-#             self.edit_data()
-#             self.Flag_view_type = True
-#         else:
-#             self.ui.edit_btn.setText("Chart")
-#             self.ui.widget.hide()
-#             self.ui.widget_2.show()
-#             self.set_data_update()
-#             self.update_chart(line=None, df=self.data_update)
-#             self.ui.next_btn.setEnabled(True)
-#             self.ui.back_btn.setEnabled(True)
-#             self.Flag_view_type = False
-
-#     def edit_data(self):
-#         if self.df is not None:
-#             data = self.df
-#             self.ui.table_widget.setRowCount(data["Day"].shape[0])
-#             for row, (day, df) in enumerate(data.iterrows()):
-#                 self.ui.table_widget.setItem(
-#                     row, 0, QtWidgets.QTableWidgetItem(str(day)))
-#                 self.ui.table_widget.setItem(
-#                     row, 1, QtWidgets.QTableWidgetItem(str(df["Working_shift"])))
-#                 self.ui.table_widget.setItem(row, 2, QtWidgets.QTableWidgetItem(
-#                     str(df["Net_avaiable_runtime"])))
-#                 self.ui.table_widget.setItem(
-#                     row, 3, QtWidgets.QTableWidgetItem(str(df["Downtime"])))
-#                 self.ui.table_widget.setItem(
-#                     row, 4, QtWidgets.QTableWidgetItem(str(df["Other_stop"])))
-#                 self.ui.table_widget.setItem(
-#                     row, 5, QtWidgets.QTableWidgetItem(str(df["Runtime"])))
-#                 self.ui.table_widget.setItem(
-#                     row, 6, QtWidgets.QTableWidgetItem(str(df["FGs"])))
-#                 self.ui.table_widget.setItem(
-#                     row, 7, QtWidgets.QTableWidgetItem(str(df["Defect"])))
-#                 self.ui.table_widget.setItem(
-#                     row, 8, QtWidgets.QTableWidgetItem(str(df["A"])))
-#                 self.ui.table_widget.setItem(
-#                     row, 9, QtWidgets.QTableWidgetItem(str(df["P"])))
-#                 self.ui.table_widget.setItem(
-#                     row, 10, QtWidgets.QTableWidgetItem(str(df["Q"])))
-#                 self.ui.table_widget.setItem(
-#                     row, 11, QtWidgets.QTableWidgetItem(str(df["OEE"])))
-    
-#     @QtCore.pyqtSlot()
-#     def update_data_frame(self, item):
-#         if item.row() < 0 or item.column() < 0 or self.Flag_view_type == False:
-#             return
-#         row = item.row()
-#         if self.ui.table_widget.item(row, 8) is None:
-#             return
-#         try:
-#             runtime = float(self.ui.table_widget.item(row, 2).text()) - float(self.ui.table_widget.item(row, 3).text()) - float(self.ui.table_widget.item(row, 4).text())
-#             self.ui.table_widget.item(row, 5).setText(str(round(runtime, 2)))
-
-#             A_cell = float(self.ui.table_widget.item(row, 5).text()) / ((float(self.ui.table_widget.item(row, 2).text())) + 0.000001)
-#             self.ui.table_widget.item(row, 8).setText(str(round(A_cell, 2)))
-
-#             cycle_time = self.machine_info[
-#                 (self.machine_info["line_name"] == self.ui.line_cbb.currentText()) &
-#                 (self.machine_info["machine_name"] == self.ui.machine_cbb.currentText())
-#             ]["cycletime"].values[0]
-#             P_cell = float(self.ui.table_widget.item(row, 6).text()) / (((60 / cycle_time) * float(self.ui.table_widget.item(row, 5).text())) + 0.000001)
-#             self.ui.table_widget.item(row, 9).setText(str(round(P_cell, 2)))
-
-#             Q_cell = float(self.ui.table_widget.item(row, 6).text()) / (float(self.ui.table_widget.item(row, 6).text()) + float(self.ui.table_widget.item(row, 7).text()) + 0.000001)
-#             self.ui.table_widget.item(row, 10).setText(str(round(Q_cell, 2)))
-
-#             OEE_cell = A_cell * P_cell * Q_cell
-#             self.ui.table_widget.item(row, 11).setText(str(round(OEE_cell, 2)))
-#             self.Flag_data_change = True
-#         except Exception as e:
-#             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to update data: {str(e)}")
-#         self.ui.save_btn.setEnabled(True)
-
-#     def set_data_update(self):
-#         if self.Flag_data_change:
-#             self.data_update = []
-#             for row in range(self.ui.table_widget.rowCount()):
-#                 row_data = []
-#                 for column in range(self.ui.table_widget.columnCount()):
-#                     item = self.ui.table_widget.item(row, column)
-#                     row_data.append(item.text() if item else None)
-#                 self.data_update.append(row_data)
-#             self.data_update = pd.DataFrame(self.data_update, columns=[
-#                 "Day", "Working_shift", "Net_avaiable_runtime", "Downtime", "Other_stop", "Runtime", "FGs", "Defect", "A", "P", "Q", "OEE"])
-#             self.data_update = self.data_update.set_index("Day")
-#             self.data_update = self.data_update.astype(float)
-#             self.update_chart(line=None,df = self.data_update)
-#         else:
-#             self.update_chart(line=None)
-
-#     @QtCore.pyqtSlot()
-#     def save_data_frame(self):
-#         self.set_data_update()
-#         if ( self.data_update is not None) or ( not self.data_update.empty ):
-#             try:
-#                 if self.ui.machine_cbb.currentText() == "Molding":
-#                     self.parent.list_df[0][self.line] = (self.parent.list_df[0][self.line][0], self.data_update)
-#                 else:
-#                     self.parent.list_df[1][self.line] = (self.parent.list_df[1][self.line][0], self.data_update)
-#                 QtWidgets.QMessageBox.information(self, "Success", "Dữ liệu đã được lưu thành công.")
-#             except Exception as e:
-#                 QtWidgets.QMessageBox.critical(self, "Error", f"Failed to save data: {str(e)}")
-#         else:
-#             QtWidgets.QMessageBox.warning(self, "Warning", "Không có dữ liệu để lưu.")
-#         self.ui.save_btn.setEnabled(False)
-#         self.data_update = None
-        
-
-
-#     def closeEvent(self, event):
-#         if (len(self.machine_code_adjust) == 0) and (len(self.line_adjust) == 0):
-#             if self.webview is not None:
-#                 self.webview.deleteLater()
-#             event.accept()
-#         else:
-#             reply = QtWidgets.QMessageBox.question(
-#                 self,
-#                 "Xác nhận",
-#                 "Bạn có chắc muốn lưu mã máy được chỉnh sửa không?",
-#                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-#                 QtWidgets.QMessageBox.No
-#             )
-#             if reply == QtWidgets.QMessageBox.Yes:
-#                 self.parent.receivers(machine_code_adjust=self.machine_code_adjust,
-#                                       machine_type_adjust=self.machine_type_adjust, line_adjust=self.line_adjust)
-#                 if self.webview is not None:
-#                     self.webview.deleteLater()
-#                 event.accept()
-    
-#==========================Function of OEE page ==================================================================================END
-#==========================Function of OEE page ==================================================================================END
-#==========================Function of OEE page ==================================================================================END
+#==========================Function of Downtime page ==================================================================================END
+#==========================Function of Downtime page ==================================================================================END
+#==========================Function of Downtime page ==================================================================================END
 
 class Machine_information(QtWidgets.QDialog):
     def __init__(self, database=None, code = None):

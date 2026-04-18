@@ -50,186 +50,725 @@ class Ui_MainWindow(object):
                 self.main_stacked.setStyleSheet("background: #ffffff")
                 self.main_stacked.setObjectName("main_stacked")
                 self.OEE_page = QtWidgets.QWidget()
-                self.OEE_page.setObjectName("OEE_page")
-                self.OEE_widget = QtWidgets.QWidget(self.OEE_page)
-                self.OEE_widget.setGeometry(QtCore.QRect(0, -10, 811, 561))
-                self.OEE_widget.setMinimumSize(QtCore.QSize(0, 525))
-                self.OEE_widget.setObjectName("OEE_widget")
-                self.horizontalLayout = QtWidgets.QHBoxLayout(self.OEE_widget)
-                self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-                self.horizontalLayout.setSpacing(0)
-                self.horizontalLayout.setObjectName("horizontalLayout")
-                self.Back_ground_Frame = QtWidgets.QFrame(self.OEE_widget)
-                self.Back_ground_Frame.setMinimumSize(QtCore.QSize(0, 525))
-                self.Back_ground_Frame.setMaximumSize(QtCore.QSize(16777215, 525))
-                self.Back_ground_Frame.setStyleSheet("background: #fafafa")
-                self.Back_ground_Frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.Back_ground_Frame.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.Back_ground_Frame.setObjectName("Back_ground_Frame")
-                self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.Back_ground_Frame)
-                self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+                self.OEE_page.setObjectName(u"OEE_page")
+                self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.OEE_page)
                 self.verticalLayout_2.setSpacing(0)
-                self.verticalLayout_2.setObjectName("verticalLayout_2")
-                self.Tilte_Frame = QtWidgets.QFrame(self.Back_ground_Frame)
-                self.Tilte_Frame.setMinimumSize(QtCore.QSize(800, 70))
-                self.Tilte_Frame.setMaximumSize(QtCore.QSize(800, 70))
-                self.Tilte_Frame.setFrameShape(QtWidgets.QFrame.NoFrame)
-                self.Tilte_Frame.setFrameShadow(QtWidgets.QFrame.Raised)
-                self.Tilte_Frame.setObjectName("Tilte_Frame")
-                self.label_4 = QtWidgets.QLabel(self.Tilte_Frame)
-                self.label_4.setWordWrap(True)
-                self.label_4.setGeometry(QtCore.QRect(270, 0, 254, 49))
-                self.label_4.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
-                font = QtGui.QFont()
-                font.setFamily("Comic Sans MS")
-                font.setPointSize(24)
-                self.label_4.setFont(font)
-                self.label_4.setAlignment(QtCore.Qt.AlignCenter)
-                self.label_4.setObjectName("label_4")
-                self.verticalLayout_2.addWidget(self.Tilte_Frame)
-                self.Input = QtWidgets.QFrame(self.Back_ground_Frame)
-                self.Input.setMinimumSize(QtCore.QSize(0, 400))
-                self.Input.setMaximumSize(QtCore.QSize(16777215, 400))
-                self.Input.setFrameShape(QtWidgets.QFrame.NoFrame)
-                self.Input.setFrameShadow(QtWidgets.QFrame.Plain)
-                self.Input.setObjectName("Input")
-                self.Tab_Func = QtWidgets.QTabWidget(self.Input)
-                self.Tab_Func.setGeometry(QtCore.QRect(20, 10, 750, 221))
-                self.Tab_Func.setMaximumSize(QtCore.QSize(750, 350))
-                self.Tab_Func.setObjectName("Tab_Func")
-                self.PE3_tab = QtWidgets.QWidget()
-                self.PE3_tab.setObjectName("PE3_tab")
-                self.Show_file_bt_FG = QtWidgets.QPushButton(self.PE3_tab)
-                self.Show_file_bt_FG.setGeometry(QtCore.QRect(458, 32, 75, 23))
-                self.Show_file_bt_FG.setMinimumSize(QtCore.QSize(75, 23))
-                icon = QtGui.QIcon()
-                icon.addPixmap(QtGui.QPixmap(resource_path("Icons/OIP.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-                self.Show_file_bt_FG.setIcon(icon)
-                self.Show_file_bt_FG.setObjectName("Show_file_bt_FG")
-                self.label_5 = QtWidgets.QLabel(self.PE3_tab)
-                self.label_5.setWordWrap(True)
-                self.label_5.setEnabled(True)
-                self.label_5.setGeometry(QtCore.QRect(11, 21, 125, 48))
-                self.label_5.setMinimumSize(QtCore.QSize(61, 16))
-                self.label_5.setObjectName("label_5")
-                self.Text_FG = QtWidgets.QTextEdit(self.PE3_tab)
-                self.Text_FG.setEnabled(True)
-                self.Text_FG.setGeometry(QtCore.QRect(152, 19, 300, 50))
-                self.Text_FG.setMinimumSize(QtCore.QSize(300, 20))
-                self.Text_FG.setMaximumSize(QtCore.QSize(500, 50))
-                self.Text_FG.setMouseTracking(True)
-                self.Text_FG.setAcceptDrops(True)
-                self.Text_FG.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.Text_FG.setFrameShadow(QtWidgets.QFrame.Sunken)
-                self.Text_FG.setObjectName("Text_FG")
-                self.label_6 = QtWidgets.QLabel(self.PE3_tab)
-                self.label_6.setWordWrap(True)
-                self.label_6.setEnabled(True)
-                self.label_6.setGeometry(QtCore.QRect(11, 101, 84, 48))
-                self.label_6.setMinimumSize(QtCore.QSize(61, 16))
-                self.label_6.setObjectName("label_6")
-                self.Text_NG = QtWidgets.QTextEdit(self.PE3_tab)
-                self.Text_NG.setEnabled(True)
-                self.Text_NG.setGeometry(QtCore.QRect(152, 97, 300, 50))
-                self.Text_NG.setMinimumSize(QtCore.QSize(300, 20))
-                self.Text_NG.setMaximumSize(QtCore.QSize(500, 50))
-                self.Text_NG.setMouseTracking(True)
-                self.Text_NG.setAcceptDrops(True)
-                self.Text_NG.setFrameShape(QtWidgets.QFrame.StyledPanel)
-                self.Text_NG.setFrameShadow(QtWidgets.QFrame.Sunken)
-                self.Text_NG.setObjectName("Text_NG")
-                self.Show_file_bt_NG = QtWidgets.QPushButton(self.PE3_tab)
-                self.Show_file_bt_NG.setGeometry(QtCore.QRect(458, 110, 75, 23))
-                self.Show_file_bt_NG.setMinimumSize(QtCore.QSize(75, 23))
-                self.Show_file_bt_NG.setMouseTracking(False)
-                icon1 = QtGui.QIcon()
-                icon1.addPixmap(QtGui.QPixmap(resource_path(r"Icons\OIP.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-                self.Show_file_bt_NG.setIcon(icon1)
-                self.Show_file_bt_NG.setObjectName("Show_file_bt_NG")
-                self.Open_Excel_FG = QtWidgets.QPushButton(self.PE3_tab)
-                self.Open_Excel_FG.setGeometry(QtCore.QRect(550, 30, 75, 23))
-                self.Open_Excel_FG.setMinimumSize(QtCore.QSize(75, 23))
-                icon2 = QtGui.QIcon()
-                icon2.addPixmap(QtGui.QPixmap(resource_path("Icons/Open.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-                self.Open_Excel_FG.setIcon(icon2)
-                self.Open_Excel_FG.setObjectName("Open_Excel_FG")
-                self.Open_Excel_NG = QtWidgets.QPushButton(self.PE3_tab)
-                self.Open_Excel_NG.setGeometry(QtCore.QRect(550, 110, 75, 23))
-                self.Open_Excel_NG.setMinimumSize(QtCore.QSize(75, 23))
-                icon3 = QtGui.QIcon()
-                icon3.addPixmap(QtGui.QPixmap(resource_path("Icons/Open.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-                self.Open_Excel_NG.setIcon(icon3)
-                self.Open_Excel_NG.setObjectName("Open_Excel_NG")
-                self.Tab_Func.addTab(self.PE3_tab, "")
-                self.PE4_tab = QtWidgets.QWidget()
-                self.PE4_tab.setObjectName("PE4_tab")
-                self.Tab_Func.addTab(self.PE4_tab, "")
-                self.Export_Excel_bt = QtWidgets.QPushButton(self.Input)
-                self.Export_Excel_bt.setGeometry(QtCore.QRect(580, 240, 160, 75))
-                self.Export_Excel_bt.setStyleSheet("QPushButton {\n"
-                                                "    background-color: qlineargradient(\n"
-                                                "        x1: 0, y1: 0, x2: 1, y2: 1,\n"
-                                                "        stop: 0 #a9a9a9,\n"
-                                                "        stop: 1 #eeeeee\n"
-                                                "    );\n"
-                                                "    border: none;\n"
-                                                "    border-radius: 25px;\n"
-                                                "}")
-                icon4 = QtGui.QIcon()
-                icon4.addPixmap(QtGui.QPixmap(resource_path("Icons/Excel_icon.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-                self.Export_Excel_bt.setIcon(icon4)
-                self.Export_Excel_bt.setIconSize(QtCore.QSize(50, 50))
-                self.Export_Excel_bt.setObjectName("Export_Excel_bt")
-                self.Setting_bt = QtWidgets.QPushButton(self.Input)
-                self.Setting_bt.setGeometry(QtCore.QRect(40, 240, 160, 75))
-                self.Setting_bt.setStyleSheet("QPushButton {\n"
-                                                "    background-color: qlineargradient(\n"
-                                                "        x1: 0, y1: 0, x2: 1, y2: 1,\n"
-                                                "        stop: 0 #a9a9a9,\n"
-                                                "        stop: 1 #eeeeee\n"
-                                                "    );\n"
-                                                "    border: none;\n"
-                                                "    border-radius: 25px;\n"
-                                                "}")
-                icon5 = QtGui.QIcon()
-                icon5.addPixmap(QtGui.QPixmap(resource_path("Icons/Set.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-                self.Setting_bt.setIcon(icon5)
-                self.Setting_bt.setIconSize(QtCore.QSize(50, 50))
-                self.Setting_bt.setObjectName("Setting_bt")
-                self.View_data_bt = QtWidgets.QPushButton(self.Input)
-                self.View_data_bt.setGeometry(QtCore.QRect(410, 240, 135, 75))
-                self.View_data_bt.setStyleSheet("QPushButton {\n"
-                                                "    background-color: qlineargradient(\n"
-                                                "        x1: 0, y1: 0, x2: 1, y2: 1,\n"
-                                                "        stop: 0 #a9a9a9,\n"
-                                                "        stop: 1 #eeeeee\n"
-                                                "    );\n"
-                                                "    border: none;\n"
-                                                "    border-radius: 25px;\n"
-                                                "}")
+                self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+                self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
+                self.frame_113 = QtWidgets.QFrame(self.OEE_page)
+                self.frame_113.setObjectName(u"frame_113")
+                self.frame_113.setMaximumSize(QtCore.QSize(16777215, 80))
+                self.frame_113.setFrameShape(QtWidgets.QFrame.NoFrame)
+                self.horizontalLayout_81 = QtWidgets.QHBoxLayout(self.frame_113)
+                self.horizontalLayout_81.setObjectName(u"horizontalLayout_81")
+                self.label_62 = QtWidgets.QLabel(self.frame_113)
+                self.label_62.setObjectName(u"label_62")
+                font1 = QtGui.QFont()
+                font1.setFamily(u"Comic Sans MS")
+                font1.setPointSize(18)
+                self.label_62.setFont(font1)
+
+                self.horizontalLayout_81.addWidget(self.label_62)
+
+
+                self.verticalLayout_2.addWidget(self.frame_113)
+
+                self.frame_112 = QtWidgets.QFrame(self.OEE_page)
+                self.frame_112.setObjectName(u"frame_112")
+                self.frame_112.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_112.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.verticalLayout_58 = QtWidgets.QVBoxLayout(self.frame_112)
+                self.verticalLayout_58.setSpacing(0)
+                self.verticalLayout_58.setObjectName(u"verticalLayout_58")
+                self.verticalLayout_58.setContentsMargins(0, 0, 0, 0)
+                self.OEE_function_frame = QtWidgets.QFrame(self.frame_112)
+                self.OEE_function_frame.setObjectName(u"OEE_function_frame")
+                self.OEE_function_frame.setMinimumSize(QtCore.QSize(0, 33))
+                self.OEE_function_frame.setMaximumSize(QtCore.QSize(16777215, 45))
+                self.OEE_function_frame.setFrameShape(QtWidgets.QFrame.NoFrame)
+                self.horizontalLayout_82 = QtWidgets.QHBoxLayout(self.OEE_function_frame)
+                self.horizontalLayout_82.setSpacing(0)
+                self.horizontalLayout_82.setObjectName(u"horizontalLayout_82")
+                self.horizontalLayout_82.setContentsMargins(0, 0, 0, 0)
+                self.OEE_dashboard_btn = QtWidgets.QPushButton(self.OEE_function_frame)
+                self.OEE_dashboard_btn.setObjectName(u"OEE_dashboard_btn")
+                sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Maximum)
+                sizePolicy.setHorizontalStretch(0)
+                sizePolicy.setVerticalStretch(0)
+                sizePolicy.setHeightForWidth(self.OEE_dashboard_btn.sizePolicy().hasHeightForWidth())
+                self.OEE_dashboard_btn.setSizePolicy(sizePolicy)
                 icon6 = QtGui.QIcon()
-                icon6.addPixmap(QtGui.QPixmap(resource_path("Icons/view.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-                self.View_data_bt.setIcon(icon6)
-                self.View_data_bt.setIconSize(QtCore.QSize(50, 50))
-                self.View_data_bt.setObjectName("View_data_bt")
-                self.Data_process_bt = QtWidgets.QPushButton(self.Input)
-                self.Data_process_bt.setGeometry(QtCore.QRect(230, 240, 135, 75))
-                self.Data_process_bt.setStyleSheet("QPushButton {\n"
-                                                        "    background-color: qlineargradient(\n"
-                                                        "        x1: 0, y1: 0, x2: 1, y2: 1,\n"
-                                                        "        stop: 0 #a9a9a9,\n"
-                                                        "        stop: 1 #eeeeee\n"
-                                                        "    );\n"
-                                                        "    border: none;\n"
-                                                        "    border-radius: 25px;\n"
-                                                        "}")
+                icon6.addFile(resource_path(u"Icons/Dashboard.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                self.OEE_dashboard_btn.setIcon(icon6)
+                self.OEE_dashboard_btn.setIconSize(QtCore.QSize(50, 25))
+                self.OEE_dashboard_btn.setFlat(True)
+
+                self.horizontalLayout_82.addWidget(self.OEE_dashboard_btn)
+
+                self.OEE_data_btn = QtWidgets.QPushButton(self.OEE_function_frame)
+                self.OEE_data_btn.setObjectName(u"OEE_data_btn")
                 icon7 = QtGui.QIcon()
-                icon7.addPixmap(QtGui.QPixmap(resource_path("Icons/Process_button.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-                self.Data_process_bt.setIcon(icon7)
-                self.Data_process_bt.setIconSize(QtCore.QSize(50, 50))
-                self.Data_process_bt.setObjectName("Data_process_bt")
-                self.verticalLayout_2.addWidget(self.Input)
-                self.horizontalLayout.addWidget(self.Back_ground_Frame)
+                icon7.addFile(resource_path(u"Icons/Record.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                self.OEE_data_btn.setIcon(icon7)
+                self.OEE_data_btn.setIconSize(QtCore.QSize(25, 25))
+                self.OEE_data_btn.setFlat(True)
+
+                self.horizontalLayout_82.addWidget(self.OEE_data_btn)
+
+                self.OEE_import_data_btn = QtWidgets.QPushButton(self.OEE_function_frame)
+                self.OEE_import_data_btn.setObjectName(u"OEE_import_data_btn")
+                icon8 = QtGui.QIcon()
+                icon8.addFile(resource_path(u"Icons/Import.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                self.OEE_import_data_btn.setIcon(icon8)
+                self.OEE_import_data_btn.setIconSize(QtCore.QSize(25, 25))
+                self.OEE_import_data_btn.setFlat(True)
+
+                self.horizontalLayout_82.addWidget(self.OEE_import_data_btn)
+
+
+                self.verticalLayout_58.addWidget(self.OEE_function_frame)
+
+                self.OEE_stacked_widget = QtWidgets.QStackedWidget(self.frame_112)
+                self.OEE_stacked_widget.setObjectName(u"OEE_stacked_widget")
+                self.OEE_Dashboard_page = QtWidgets.QWidget()
+                self.OEE_Dashboard_page.setObjectName(u"OEE_Dashboard_page")
+                self.verticalLayout_59 = QtWidgets.QVBoxLayout(self.OEE_Dashboard_page)
+                self.verticalLayout_59.setSpacing(0)
+                self.verticalLayout_59.setObjectName(u"verticalLayout_59")
+                self.verticalLayout_59.setContentsMargins(0, 0, 0, 0)
+                self.frame_114 = QtWidgets.QFrame(self.OEE_Dashboard_page)
+                self.frame_114.setObjectName(u"frame_114")
+                sizePolicy1 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+                sizePolicy1.setHorizontalStretch(0)
+                sizePolicy1.setVerticalStretch(0)
+                sizePolicy1.setHeightForWidth(self.frame_114.sizePolicy().hasHeightForWidth())
+                self.frame_114.setSizePolicy(sizePolicy1)
+                self.frame_114.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_114.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame_114)
+                self.horizontalLayout.setSpacing(0)
+                self.horizontalLayout.setObjectName(u"horizontalLayout")
+                self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+                self.frame_115 = QtWidgets.QFrame(self.frame_114)
+                self.frame_115.setObjectName(u"frame_115")
+                sizePolicy2 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+                sizePolicy2.setHorizontalStretch(0)
+                sizePolicy2.setVerticalStretch(0)
+                sizePolicy2.setHeightForWidth(self.frame_115.sizePolicy().hasHeightForWidth())
+                self.frame_115.setSizePolicy(sizePolicy2)
+                self.frame_115.setMaximumSize(QtCore.QSize(100, 16777215))
+                self.frame_115.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_115.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.verticalLayout_74 = QtWidgets.QVBoxLayout(self.frame_115)
+                self.verticalLayout_74.setSpacing(15)
+                self.verticalLayout_74.setObjectName(u"verticalLayout_74")
+                self.groupBox_2 = QtWidgets.QGroupBox(self.frame_115)
+                self.groupBox_2.setObjectName(u"groupBox_2")
+                self.groupBox_2.setMinimumSize(QtCore.QSize(0, 60))
+                self.groupBox_2.setStyleSheet(qss)
+                font2 = QtGui.QFont()
+                font2.setFamily(u"Segoe UI")
+                font2.setPointSize(10)
+                font2.setBold(True)
+                font2.setItalic(True)
+                font2.setWeight(75)
+                self.groupBox_2.setFont(font2)
+                self.verticalLayout_75 = QtWidgets.QVBoxLayout(self.groupBox_2)
+                self.verticalLayout_75.setSpacing(0)
+                self.verticalLayout_75.setObjectName(u"verticalLayout_75")
+                self.verticalLayout_75.setContentsMargins(5, 5, 5, 5)
+                self.OEE_area_cbb = QtWidgets.QComboBox(self.groupBox_2)
+                self.OEE_area_cbb.setObjectName(u"OEE_area_cbb")
+
+                self.verticalLayout_75.addWidget(self.OEE_area_cbb)
+
+
+                self.verticalLayout_74.addWidget(self.groupBox_2)
+
+                self.groupBox_3 = QtWidgets.QGroupBox(self.frame_115)
+                self.groupBox_3.setObjectName(u"groupBox_3")
+                self.groupBox_3.setMinimumSize(QtCore.QSize(0, 60))
+                self.groupBox_3.setStyleSheet(qss)
+                self.groupBox_3.setFont(font2)
+                self.verticalLayout_76 = QtWidgets.QVBoxLayout(self.groupBox_3)
+                self.verticalLayout_76.setObjectName(u"verticalLayout_76")
+                self.verticalLayout_76.setContentsMargins(5, 10, 5, 10)
+                self.OEE_month_radio = QtWidgets.QRadioButton(self.groupBox_3)
+                self.OEE_month_radio.setObjectName(u"OEE_month_radio")
+                self.OEE_month_radio.setChecked(True)
+
+                self.verticalLayout_76.addWidget(self.OEE_month_radio)
+
+                self.OEE_year_radio = QtWidgets.QRadioButton(self.groupBox_3)
+                self.OEE_year_radio.setObjectName(u"OEE_year_radio")
+
+                self.verticalLayout_76.addWidget(self.OEE_year_radio)
+
+                self.OEE_period_edit = QtWidgets.QDateEdit(self.groupBox_3)
+                self.OEE_period_edit.setObjectName(u"OEE_period_edit")
+                self.OEE_period_edit.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+                self.OEE_period_edit.setAccelerated(False)
+                self.OEE_period_edit.setProperty("showGroupSeparator", False)
+                self.OEE_period_edit.setCalendarPopup(True)
+                self.OEE_calendar_widget = self.OEE_period_edit.calendarWidget()
+                self.OEE_calendar_widget.setStyleSheet("""
+                                                QCalendarWidget QWidget#qt_calendar_navigationbar {
+                                                        background-color: #0066cc; /* Màu xanh nền */
+                                                }
+                                                QCalendarWidget QToolButton {
+                                                        color: white;
+                                                        font-weight: bold;
+                                                        background-color: transparent;
+                                                }
+                                                """
+                                                )
+                self.OEE_period_edit.setDisplayFormat("MMM-yyyy")
+                self.table_view_of_DTcalendar = self.OEE_calendar_widget.findChild(QtWidgets.QTableView)
+                self.table_view_of_DTcalendar.hide()
+                self.OEE_calendar_widget.setFixedSize(250, 30) 
+
+                self.verticalLayout_76.addWidget(self.OEE_period_edit)
+
+
+                self.verticalLayout_74.addWidget(self.groupBox_3)
+
+                self.groupBox_4 = QtWidgets.QGroupBox(self.frame_115)
+                self.groupBox_4.setObjectName(u"groupBox_4")
+                self.groupBox_4.setMinimumSize(QtCore.QSize(0, 60))
+                self.groupBox_4.setStyleSheet(qss)
+                self.groupBox_4.setFont(font2)
+                self.verticalLayout_77 = QtWidgets.QVBoxLayout(self.groupBox_4)
+                self.verticalLayout_77.setObjectName(u"verticalLayout_77")
+                self.verticalLayout_77.setContentsMargins(5, 5, 5, 5)
+                self.OEE_model_cbb = QtWidgets.QComboBox(self.groupBox_4)
+                self.OEE_model_cbb.setObjectName(u"OEE_model_cbb")
+                self.OEE_model_cbb.view().setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+                self.OEE_model_cbb.view().setTextElideMode(QtCore.Qt.ElideNone)
+                self.OEE_model_cbb.view().setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+                self.verticalLayout_77.addWidget(self.OEE_model_cbb)
+
+
+                self.verticalLayout_74.addWidget(self.groupBox_4)
+
+                self.groupBox_5 = QtWidgets.QGroupBox(self.frame_115)
+                self.groupBox_5.setObjectName(u"groupBox_5")
+                self.groupBox_5.setMinimumSize(QtCore.QSize(0, 60))
+                self.groupBox_5.setStyleSheet(qss)
+                self.groupBox_5.setFont(font2)
+                self.verticalLayout_78 = QtWidgets.QVBoxLayout(self.groupBox_5)
+                self.verticalLayout_78.setSpacing(0)
+                self.verticalLayout_78.setObjectName(u"verticalLayout_78")
+                self.verticalLayout_78.setContentsMargins(5, 5, 5, 5)
+                self.OEE_line_cbb = QtWidgets.QComboBox(self.groupBox_5)
+                self.OEE_line_cbb.setObjectName(u"OEE_line_cbb")
+
+                self.verticalLayout_78.addWidget(self.OEE_line_cbb)
+
+
+                self.verticalLayout_74.addWidget(self.groupBox_5)
+
+                self.groupBox_6 = QtWidgets.QGroupBox(self.frame_115)
+                self.groupBox_6.setObjectName(u"groupBox_6")
+                self.groupBox_6.setMinimumSize(QtCore.QSize(0, 60))
+                self.groupBox_6.setStyleSheet(qss)
+                self.groupBox_6.setFont(font2)
+                self.verticalLayout_79 = QtWidgets.QVBoxLayout(self.groupBox_6)
+                self.verticalLayout_79.setSpacing(0)
+                self.verticalLayout_79.setObjectName(u"verticalLayout_79")
+                self.verticalLayout_79.setContentsMargins(5, 5, 5, 5)
+                self.OEE_process_cbb = QtWidgets.QComboBox(self.groupBox_6)
+                self.OEE_process_cbb.setObjectName(u"OEE_process_cbb")
+
+                self.verticalLayout_79.addWidget(self.OEE_process_cbb)
+
+
+                self.verticalLayout_74.addWidget(self.groupBox_6)
+
+                self.OEE_clear_filter_btn = QtWidgets.QPushButton(self.frame_115)
+                self.OEE_clear_filter_btn.setObjectName(u"OEE_clear_filter_btn")
+
+                self.verticalLayout_74.addWidget(self.OEE_clear_filter_btn)
+
+                self.verticalSpacer_3 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.MinimumExpanding)
+
+                self.verticalLayout_74.addItem(self.verticalSpacer_3)
+
+
+                self.horizontalLayout.addWidget(self.frame_115)
+
+                self.frame_123 = QtWidgets.QFrame(self.frame_114)
+                self.frame_123.setObjectName(u"frame_123")
+                self.frame_123.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_123.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.verticalLayout_70 = QtWidgets.QVBoxLayout(self.frame_123)
+                self.verticalLayout_70.setObjectName(u"verticalLayout_70")
+                self.verticalLayout_70.setContentsMargins(9, 9, 9, 9)
+                self.verticalLayout_70.setSpacing(10)
+                self.frame_124 = QtWidgets.QFrame(self.frame_123)
+                self.frame_124.setObjectName(u"frame_124")
+                sizePolicy3 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+                sizePolicy3.setHorizontalStretch(0)
+                sizePolicy3.setVerticalStretch(0)
+                sizePolicy3.setHeightForWidth(self.frame_124.sizePolicy().hasHeightForWidth())
+                self.frame_124.setSizePolicy(sizePolicy3)
+                self.frame_124.setMinimumSize(QtCore.QSize(0, 120))
+                self.frame_124.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_124.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_83 = QtWidgets.QHBoxLayout(self.frame_124)
+                self.horizontalLayout_83.setObjectName(u"horizontalLayout_83")
+                self.horizontalLayout_83.setContentsMargins(0, 0, 0, 0)
+                self.horizontalLayout_83.setSpacing(10)
+                self.frame_125 = QtWidgets.QFrame(self.frame_124)
+                self.frame_125.setObjectName(u"frame_125")
+                self.frame_125.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_125.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_125.setGraphicsEffect(self.shadow)
+                self.frame_125.setStyleSheet(qss)
+                self.verticalLayout_64 = QtWidgets.QVBoxLayout(self.frame_125)
+                self.verticalLayout_64.setObjectName(u"verticalLayout_64")
+                self.OEE_OK_qty_lbl = QtWidgets.QLabel(self.frame_125)
+                self.OEE_OK_qty_lbl.setObjectName(u"OEE_OK_qty_lbl")
+                self.OEE_OK_qty_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_64.addWidget(self.OEE_OK_qty_lbl)
+
+                self.label_64 = QtWidgets.QLabel(self.frame_125)
+                self.label_64.setObjectName(u"label_64")
+                self.label_64.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_64.addWidget(self.label_64)
+
+
+                self.horizontalLayout_83.addWidget(self.frame_125)
+
+                self.frame_126 = QtWidgets.QFrame(self.frame_124)
+                self.frame_126.setObjectName(u"frame_126")
+                self.frame_126.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_126.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_126.setGraphicsEffect(self.shadow)
+                self.frame_126.setStyleSheet(qss)
+                self.verticalLayout_65 = QtWidgets.QVBoxLayout(self.frame_126)
+                self.verticalLayout_65.setObjectName(u"verticalLayout_65")
+                self.OEE_NG_qty_lbl = QtWidgets.QLabel(self.frame_126)
+                self.OEE_NG_qty_lbl.setObjectName(u"OEE_NG_qty_lbl")
+                self.OEE_NG_qty_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_65.addWidget(self.OEE_NG_qty_lbl)
+
+                self.label_78 = QtWidgets.QLabel(self.frame_126)
+                self.label_78.setObjectName(u"label_78")
+                self.label_78.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_65.addWidget(self.label_78)
+
+
+                self.horizontalLayout_83.addWidget(self.frame_126)
+
+                self.frame_127 = QtWidgets.QFrame(self.frame_124)
+                self.frame_127.setObjectName(u"frame_127")
+                self.frame_127.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_127.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.frame_127.setStyleSheet(qss)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_127.setGraphicsEffect(self.shadow)
+                self.verticalLayout_66 = QtWidgets.QVBoxLayout(self.frame_127)
+                self.verticalLayout_66.setObjectName(u"verticalLayout_66")
+                self.OEE_WT_lbl = QtWidgets.QLabel(self.frame_127)
+                self.OEE_WT_lbl.setObjectName(u"OEE_WT_lbl")
+                self.OEE_WT_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_66.addWidget(self.OEE_WT_lbl)
+
+                self.label_80 = QtWidgets.QLabel(self.frame_127)
+                self.label_80.setObjectName(u"label_80")
+                self.label_80.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_66.addWidget(self.label_80)
+
+
+                self.horizontalLayout_83.addWidget(self.frame_127)
+
+                self.frame_128 = QtWidgets.QFrame(self.frame_124)
+                self.frame_128.setObjectName(u"frame_128")
+                self.frame_128.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_128.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.frame_128.setStyleSheet(qss)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_128.setGraphicsEffect(self.shadow)
+                self.verticalLayout_67 = QtWidgets.QVBoxLayout(self.frame_128)
+                self.verticalLayout_67.setObjectName(u"verticalLayout_67")
+                self.OEE_DT_lbl = QtWidgets.QLabel(self.frame_128)
+                self.OEE_DT_lbl.setObjectName(u"OEE_DT_lbl")
+                self.OEE_DT_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_67.addWidget(self.OEE_DT_lbl)
+
+                self.label_82 = QtWidgets.QLabel(self.frame_128)
+                self.label_82.setObjectName(u"label_82")
+                self.label_82.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_67.addWidget(self.label_82)
+
+
+                self.horizontalLayout_83.addWidget(self.frame_128)
+
+                self.frame_129 = QtWidgets.QFrame(self.frame_124)
+                self.frame_129.setObjectName(u"frame_129")
+                self.frame_129.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_129.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_129.setGraphicsEffect(self.shadow)
+                self.frame_129.setStyleSheet(qss)
+                self.verticalLayout_68 = QtWidgets.QVBoxLayout(self.frame_129)
+                self.verticalLayout_68.setObjectName(u"verticalLayout_68")
+                self.label_85 = QtWidgets.QLabel(self.frame_129)
+                self.label_85.setObjectName(u"label_85")
+                self.label_85.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_68.addWidget(self.label_85)
+
+                self.label_84 = QtWidgets.QLabel(self.frame_129)
+                self.label_84.setObjectName(u"label_84")
+                self.label_84.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_68.addWidget(self.label_84)
+
+
+                self.horizontalLayout_83.addWidget(self.frame_129)
+
+
+                self.verticalLayout_70.addWidget(self.frame_124)
+
+                self.frame_130 = QtWidgets.QFrame(self.frame_123)
+                self.frame_130.setObjectName(u"frame_130")
+                self.frame_130.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_130.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_84 = QtWidgets.QHBoxLayout(self.frame_130)
+                self.horizontalLayout_84.setObjectName(u"horizontalLayout_84")
+                self.horizontalLayout_84.setSpacing(10)
+                self.horizontalLayout_84.setContentsMargins(0, 0, 0, 0)
+                self.frame_131 = QtWidgets.QFrame(self.frame_130)
+                self.frame_131.setObjectName(u"frame_131")
+                self.frame_131.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_131.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_131.setGraphicsEffect(self.shadow)                
+                self.frame_131.setStyleSheet(qss)
+                self.verticalLayout_60 = QtWidgets.QVBoxLayout(self.frame_131)
+                self.verticalLayout_60.setObjectName(u"verticalLayout_60")
+                self.label_4 = QtWidgets.QLabel(self.frame_131)
+                self.label_4.setObjectName(u"label_4")
+                self.label_4.setAlignment(QtCore.Qt.AlignCenter)
+                sizePolicy3.setHeightForWidth(self.label_4.sizePolicy().hasHeightForWidth())
+                self.label_4.setSizePolicy(sizePolicy3)
+
+                self.verticalLayout_60.addWidget(self.label_4)
+
+                self.OEE_value_chart = QtWidgets.QWidget(self.frame_131)
+                self.OEE_value_chart.setObjectName(u"OEE_value_chart")
+
+                self.verticalLayout_60.addWidget(self.OEE_value_chart)
+
+                self.label_86 = QtWidgets.QLabel(self.frame_131)
+                self.label_86.setObjectName(u"label_86")
+                sizePolicy3.setHeightForWidth(self.label_86.sizePolicy().hasHeightForWidth())
+                self.label_86.setSizePolicy(sizePolicy3)
+                self.verticalLayout_60.addWidget(self.label_86)
+
+
+                self.horizontalLayout_84.addWidget(self.frame_131)
+
+                self.frame_132 = QtWidgets.QFrame(self.frame_130)
+                self.frame_132.setObjectName(u"frame_132")
+                self.frame_132.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_132.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_132.setGraphicsEffect(self.shadow)   
+                self.frame_132.setStyleSheet(qss)
+                self.verticalLayout_61 = QtWidgets.QVBoxLayout(self.frame_132)
+                self.verticalLayout_61.setObjectName(u"verticalLayout_61")
+                self.label_5 = QtWidgets.QLabel(self.frame_132)
+                self.label_5.setObjectName(u"label_5")
+                self.label_5.setAlignment(QtCore.Qt.AlignCenter)
+                sizePolicy3.setHeightForWidth(self.label_5.sizePolicy().hasHeightForWidth())
+                self.label_5.setSizePolicy(sizePolicy3)
+                self.verticalLayout_61.addWidget(self.label_5)
+
+                self.OEE_A_value_chart = QtWidgets.QWidget(self.frame_132)
+                self.OEE_A_value_chart.setObjectName(u"OEE_A_value_chart")
+
+                self.verticalLayout_61.addWidget(self.OEE_A_value_chart)
+
+                self.label_87 = QtWidgets.QLabel(self.frame_132)
+                self.label_87.setObjectName(u"label_87")
+                sizePolicy3.setHeightForWidth(self.label_87.sizePolicy().hasHeightForWidth())
+                self.label_87.setSizePolicy(sizePolicy3)
+                self.verticalLayout_61.addWidget(self.label_87)
+
+
+                self.horizontalLayout_84.addWidget(self.frame_132)
+
+                self.frame_133 = QtWidgets.QFrame(self.frame_130)
+                self.frame_133.setObjectName(u"frame_133")
+                self.frame_133.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_133.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_133.setGraphicsEffect(self.shadow)   
+                self.frame_133.setStyleSheet(qss)
+                self.verticalLayout_62 = QtWidgets.QVBoxLayout(self.frame_133)
+                self.verticalLayout_62.setObjectName(u"verticalLayout_62")
+                self.label_6 = QtWidgets.QLabel(self.frame_133)
+                self.label_6.setObjectName(u"label_6")
+                self.label_6.setAlignment(QtCore.Qt.AlignCenter)
+                sizePolicy3.setHeightForWidth(self.label_6.sizePolicy().hasHeightForWidth())
+                self.label_6.setSizePolicy(sizePolicy3)
+
+                self.verticalLayout_62.addWidget(self.label_6)
+
+                self.OEE_P_value_chart = QtWidgets.QWidget(self.frame_133)
+                self.OEE_P_value_chart.setObjectName(u"OEE_P_value_chart")
+
+                self.verticalLayout_62.addWidget(self.OEE_P_value_chart)
+
+                self.label_88 = QtWidgets.QLabel(self.frame_133)
+                self.label_88.setObjectName(u"label_88")
+                sizePolicy3.setHeightForWidth(self.label_88.sizePolicy().hasHeightForWidth())
+                self.label_88.setSizePolicy(sizePolicy3)
+                self.verticalLayout_62.addWidget(self.label_88)
+
+
+                self.horizontalLayout_84.addWidget(self.frame_133)
+
+                self.frame_134 = QtWidgets.QFrame(self.frame_130)
+                self.frame_134.setObjectName(u"frame_134")
+                self.frame_134.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_134.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_134.setGraphicsEffect(self.shadow)   
+                self.frame_134.setStyleSheet(qss)
+                self.verticalLayout_63 = QtWidgets.QVBoxLayout(self.frame_134)
+                self.verticalLayout_63.setObjectName(u"verticalLayout_63")
+                self.label_63 = QtWidgets.QLabel(self.frame_134)
+                self.label_63.setObjectName(u"label_63")
+                self.label_63.setAlignment(QtCore.Qt.AlignCenter)
+                sizePolicy3.setHeightForWidth(self.label_63.sizePolicy().hasHeightForWidth())
+                self.label_63.setSizePolicy(sizePolicy3)
+                self.verticalLayout_63.addWidget(self.label_63)
+
+                self.OEE_Q_value_chart = QtWidgets.QWidget(self.frame_134)
+                self.OEE_Q_value_chart.setObjectName(u"OEE_Q_value_chart")
+
+                self.verticalLayout_63.addWidget(self.OEE_Q_value_chart)
+
+                self.label_89 = QtWidgets.QLabel(self.frame_134)
+                self.label_89.setObjectName(u"label_89")
+                sizePolicy3.setHeightForWidth(self.label_89.sizePolicy().hasHeightForWidth())
+                self.label_89.setSizePolicy(sizePolicy3)
+
+                self.verticalLayout_63.addWidget(self.label_89)
+
+
+                self.horizontalLayout_84.addWidget(self.frame_134)
+
+                self.frame_136 = QtWidgets.QFrame(self.frame_130)
+                self.frame_136.setObjectName(u"frame_136")
+                self.frame_136.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_136.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.verticalLayout_71 = QtWidgets.QVBoxLayout(self.frame_136)
+                self.verticalLayout_71.setObjectName(u"verticalLayout_71")
+                self.verticalLayout_71.setContentsMargins(0, 0, 0, 0)
+                self.verticalLayout_71.setSpacing(10)
+                self.frame_137 = QtWidgets.QFrame(self.frame_136)
+                self.frame_137.setObjectName(u"frame_137")
+                self.frame_137.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_137.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_137.setGraphicsEffect(self.shadow)   
+                self.frame_137.setStyleSheet(qss)
+                self.verticalLayout_72 = QtWidgets.QVBoxLayout(self.frame_137)
+                self.verticalLayout_72.setObjectName(u"verticalLayout_72")
+                self.label_91 = QtWidgets.QLabel(self.frame_137)
+                self.label_91.setObjectName(u"label_91")
+                self.label_91.setAlignment(QtCore.Qt.AlignCenter)
+                sizePolicy3.setHeightForWidth(self.label_91.sizePolicy().hasHeightForWidth())
+                self.label_91.setSizePolicy(sizePolicy3)
+                self.verticalLayout_72.addWidget(self.label_91)
+
+                self.OEE_MTTR_value_lbl = QtWidgets.QLabel(self.frame_137)
+                self.OEE_MTTR_value_lbl.setObjectName(u"OEE_MTTR_value_lbl")
+                self.OEE_MTTR_value_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_72.addWidget(self.OEE_MTTR_value_lbl)
+
+
+                self.verticalLayout_71.addWidget(self.frame_137)
+
+                self.frame_138 = QtWidgets.QFrame(self.frame_136)
+                self.frame_138.setObjectName(u"frame_138")
+                self.frame_138.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_138.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.frame_138.setStyleSheet(qss)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_138.setGraphicsEffect(self.shadow)
+                self.verticalLayout_73 = QtWidgets.QVBoxLayout(self.frame_138)
+                self.verticalLayout_73.setObjectName(u"verticalLayout_73")
+                self.label_94 = QtWidgets.QLabel(self.frame_138)
+                self.label_94.setObjectName(u"label_94")
+                self.label_94.setAlignment(QtCore.Qt.AlignCenter)
+                sizePolicy3.setHeightForWidth(self.label_94.sizePolicy().hasHeightForWidth())
+                self.label_94.setSizePolicy(sizePolicy3)
+
+                self.verticalLayout_73.addWidget(self.label_94)
+
+                self.OEE_MTBF_value_lbl = QtWidgets.QLabel(self.frame_138)
+                self.OEE_MTBF_value_lbl.setObjectName(u"OEE_MTBF_value_lbl")
+                self.OEE_MTBF_value_lbl.setAlignment(QtCore.Qt.AlignCenter)
+
+                self.verticalLayout_73.addWidget(self.OEE_MTBF_value_lbl)
+
+
+                self.verticalLayout_71.addWidget(self.frame_138)
+
+
+                self.horizontalLayout_84.addWidget(self.frame_136)
+
+
+                self.verticalLayout_70.addWidget(self.frame_130)
+
+                self.frame_135 = QtWidgets.QFrame(self.frame_123)
+                self.frame_135.setObjectName(u"frame_135")
+                self.frame_135.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_135.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.horizontalLayout_85 = QtWidgets.QHBoxLayout(self.frame_135)
+                self.horizontalLayout_85.setSpacing(10)
+                self.horizontalLayout_85.setObjectName(u"horizontalLayout_85")
+                self.horizontalLayout_85.setContentsMargins(0, 0, 0, 0)
+                self.frame_139 = QtWidgets.QFrame(self.frame_135)
+                self.frame_139.setObjectName(u"frame_139")
+                sizePolicy4 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+                sizePolicy4.setHorizontalStretch(0)
+                sizePolicy4.setVerticalStretch(0)
+                sizePolicy4.setHeightForWidth(self.frame_139.sizePolicy().hasHeightForWidth())
+                self.frame_139.setSizePolicy(sizePolicy4)
+                self.frame_139.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_139.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_139.setGraphicsEffect(self.shadow)
+                self.frame_139.setStyleSheet(qss)
+                self.verticalLayout_69 = QtWidgets.QVBoxLayout(self.frame_139)
+                self.verticalLayout_69.setSpacing(3)
+                self.verticalLayout_69.setObjectName(u"verticalLayout_69")
+                self.verticalLayout_69.setContentsMargins(-1, 9, -1, 9)
+                self.label_90 = QtWidgets.QLabel(self.frame_139)
+                self.label_90.setObjectName(u"label_90")
+                sizePolicy3.setHeightForWidth(self.label_90.sizePolicy().hasHeightForWidth())
+                self.label_90.setSizePolicy(sizePolicy3)
+
+                self.verticalLayout_69.addWidget(self.label_90)
+
+                self.OEE_metrics_chart = QtWidgets.QWidget(self.frame_139)
+                self.OEE_metrics_chart.setObjectName(u"OEE_metrics_chart")
+
+                self.verticalLayout_69.addWidget(self.OEE_metrics_chart)
+
+
+                self.horizontalLayout_85.addWidget(self.frame_139)
+
+                self.frame_140 = QtWidgets.QFrame(self.frame_135)
+                self.frame_140.setObjectName(u"frame_140")
+                sizePolicy5 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+                sizePolicy5.setHorizontalStretch(0)
+                sizePolicy5.setVerticalStretch(0)
+                sizePolicy5.setHeightForWidth(self.frame_140.sizePolicy().hasHeightForWidth())
+                self.frame_140.setSizePolicy(sizePolicy5)
+                self.frame_140.setMaximumSize(QtCore.QSize(500, 16777215))
+                self.frame_140.setFrameShape(QtWidgets.QFrame.StyledPanel)
+                self.frame_140.setFrameShadow(QtWidgets.QFrame.Raised)
+                self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+                self.shadow.setBlurRadius(15)       
+                self.shadow.setOffset(0, 0)          
+                self.shadow.setColor(QtGui.QColor(0, 0, 0, 50)) 
+                self.frame_140.setGraphicsEffect(self.shadow)
+                self.frame_140.setStyleSheet(qss)
+                self.verticalLayout_80 = QtWidgets.QVBoxLayout(self.frame_140)
+                self.verticalLayout_80.setSpacing(3)
+                self.verticalLayout_80.setObjectName(u"verticalLayout_80")
+                self.label_65 = QtWidgets.QLabel(self.frame_140)
+                self.label_65.setObjectName(u"label_65")
+                sizePolicy3.setHeightForWidth(self.label_65.sizePolicy().hasHeightForWidth())
+                self.label_65.setSizePolicy(sizePolicy3)
+
+                self.verticalLayout_80.addWidget(self.label_65)
+
+                self.OEE_maintenance_chart = QtWidgets.QWidget(self.frame_140)
+                self.OEE_maintenance_chart.setObjectName(u"OEE_maintenance_chart")
+
+                self.verticalLayout_80.addWidget(self.OEE_maintenance_chart)
+
+
+                self.horizontalLayout_85.addWidget(self.frame_140)
+
+
+                self.verticalLayout_70.addWidget(self.frame_135)
+
+
+
+                self.horizontalLayout.addWidget(self.frame_123)
+
+
+                self.verticalLayout_59.addWidget(self.frame_114)
+
+                self.OEE_stacked_widget.addWidget(self.OEE_Dashboard_page)
+                self.OEE_Detail_page = QtWidgets.QWidget()
+                self.OEE_Detail_page.setObjectName(u"OEE_Detail_page")
+                self.OEE_stacked_widget.addWidget(self.OEE_Detail_page)
+                self.OEE_Importdata_page = QtWidgets.QWidget()
+                self.OEE_Importdata_page.setObjectName(u"OEE_Importdata_page")
+                self.OEE_stacked_widget.addWidget(self.OEE_Importdata_page)
+
+                self.verticalLayout_58.addWidget(self.OEE_stacked_widget)
+
+
+                self.verticalLayout_2.addWidget(self.frame_112)
+
                 self.main_stacked.addWidget(self.OEE_page)
 
                 self.Downtime_page = QtWidgets.QWidget()
@@ -304,9 +843,9 @@ class Ui_MainWindow(object):
 
                 self.DT_problem_report_btn = QtWidgets.QPushButton(self.DT_fun_frame)
                 self.DT_problem_report_btn.setObjectName(u"DT_problem_report_btn")
-                icon17 = QtGui.QIcon()
-                icon17.addFile(resource_path(u"Icons/problem_report.png"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-                self.DT_problem_report_btn.setIcon(icon17)
+                icon19 = QtGui.QIcon()
+                icon19.addFile(resource_path(u"Icons/problem_report.png"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                self.DT_problem_report_btn.setIcon(icon19)
                 self.DT_problem_report_btn.setIconSize(QtCore.QSize(25, 25))
                 self.DT_problem_report_btn.setFlat(True)
 
@@ -955,7 +1494,7 @@ class Ui_MainWindow(object):
 
                 self.DT_DD_area_cbb = QtWidgets.QComboBox(self.frame_116)
                 self.DT_DD_area_cbb.setObjectName(u"DT_DD_area_cbb")
-
+                self.DT_DD_area_cbb.setStyleSheet(qss)
                 self.horizontalLayout_89.addWidget(self.DT_DD_area_cbb)
 
 
@@ -976,6 +1515,7 @@ class Ui_MainWindow(object):
                 self.DT_DD_date_edit = QtWidgets.QDateEdit(self.frame_117)
                 self.DT_DD_date_edit.setObjectName(u"DT_DD_date_edit")
                 self.DT_DD_date_edit.setCalendarPopup(True)
+                self.DT_DD_date_edit.setStyleSheet(qss)
                 calendar_widget = self.DT_DD_date_edit.calendarWidget()
                 calendar_widget.setStyleSheet("""
                                                 QCalendarWidget QWidget#qt_calendar_navigationbar {
@@ -1006,9 +1546,8 @@ class Ui_MainWindow(object):
 
                 self.DT_DD_line_cbb = QtWidgets.QComboBox(self.frame_118)
                 self.DT_DD_line_cbb.setObjectName(u"DT_DD_line_cbb")
-
+                self.DT_DD_line_cbb.setStyleSheet(qss)
                 self.horizontalLayout_91.addWidget(self.DT_DD_line_cbb)
-
 
                 self.horizontalLayout_88.addWidget(self.frame_118)
 
@@ -1031,6 +1570,7 @@ class Ui_MainWindow(object):
                 sizePolicy4.setVerticalStretch(0)
                 sizePolicy4.setHeightForWidth(self.DT_DD_machine_code_lnedit.sizePolicy().hasHeightForWidth())
                 self.DT_DD_machine_code_lnedit.setSizePolicy(sizePolicy4)
+                self.DT_DD_machine_code_lnedit.setStyleSheet(qss)
 
                 self.horizontalLayout_92.addWidget(self.DT_DD_machine_code_lnedit)
 
@@ -1040,7 +1580,10 @@ class Ui_MainWindow(object):
                 self.DT_DD_load_btn = QtWidgets.QPushButton(self.frame_110)
                 self.DT_DD_load_btn.setObjectName(u"DT_DD_load_btn")
                 self.DT_DD_load_btn.setMinimumSize(QtCore.QSize(100, 30))
-
+                self.DT_DD_load_btn.setStyleSheet(qss)
+                icon17 = QtGui.QIcon()
+                icon17.addFile(resource_path(u"Icons/databaseExport.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                self.DT_DD_load_btn.setIcon(icon17)
                 self.horizontalLayout_88.addWidget(self.DT_DD_load_btn)
 
                 self.horizontalSpacer_8 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
@@ -1079,7 +1622,10 @@ class Ui_MainWindow(object):
                 self.DT_DD_insert_btn = QtWidgets.QPushButton(self.frame_111)
                 self.DT_DD_insert_btn.setObjectName(u"DT_DD_insert_btn")
                 self.DT_DD_insert_btn.setMinimumSize(QtCore.QSize(200, 30))
-
+                self.DT_DD_insert_btn.setStyleSheet(qss)
+                icon19 = QtGui.QIcon()
+                icon19.addFile(resource_path(u"Icons/plus.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                self.DT_DD_insert_btn.setIcon(icon19)
                 self.horizontalLayout_87.addWidget(self.DT_DD_insert_btn)
 
                 self.horizontalSpacer_6 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
@@ -1093,11 +1639,15 @@ class Ui_MainWindow(object):
                 # self.horizontalSpacer_7 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
                 # self.horizontalLayout_87.addItem(self.horizontalSpacer_7)
 
-                self.DT_DD_upload_btn = QtWidgets.QPushButton(self.frame_111)
-                self.DT_DD_upload_btn.setObjectName(u"DT_DD_upload_btn")
-                self.DT_DD_upload_btn.setMinimumSize(QtCore.QSize(200, 30))
+                self.DT_DD_update_btn = QtWidgets.QPushButton(self.frame_111)
+                self.DT_DD_update_btn.setObjectName(u"DT_DD_update_btn")
+                self.DT_DD_update_btn.setMinimumSize(QtCore.QSize(200, 30))
+                self.DT_DD_update_btn.setStyleSheet(qss)
+                icon24 = QtGui.QIcon()
+                icon24.addFile(resource_path("Icons/reset.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                self.DT_DD_update_btn.setIcon(icon24)
 
-                self.horizontalLayout_87.addWidget(self.DT_DD_upload_btn)
+                self.horizontalLayout_87.addWidget(self.DT_DD_update_btn)
 
                 self.horizontalSpacer_10 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.MinimumExpanding)
 
@@ -1466,8 +2016,6 @@ class Ui_MainWindow(object):
                 self.horizontalLayout_66.addWidget(self.DT_filter_report_btn)
                 self.DT_reload_report_btn = QtWidgets.QToolButton(self.frame_107)
                 self.DT_reload_report_btn.setObjectName(u"DT_reload_report_btn")
-                icon24 = QtGui.QIcon()
-                icon24.addFile(resource_path("Icons/reset.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
                 self.DT_reload_report_btn.setIcon(icon24)
                 self.DT_reload_report_btn.setIconSize(QtCore.QSize(50, 50))
                 self.DT_reload_report_btn.setToolButtonStyle(QtCore.Qt.ToolButtonTextUnderIcon)
@@ -2661,8 +3209,6 @@ class Ui_MainWindow(object):
                 self.Load_btn = QtWidgets.QPushButton(self.frame_36)
                 self.Load_btn.setObjectName(u"Load_btn")
                 self.Load_btn.setMaximumSize(QtCore.QSize(100, 16777215))
-                icon17 = QtGui.QIcon()
-                icon17.addFile(resource_path(u"Icons/databaseExport.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
                 self.Load_btn.setIcon(icon17)
                 self.Load_btn.setIconSize(QtCore.QSize(25, 25))
                 self.Load_btn.setStyleSheet(qss)
@@ -2745,7 +3291,7 @@ class Ui_MainWindow(object):
                 self.horizontalLayout_27.addWidget(self.frame_38)
 
                 self.verticalLayout_26.addWidget(self.frame_30)
-
+                # icon
                 self.frame_311 = QtWidgets.QFrame(self.frame_28)
                 self.frame_311.setObjectName(u"frame_311")
                 self.frame_311.setMinimumSize(QtCore.QSize(0, 30))
@@ -3041,7 +3587,7 @@ class Ui_MainWindow(object):
                 self.Year_plan_cbb_DP = QtWidgets.QComboBox(self.frame_69)
                 self.Year_plan_cbb_DP.setObjectName(u"Year_plan_cbb_DP")
                 self.Year_plan_cbb_DP.setMinimumSize(QtCore.QSize(100, 0))
-
+                self.Year_plan_cbb_DP.setStyleSheet(qss)
                 self.horizontalLayout_49.addWidget(self.Year_plan_cbb_DP)
 
 
@@ -3610,25 +4156,48 @@ class Ui_MainWindow(object):
 
                 self.retranslateUi(MainWindow)
                 self.main_stacked.setCurrentIndex(1)
-                self.Tab_Func.setCurrentIndex(1)
+                # self.Tab_Func.setCurrentIndex(1)
                 QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
         def retranslateUi(self, MainWindow):
                 _translate = QtCore.QCoreApplication.translate
                 MainWindow.setWindowTitle(_translate("MainWindow", "CMMS"))
-                self.label_4.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:26pt; font-weight:600; color:#9d0000;\">OEE Calculator</span></p></body></html>"))
-                self.Show_file_bt_FG.setText(_translate("MainWindow", "Show file"))
-                self.label_5.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt; font-weight:600;\">Đường dẫn </span></p><p><span style=\" font-size:11pt; font-weight:600;\">&quot;Moldding Daily&quot;</span></p></body></html>"))
-                self.label_6.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:11pt; font-weight:600;\">Đường dẫn </span></p><p><span style=\" font-size:11pt; font-weight:600;\">&quot;NG data&quot;</span></p></body></html>"))
-                self.Show_file_bt_NG.setText(_translate("MainWindow", "Show file"))
-                self.Open_Excel_FG.setText(_translate("MainWindow", "Open Excel"))
-                self.Open_Excel_NG.setText(_translate("MainWindow", "Open Excel"))
-                self.Tab_Func.setTabText(self.Tab_Func.indexOf(self.PE3_tab), _translate("MainWindow", "PE3"))
-                self.Tab_Func.setTabText(self.Tab_Func.indexOf(self.PE4_tab), _translate("MainWindow", "PE4"))
-                self.Export_Excel_bt.setText(_translate("MainWindow", "Export EXCEL file"))
-                self.Setting_bt.setText(_translate("MainWindow", "Setting"))
-                self.View_data_bt.setText(_translate("MainWindow", "View Data"))
-                self.Data_process_bt.setText(_translate("MainWindow", "Data process"))
+                self.label_62.setText(_translate("MainWindow", u"<html><head/><body><p align=\"center\"><span style=\" font-size:26pt; font-weight:696; color:#9d0000;\">Overall Equipment Effectiveness</span></p></body></html>", None))
+                self.OEE_dashboard_btn.setText(_translate("MainWindow", u"Dashboard", None))
+                self.OEE_data_btn.setText(_translate("MainWindow", u"Detail Data", None))
+                self.OEE_import_data_btn.setText(_translate("MainWindow", u"Import Data", None))
+                self.groupBox_2.setTitle(_translate("MainWindow", u"Area", None))
+                self.groupBox_3.setTitle(_translate("MainWindow", u"Date", None))
+                self.OEE_month_radio.setText(_translate("MainWindow", u"Month", None))
+                self.OEE_year_radio.setText(_translate("MainWindow", u"Year", None))
+                self.groupBox_4.setTitle(_translate("MainWindow", u"Model", None))
+                self.groupBox_5.setTitle(_translate("MainWindow", u"Line", None))
+                self.groupBox_6.setTitle(_translate("MainWindow", u"Process", None))
+                self.OEE_clear_filter_btn.setText(_translate("MainWindow", u"Clear", None))
+                self.OEE_OK_qty_lbl.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_64.setText(_translate("MainWindow", u"OK Quantity", None))
+                self.label_65.setText(_translate("MainWindow", u"Maintenance", None))
+                self.OEE_NG_qty_lbl.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_78.setText(_translate("MainWindow", u"NG Quantity", None))
+                self.OEE_WT_lbl.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_80.setText(_translate("MainWindow", u"Total Working Time", None))
+                self.OEE_DT_lbl.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_82.setText(_translate("MainWindow", u"Total Downtime", None))
+                self.label_85.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_84.setText(_translate("MainWindow", u"Production Line Status", None))
+                self.label_4.setText(_translate("MainWindow", u"OEE", None))
+                self.label_86.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_5.setText(_translate("MainWindow", u"Availability", None))
+                self.label_87.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_6.setText(_translate("MainWindow", u"Performance", None))
+                self.label_88.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_63.setText(_translate("MainWindow", u"Quality", None))
+                self.label_89.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_91.setText(_translate("MainWindow", u"MTTR", None))
+                self.OEE_MTTR_value_lbl.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_94.setText(_translate("MainWindow", u"MTBF", None))
+                self.OEE_MTBF_value_lbl.setText(_translate("MainWindow", u"TextLabel", None))
+                self.label_90.setText(_translate("MainWindow", u"OEE metrics", None))
                 self.label_8.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" font-size:20pt; font-weight:600; color:#9d0000;\">MAINTENANCE</span></p></body></html>"))
                 self.filter_mainten_btn.setText(_translate("MainWindow", "Filter "))
                 self.label_9.setText(_translate("MainWindow", "Code"))
@@ -3793,7 +4362,7 @@ class Ui_MainWindow(object):
                 self.label_76.setText(_translate("MainWindow", u"Machine code", None))
                 self.DT_DD_load_btn.setText(_translate("MainWindow", u"Load", None))
                 self.DT_DD_insert_btn.setText(_translate("MainWindow", u"Insert", None))
-                self.DT_DD_upload_btn.setText(_translate("MainWindow", u"Upload", None))
+                self.DT_DD_update_btn.setText(_translate("MainWindow", u"Update", None))
                 self.label_77.setText(_translate("MainWindow", u"SUMMARY REPORT", None))
                 self.DT_DD_error_chart_btn.setText(_translate("MainWindow", u"Error chart", None))
                 self.DT_DD_line_chart_btn.setText(_translate("MainWindow", u"Line chart", None))
@@ -3827,6 +4396,5 @@ class Ui_MainWindow(object):
 #     Form = QtWidgets.QMainWindow()
 #     ui = Ui_MainWindow()
 #     ui.setupUi(Form)
-#     ui.DT_stacked_widget.setCurrentWidget(ui.DT_import_data_page)
 #     Form.show()
 #     sys.exit(app.exec_())

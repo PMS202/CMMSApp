@@ -36,6 +36,9 @@ QColorDialog {
 QComboBox {
 	color:rgb(81,72,65);
 	background: #ffffff;
+	border: 1px solid rgb(207,207,207);
+	border-radius: 3px;   
+ 	padding: 2px 8px;
 }
 QComboBox:editable {
 	background: #ffffff;
@@ -635,35 +638,29 @@ QToolBox::tab:selected {
         border: 1px solid rgb(179, 179, 179);
         border-radius: 20px;
     } */
-#near_due_frame, #frame_61,#frame_76, #frame_77,#frame_78,#frame_79,#frame_82, #frame_83, #frame_94 {
+#near_due_frame, #frame_61,#frame_76, #frame_77,#frame_78,#frame_79,#frame_82, #frame_83, #frame_94
+{
         border: 1px solid rgb(179, 179, 179);
         border-radius: 20px;
+    }
+#frame_125 ,#frame_126 ,#frame_127,#frame_128 ,#frame_129,#frame_131 ,#frame_132 ,#frame_133 ,#frame_134,
+ #frame_137 ,#frame_138,#frame_139, #frame_140 {
+        border: 1px solid rgb(179, 179, 179);
+        border-radius: 10px;
     }
 
 #frame_106 {
     background: #f8f9fa;
     border-right: 1px solid #888b8b;
 }
-#groupBox_86, #groupBox_90, #groupBox {
+#groupBox_2, #groupBox_3, #groupBox_4, #groupBox_5, #groupBox_6, #groupBox_86, #groupBox_90, #groupBox {
     border: 1px solid gray;
     border-radius: 5px;
     margin-top: 10px;
 	background-color: transparent;
 }
 
-#groupBox_86::title {
-    subcontrol-origin: margin;
-    left: 10px;
-    padding: 0 3px 0 3px;
-}
-
-#groupBox_90::title {
-    subcontrol-origin: margin;
-    left: 10px;
-    padding: 0 3px 0 3px;
-}
-
-#groupBox::title {
+#groupBox_2::title, #groupBox_3::title, #groupBox_4::title, #groupBox_5::title, #groupBox_6::title, #groupBox_86::title, #groupBox_90::title , #groupBox::title {
     subcontrol-origin: margin;
     left: 10px;
     padding: 0 3px 0 3px;

@@ -336,507 +336,1153 @@
        <number>3</number>
       </property>
       <widget class="QWidget" name="OEE_page">
-       <widget class="QWidget" name="OEE_widget" native="true">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>-10</y>
-          <width>811</width>
-          <height>561</height>
-         </rect>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <property name="spacing">
+         <number>0</number>
         </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>525</height>
-         </size>
+        <property name="leftMargin">
+         <number>0</number>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <property name="spacing">
-          <number>0</number>
-         </property>
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-         <property name="bottomMargin">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QFrame" name="Back_ground_Frame">
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>525</height>
-            </size>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QFrame" name="frame_113">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>80</height>
+           </size>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_81">
+           <item>
+            <widget class="QLabel" name="label_62">
+             <property name="font">
+              <font>
+               <family>Comic Sans MS</family>
+               <pointsize>18</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:26pt; font-weight:696; color:#9d0000;&quot;&gt;Overall Equipment Effectiveness&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QFrame" name="frame_112">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_58">
+           <property name="spacing">
+            <number>0</number>
            </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>525</height>
-            </size>
+           <property name="leftMargin">
+            <number>0</number>
            </property>
-           <property name="styleSheet">
-            <string notr="true">background: #fafafa</string>
+           <property name="topMargin">
+            <number>0</number>
            </property>
-           <property name="frameShape">
-            <enum>QFrame::NoFrame</enum>
+           <property name="rightMargin">
+            <number>0</number>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <property name="leftMargin">
-             <number>0</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>0</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
-            <item>
-             <widget class="QFrame" name="Tilte_Frame">
-              <property name="minimumSize">
-               <size>
-                <width>800</width>
-                <height>70</height>
-               </size>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QFrame" name="OEE_function_frame">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>33</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>45</height>
+              </size>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::NoFrame</enum>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_82">
+              <property name="spacing">
+               <number>0</number>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>800</width>
-                <height>70</height>
-               </size>
+              <property name="leftMargin">
+               <number>0</number>
               </property>
-              <property name="frameShape">
-               <enum>QFrame::NoFrame</enum>
+              <property name="topMargin">
+               <number>0</number>
               </property>
-              <widget class="QLabel" name="label_4">
-               <property name="geometry">
-                <rect>
-                 <x>270</x>
-                 <y>0</y>
-                 <width>254</width>
-                 <height>49</height>
-                </rect>
-               </property>
-               <property name="font">
-                <font>
-                 <family>Comic Sans MS</family>
-                 <pointsize>24</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:26pt; font-weight:600; color:#9d0000;&quot;&gt;OEE Calculator&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-               </property>
-              </widget>
-             </widget>
-            </item>
-            <item>
-             <widget class="QFrame" name="Input">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>400</height>
-               </size>
+              <property name="rightMargin">
+               <number>0</number>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>400</height>
-               </size>
+              <property name="bottomMargin">
+               <number>0</number>
               </property>
-              <property name="frameShape">
-               <enum>QFrame::NoFrame</enum>
-              </property>
-              <widget class="QTabWidget" name="Tab_Func">
-               <property name="geometry">
-                <rect>
-                 <x>20</x>
-                 <y>10</y>
-                 <width>750</width>
-                 <height>221</height>
-                </rect>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>750</width>
-                 <height>350</height>
-                </size>
-               </property>
-               <property name="currentIndex">
+              <item>
+               <widget class="QPushButton" name="OEE_dashboard_btn">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Dashboard</string>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../../../../../program/Icons/Dashboard.ico</normaloff>../../../../../program/Icons/Dashboard.ico</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>50</width>
+                  <height>25</height>
+                 </size>
+                </property>
+                <property name="default">
+                 <bool>false</bool>
+                </property>
+                <property name="flat">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="OEE_data_btn">
+                <property name="text">
+                 <string>Detail Data</string>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../../../../../program/Icons/Record.ico</normaloff>../../../../../program/Icons/Record.ico</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>25</width>
+                  <height>25</height>
+                 </size>
+                </property>
+                <property name="flat">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="OEE_import_data_btn">
+                <property name="text">
+                 <string>Import Data</string>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../../../../Icons/Import.ico</normaloff>../../../../Icons/Import.ico</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>25</width>
+                  <height>25</height>
+                 </size>
+                </property>
+                <property name="flat">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QStackedWidget" name="OEE_stacked_widget">
+             <widget class="QWidget" name="OEE_Dashboard_page">
+              <layout class="QVBoxLayout" name="verticalLayout_59">
+               <property name="spacing">
                 <number>0</number>
                </property>
-               <widget class="QWidget" name="PE3_tab">
-                <attribute name="title">
-                 <string>PE3</string>
-                </attribute>
-                <widget class="QPushButton" name="Show_file_bt_FG">
-                 <property name="geometry">
-                  <rect>
-                   <x>458</x>
-                   <y>32</y>
-                   <width>75</width>
-                   <height>23</height>
-                  </rect>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>75</width>
-                   <height>23</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>Show file</string>
-                 </property>
-                 <property name="icon">
-                  <iconset>
-                   <normaloff>../../../../Icons/OIP.ico</normaloff>../../../../Icons/OIP.ico</iconset>
-                 </property>
-                </widget>
-                <widget class="QLabel" name="label_5">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="geometry">
-                  <rect>
-                   <x>11</x>
-                   <y>21</y>
-                   <width>125</width>
-                   <height>48</height>
-                  </rect>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>61</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Đường dẫn &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;&amp;quot;Moldding Daily&amp;quot;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                </widget>
-                <widget class="QTextEdit" name="Text_FG">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="geometry">
-                  <rect>
-                   <x>152</x>
-                   <y>19</y>
-                   <width>300</width>
-                   <height>50</height>
-                  </rect>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>300</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>500</width>
-                   <height>50</height>
-                  </size>
-                 </property>
-                 <property name="mouseTracking">
-                  <bool>true</bool>
-                 </property>
-                 <property name="acceptDrops">
-                  <bool>true</bool>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QFrame" name="frame_114">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
                  </property>
                  <property name="frameShape">
-                  <enum>QFrame::NoFrame</enum>
+                  <enum>QFrame::StyledPanel</enum>
                  </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout">
+                  <property name="spacing">
+                   <number>0</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QFrame" name="frame_115">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>100</width>
+                      <height>16777215</height>
+                     </size>
+                    </property>
+                    <property name="frameShape">
+                     <enum>QFrame::StyledPanel</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Raised</enum>
+                    </property>
+                    <layout class="QVBoxLayout" name="verticalLayout_74">
+                     <property name="spacing">
+                      <number>15</number>
+                     </property>
+                     <item>
+                      <widget class="QGroupBox" name="groupBox_2">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>60</height>
+                        </size>
+                       </property>
+                       <property name="font">
+                        <font>
+                         <family>Segoe UI</family>
+                         <pointsize>10</pointsize>
+                         <weight>75</weight>
+                         <italic>true</italic>
+                         <bold>true</bold>
+                        </font>
+                       </property>
+                       <property name="title">
+                        <string>Area</string>
+                       </property>
+                       <layout class="QVBoxLayout" name="verticalLayout_75">
+                        <property name="spacing">
+                         <number>0</number>
+                        </property>
+                        <property name="leftMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>5</number>
+                        </property>
+                        <item>
+                         <widget class="QComboBox" name="OEE_area_cbb"/>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QGroupBox" name="groupBox_3">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>60</height>
+                        </size>
+                       </property>
+                       <property name="title">
+                        <string>Date</string>
+                       </property>
+                       <layout class="QVBoxLayout" name="verticalLayout_76">
+                        <property name="leftMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>10</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>10</number>
+                        </property>
+                        <item>
+                         <widget class="QRadioButton" name="OEE_month_radio">
+                          <property name="text">
+                           <string>Month</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QRadioButton" name="OEE_year_radio">
+                          <property name="text">
+                           <string>Year</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QDateEdit" name="OEE_period_cbb">
+                          <property name="displayFormat">
+                           <string>MM-yy</string>
+                          </property>
+                          <property name="calendarPopup">
+                           <bool>true</bool>
+                          </property>
+                          <property name="date">
+                           <date>
+                            <year>2025</year>
+                            <month>12</month>
+                            <day>1</day>
+                           </date>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QGroupBox" name="groupBox_4">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>60</height>
+                        </size>
+                       </property>
+                       <property name="title">
+                        <string>Model</string>
+                       </property>
+                       <layout class="QVBoxLayout" name="verticalLayout_77">
+                        <property name="leftMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>5</number>
+                        </property>
+                        <item>
+                         <widget class="QComboBox" name="OEE_model_cbb"/>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QGroupBox" name="groupBox_5">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>60</height>
+                        </size>
+                       </property>
+                       <property name="title">
+                        <string>Line</string>
+                       </property>
+                       <layout class="QVBoxLayout" name="verticalLayout_78">
+                        <property name="spacing">
+                         <number>0</number>
+                        </property>
+                        <property name="leftMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>5</number>
+                        </property>
+                        <item>
+                         <widget class="QComboBox" name="OEE_line_cbb"/>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QGroupBox" name="groupBox_6">
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>60</height>
+                        </size>
+                       </property>
+                       <property name="title">
+                        <string>Machine</string>
+                       </property>
+                       <layout class="QVBoxLayout" name="verticalLayout_79">
+                        <property name="spacing">
+                         <number>0</number>
+                        </property>
+                        <property name="leftMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>5</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>5</number>
+                        </property>
+                        <item>
+                         <widget class="QComboBox" name="OEE_machine_cbb"/>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QPushButton" name="OEE_clear_filter_btn">
+                       <property name="text">
+                        <string>Clear</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <spacer name="verticalSpacer_3">
+                       <property name="orientation">
+                        <enum>Qt::Vertical</enum>
+                       </property>
+                       <property name="sizeType">
+                        <enum>QSizePolicy::MinimumExpanding</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>20</width>
+                         <height>40</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QFrame" name="frame_123">
+                    <property name="frameShape">
+                     <enum>QFrame::StyledPanel</enum>
+                    </property>
+                    <property name="frameShadow">
+                     <enum>QFrame::Raised</enum>
+                    </property>
+                    <layout class="QVBoxLayout" name="verticalLayout_70">
+                     <property name="spacing">
+                      <number>10</number>
+                     </property>
+                     <item>
+                      <widget class="QFrame" name="frame_124">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="minimumSize">
+                        <size>
+                         <width>0</width>
+                         <height>100</height>
+                        </size>
+                       </property>
+                       <property name="maximumSize">
+                        <size>
+                         <width>16777215</width>
+                         <height>16777215</height>
+                        </size>
+                       </property>
+                       <property name="frameShape">
+                        <enum>QFrame::StyledPanel</enum>
+                       </property>
+                       <property name="frameShadow">
+                        <enum>QFrame::Raised</enum>
+                       </property>
+                       <layout class="QHBoxLayout" name="horizontalLayout_83">
+                        <property name="spacing">
+                         <number>10</number>
+                        </property>
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QFrame" name="frame_125">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
+                          <property name="minimumSize">
+                           <size>
+                            <width>0</width>
+                            <height>100</height>
+                           </size>
+                          </property>
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_64">
+                           <item>
+                            <widget class="QLabel" name="OEE_OK_qty_lbl">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>TextLabel</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="label_64">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>OK Quantity</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_126">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_65">
+                           <item>
+                            <widget class="QLabel" name="OEE_NG_qty_lbl">
+                             <property name="text">
+                              <string>TextLabel</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="label_78">
+                             <property name="text">
+                              <string>NG Quantity</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_127">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_66">
+                           <item>
+                            <widget class="QLabel" name="OEE_WT_lbl">
+                             <property name="text">
+                              <string>TextLabel</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="label_80">
+                             <property name="text">
+                              <string>Total Working Time</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_128">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_67">
+                           <item>
+                            <widget class="QLabel" name="OEE_DT_lbl">
+                             <property name="text">
+                              <string>TextLabel</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="label_82">
+                             <property name="text">
+                              <string>Total Downtime</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_129">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_68">
+                           <item>
+                            <widget class="QLabel" name="label_85">
+                             <property name="text">
+                              <string>TextLabel</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="label_84">
+                             <property name="text">
+                              <string>Production Line Status</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QFrame" name="frame_130">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="frameShape">
+                        <enum>QFrame::StyledPanel</enum>
+                       </property>
+                       <property name="frameShadow">
+                        <enum>QFrame::Raised</enum>
+                       </property>
+                       <layout class="QHBoxLayout" name="horizontalLayout_84">
+                        <property name="spacing">
+                         <number>10</number>
+                        </property>
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QFrame" name="frame_131">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_60">
+                           <item>
+                            <widget class="QLabel" name="label_4">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>OEE</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QWidget" name="OEE_value_chart" native="true"/>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="label_86">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>TextLabel</string>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_132">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_61">
+                           <item>
+                            <widget class="QLabel" name="label_5">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>Availability</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QWidget" name="OEE_A_value_chart" native="true"/>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="label_87">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>TextLabel</string>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_133">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_62">
+                           <item>
+                            <widget class="QLabel" name="label_6">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>Performance</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QWidget" name="OEE_P_value_chart" native="true"/>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="label_88">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>TextLabel</string>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_134">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_63">
+                           <item>
+                            <widget class="QLabel" name="label_63">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>Quality</string>
+                             </property>
+                             <property name="alignment">
+                              <set>Qt::AlignCenter</set>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QWidget" name="OEE_Q_value_chart" native="true"/>
+                           </item>
+                           <item>
+                            <widget class="QLabel" name="label_89">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>TextLabel</string>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_136">
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_71">
+                           <property name="leftMargin">
+                            <number>0</number>
+                           </property>
+                           <property name="topMargin">
+                            <number>0</number>
+                           </property>
+                           <property name="rightMargin">
+                            <number>0</number>
+                           </property>
+                           <property name="bottomMargin">
+                            <number>0</number>
+                           </property>
+                           <item>
+                            <widget class="QFrame" name="frame_137">
+                             <property name="frameShape">
+                              <enum>QFrame::StyledPanel</enum>
+                             </property>
+                             <property name="frameShadow">
+                              <enum>QFrame::Raised</enum>
+                             </property>
+                             <layout class="QVBoxLayout" name="verticalLayout_72">
+                              <item>
+                               <widget class="QLabel" name="label_91">
+                                <property name="sizePolicy">
+                                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                                  <horstretch>0</horstretch>
+                                  <verstretch>0</verstretch>
+                                 </sizepolicy>
+                                </property>
+                                <property name="text">
+                                 <string>MTTR</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QLabel" name="OEE_MTTR_value_lbl">
+                                <property name="text">
+                                 <string>TextLabel</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                             </layout>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QFrame" name="frame_138">
+                             <property name="frameShape">
+                              <enum>QFrame::StyledPanel</enum>
+                             </property>
+                             <property name="frameShadow">
+                              <enum>QFrame::Raised</enum>
+                             </property>
+                             <layout class="QVBoxLayout" name="verticalLayout_73">
+                              <item>
+                               <widget class="QLabel" name="label_94">
+                                <property name="sizePolicy">
+                                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                                  <horstretch>0</horstretch>
+                                  <verstretch>0</verstretch>
+                                 </sizepolicy>
+                                </property>
+                                <property name="text">
+                                 <string>MTBF</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QLabel" name="OEE_MTBF_value_lbl">
+                                <property name="text">
+                                 <string>TextLabel</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                             </layout>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QFrame" name="frame_135">
+                       <property name="frameShape">
+                        <enum>QFrame::StyledPanel</enum>
+                       </property>
+                       <property name="frameShadow">
+                        <enum>QFrame::Raised</enum>
+                       </property>
+                       <layout class="QHBoxLayout" name="horizontalLayout_85">
+                        <property name="spacing">
+                         <number>10</number>
+                        </property>
+                        <property name="leftMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="topMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                         <number>0</number>
+                        </property>
+                        <property name="bottomMargin">
+                         <number>0</number>
+                        </property>
+                        <item>
+                         <widget class="QFrame" name="frame_139">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_69">
+                           <property name="spacing">
+                            <number>3</number>
+                           </property>
+                           <property name="topMargin">
+                            <number>9</number>
+                           </property>
+                           <property name="bottomMargin">
+                            <number>9</number>
+                           </property>
+                           <item>
+                            <widget class="QLabel" name="label_90">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>OEE metrics</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QWidget" name="OEE_metrics_chart" native="true"/>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QFrame" name="frame_140">
+                          <property name="sizePolicy">
+                           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                            <horstretch>0</horstretch>
+                            <verstretch>0</verstretch>
+                           </sizepolicy>
+                          </property>
+                          <property name="maximumSize">
+                           <size>
+                            <width>500</width>
+                            <height>16777215</height>
+                           </size>
+                          </property>
+                          <property name="frameShape">
+                           <enum>QFrame::StyledPanel</enum>
+                          </property>
+                          <property name="frameShadow">
+                           <enum>QFrame::Raised</enum>
+                          </property>
+                          <layout class="QVBoxLayout" name="verticalLayout_80">
+                           <property name="spacing">
+                            <number>3</number>
+                           </property>
+                           <item>
+                            <widget class="QLabel" name="label_65">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                             <property name="text">
+                              <string>Maintenance</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QWidget" name="OEE_maintenance_chart" native="true"/>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </item>
+                    </layout>
+                   </widget>
+                  </item>
+                 </layout>
                 </widget>
-                <widget class="QLabel" name="label_6">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="geometry">
-                  <rect>
-                   <x>11</x>
-                   <y>101</y>
-                   <width>84</width>
-                   <height>48</height>
-                  </rect>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>61</width>
-                   <height>16</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Đường dẫn &lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;&amp;quot;NG data&amp;quot;&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                 </property>
-                </widget>
-                <widget class="QTextEdit" name="Text_NG">
-                 <property name="enabled">
-                  <bool>true</bool>
-                 </property>
-                 <property name="geometry">
-                  <rect>
-                   <x>152</x>
-                   <y>97</y>
-                   <width>300</width>
-                   <height>50</height>
-                  </rect>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>300</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>500</width>
-                   <height>50</height>
-                  </size>
-                 </property>
-                 <property name="mouseTracking">
-                  <bool>true</bool>
-                 </property>
-                 <property name="acceptDrops">
-                  <bool>true</bool>
-                 </property>
-                 <property name="frameShape">
-                  <enum>QFrame::NoFrame</enum>
-                 </property>
-                </widget>
-                <widget class="QPushButton" name="Show_file_bt_NG">
-                 <property name="geometry">
-                  <rect>
-                   <x>458</x>
-                   <y>110</y>
-                   <width>75</width>
-                   <height>23</height>
-                  </rect>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>75</width>
-                   <height>23</height>
-                  </size>
-                 </property>
-                 <property name="mouseTracking">
-                  <bool>false</bool>
-                 </property>
-                 <property name="text">
-                  <string>Show file</string>
-                 </property>
-                 <property name="icon">
-                  <iconset>
-                   <normaloff>../../../../.designer/backup/OIP.png</normaloff>../../../../.designer/backup/OIP.png</iconset>
-                 </property>
-                </widget>
-                <widget class="QPushButton" name="Open_Excel_FG">
-                 <property name="geometry">
-                  <rect>
-                   <x>550</x>
-                   <y>30</y>
-                   <width>75</width>
-                   <height>23</height>
-                  </rect>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>75</width>
-                   <height>23</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>Open Excel</string>
-                 </property>
-                 <property name="icon">
-                  <iconset>
-                   <normaloff>../../../../Icons/Open.ico</normaloff>../../../../Icons/Open.ico</iconset>
-                 </property>
-                </widget>
-                <widget class="QPushButton" name="Open_Excel_NG">
-                 <property name="geometry">
-                  <rect>
-                   <x>550</x>
-                   <y>110</y>
-                   <width>75</width>
-                   <height>23</height>
-                  </rect>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>75</width>
-                   <height>23</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>Open Excel</string>
-                 </property>
-                 <property name="icon">
-                  <iconset>
-                   <normaloff>../../../../.designer/backup/Open.png</normaloff>../../../../.designer/backup/Open.png</iconset>
-                 </property>
-                </widget>
-               </widget>
-               <widget class="QWidget" name="PE4_tab">
-                <attribute name="title">
-                 <string>PE4</string>
-                </attribute>
-               </widget>
-              </widget>
-              <widget class="QPushButton" name="Export_Excel_bt">
-               <property name="geometry">
-                <rect>
-                 <x>580</x>
-                 <y>240</y>
-                 <width>160</width>
-                 <height>75</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
-    background-color: qlineargradient(
-        x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 #a9a9a9,
-        stop: 1 #eeeeee
-    );
-    border: none;
-    border-radius: 25px;
-}</string>
-               </property>
-               <property name="text">
-                <string>Export EXCEL file</string>
-               </property>
-               <property name="icon">
-                <iconset>
-                 <normaloff>../../../../Icons/Excel_icon.ico</normaloff>../../../../Icons/Excel_icon.ico</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>50</width>
-                 <height>50</height>
-                </size>
-               </property>
-              </widget>
-              <widget class="QPushButton" name="Setting_bt">
-               <property name="geometry">
-                <rect>
-                 <x>40</x>
-                 <y>240</y>
-                 <width>160</width>
-                 <height>75</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
-    background-color: qlineargradient(
-        x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 #a9a9a9,
-        stop: 1 #eeeeee
-    );
-    border: none;
-    border-radius: 25px;
-}</string>
-               </property>
-               <property name="text">
-                <string>Setting</string>
-               </property>
-               <property name="icon">
-                <iconset>
-                 <normaloff>../../../../Icons/Set.ico</normaloff>../../../../Icons/Set.ico</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>50</width>
-                 <height>50</height>
-                </size>
-               </property>
-              </widget>
-              <widget class="QPushButton" name="View_data_bt">
-               <property name="geometry">
-                <rect>
-                 <x>410</x>
-                 <y>240</y>
-                 <width>135</width>
-                 <height>75</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
-    background-color: qlineargradient(
-        x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 #a9a9a9,
-        stop: 1 #eeeeee
-    );
-    border: none;
-    border-radius: 25px;
-}</string>
-               </property>
-               <property name="text">
-                <string>View Data</string>
-               </property>
-               <property name="icon">
-                <iconset>
-                 <normaloff>../../../../Icons/view.ico</normaloff>../../../../Icons/view.ico</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>50</width>
-                 <height>50</height>
-                </size>
-               </property>
-              </widget>
-              <widget class="QPushButton" name="Data_process_bt">
-               <property name="geometry">
-                <rect>
-                 <x>230</x>
-                 <y>240</y>
-                 <width>135</width>
-                 <height>75</height>
-                </rect>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
-    background-color: qlineargradient(
-        x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 #a9a9a9,
-        stop: 1 #eeeeee
-    );
-    border: none;
-    border-radius: 25px;
-}</string>
-               </property>
-               <property name="text">
-                <string>Data process</string>
-               </property>
-               <property name="icon">
-                <iconset>
-                 <normaloff>../../../../Icons/Process_button.ico</normaloff>../../../../Icons/Process_button.ico</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>50</width>
-                 <height>50</height>
-                </size>
-               </property>
-              </widget>
+               </item>
+              </layout>
              </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-        </layout>
-       </widget>
+             <widget class="QWidget" name="OEE_Detail_page"/>
+             <widget class="QWidget" name="OEE_Importdata_page"/>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="Downtime_page">
        <layout class="QVBoxLayout" name="verticalLayout_39">
@@ -1026,7 +1672,7 @@
            <item>
             <widget class="QStackedWidget" name="DT_stacked_widget">
              <property name="currentIndex">
-              <number>2</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="DT_Dashboard_widget">
               <layout class="QHBoxLayout" name="horizontalLayout_67">
@@ -3950,7 +4596,7 @@
            </size>
           </property>
           <property name="currentIndex">
-           <number>3</number>
+           <number>2</number>
           </property>
           <widget class="QWidget" name="Home_page_M">
            <widget class="QTableView" name="Maintenance_table">
