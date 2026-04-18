@@ -12,9 +12,9 @@ import pandas as pd
 # sys.path.append(r'C:\Users\2173452100291\Documents\OEE_project')
 
 # from Database.MariaDB import Database_process
-import Calculation.Losstime2 as LT
-import Calculation.FG_data2 as FG
-import Calculation.NG_data2 as NG
+import OEE.Losstime2 as LT
+import OEE.FG_data2 as FG
+import OEE.NG_data2 as NG
 
 
 Net_available_runtime = {8: 425, 9.5: 515, 12: 635, 16: 850, 24: 580}

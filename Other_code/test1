@@ -1,60 +1,102 @@
-import sys
-from PyQt5 import QtWidgets, QtCore, QtGui
+# import sys
+# from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
+# from PyQt5.QtGui import QPainter, QColor, QPen, QFont, QConicalGradient
+# from PyQt5.QtCore import Qt, QRectF
 
-class MonthYearPicker(QtWidgets.QDateEdit):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # 1. Định dạng chỉ hiển thị Tháng và Năm
-        self.setDisplayFormat("MMM-yyyy")
-        self.setCalendarPopup(True)
-        self.setDate(QtCore.QDate.currentDate())
 
-        # 2. Lấy đối tượng Calendar và tùy biến
-        self.cal = self.calendarWidget()
-        
-        # Ẩn bảng ngày bên dưới
-        table_view = self.cal.findChild(QtWidgets.QTableView)
-        if table_view:
-            table_view.hide()
+# class DonutChart(QWidget):
+#     def __init__(self, value: float, max_value: float = 100, parent=None):
+#         """
+#         value: giá trị hiện tại (vd: 83)
+#         max_value: giá trị tối đa (vd: 100)
+#         """
+#         super().__init__(parent)
+#         self.value = value
+#         self.max_value = max_value
+#         self.setMinimumSize(200, 200)
 
-        # 3. Ép kích thước Popup chỉ vừa bằng thanh tiêu đề (Thanh màu xanh)
-        # Thông thường thanh này cao khoảng 40-50px
-        self.cal.setFixedSize(250, 45) 
+#     def paintEvent(self, event):
+#         painter = QPainter(self)
+#         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # 4. Cập nhật giá trị ngay khi bấm mũi tên chuyển tháng/năm
-        self.cal.currentPageChanged.connect(self.update_date_from_calendar)
+#         width = self.width()
+#         height = self.height()
+#         size = min(width, height)
 
-        # 5. Style Sheet để giống hình mẫu của bạn
-        self.cal.setStyleSheet("""
-            QCalendarWidget QWidget#qt_calendar_navigationbar {
-                background-color: #0066cc; /* Màu xanh nền */
-            }
-            QCalendarWidget QToolButton {
-                color: white;
-                font-weight: bold;
-                background-color: transparent;
-            }
-        """)
+#         # Căn giữa
+#         x = (width - size) / 2
+#         y = (height - size) / 2
 
-    def update_date_from_calendar(self, year, month):
-        # Khi người dùng bấm mũi tên, cập nhật lại ngày vào QDateEdit
-        # Ta lấy ngày 1 của tháng đó làm mặc định
-        new_date = QtCore.QDate(year, month, 1)
-        self.setDate(new_date)
+#         stroke_width = size * 0.12  # Độ dày vòng tròn
+#         margin = stroke_width / 2
 
-# --- Chạy thử ứng dụng ---
-if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    
-    window = QtWidgets.QWidget()
-    window.setWindowTitle("Month Year Only")
-    layout = QtWidgets.QVBoxLayout(window)
+#         rect = QRectF(x + margin, y + margin,
+#                       size - stroke_width, size - stroke_width)
 
-    picker = MonthYearPicker()
-    layout.addWidget(picker)
-    layout.addWidget(QtWidgets.QLabel("Widget này đã ẩn hoàn toàn bảng chọn ngày."))
+#         percentage = self.value / self.max_value
+#         span_angle = int(percentage * 360 * 16)   # QPainter dùng 1/16 độ
+#         full_angle = 360 * 16
+#         start_angle = 90 * 16  # Bắt đầu từ trên cùng
 
-    window.resize(300, 100)
-    window.show()
-    sys.exit(app.exec_())
+#         # --- Vẽ vòng nền (màu xám nhạt) ---
+#         pen_bg = QPen(QColor("#E8E8E8"))
+#         pen_bg.setWidth(int(stroke_width))
+#         pen_bg.setCapStyle(Qt.PenCapStyle.FlatCap)
+#         painter.setPen(pen_bg)
+#         painter.drawArc(rect, start_angle, -full_angle)
+
+#         # --- Vẽ vòng giá trị (màu xanh lá) ---
+#         pen_fg = QPen(QColor("#2ECC71"))
+#         pen_fg.setWidth(int(stroke_width))
+#         pen_fg.setCapStyle(Qt.PenCapStyle.RoundCap)
+#         painter.setPen(pen_fg)
+#         painter.drawArc(rect, start_angle, -span_angle)
+
+#         # --- Vẽ text ở giữa ---
+#         painter.setPen(QColor("#333333"))
+#         font = QFont("Arial", int(size * 0.18), QFont.Weight.Bold)
+#         painter.setFont(font)
+#         painter.drawText(
+#             QRectF(x, y, size, size),
+#             Qt.AlignmentFlag.AlignCenter,
+#             f"{int(self.value)}%"
+#         )
+
+#         painter.end()
+
+
+# if __name__ == "__main__":
+#     app = QApplication(sys.argv)
+
+#     window = QWidget()
+#     window.setWindowTitle("Donut Chart - OEE")
+#     window.setStyleSheet("background-color: white;")
+
+#     layout = QVBoxLayout(window)
+
+#     chart = DonutChart(value=83, max_value=100)
+#     layout.addWidget(chart)
+
+#     window.resize(300, 300)
+#     window.show()
+#     sys.exit(app.exec())
+
+from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
+
+app = QApplication([])
+window = QWidget()
+layout = QVBoxLayout()
+
+label = QLabel()
+
+# Sử dụng HTML để định dạng các phần khác nhau
+text = """
+<span style='font-family: Arial; color: red; font-size: 20pt;'>Đoạn 1: Đỏ & Lớn</span><br>
+<span style='font-family: Comic Sans MS; color: blue; font-weight: bold; font-size: 100pt;'>Đoạn 2: Xanh & Nhỏ</span>
+"""
+
+label.setText(text)
+layout.addWidget(label)
+window.setLayout(layout)
+window.show()
+app.exec_()
