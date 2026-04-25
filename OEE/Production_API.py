@@ -62,7 +62,7 @@ if __name__ == "__main__":
                                                         FROM line_operation_times AS lot
                                                         JOIN production_lines AS pl ON lot.line_id = pl.line_id
                                                         WHERE lot.change_model IS NOT NULL AND MONTH(lot.operation_date) = 12 AND YEAR(lot.operation_date) = 2025
-                                                        ORDER BY lot.line_id;''')
+                                                        ORDER BY lot.line_id;''') #đổi change_model qua bảng downtime_record để lấy model
         history_model_dict = {}
         for item in history_model_ofLines:
             if item[0] not in history_model_dict:

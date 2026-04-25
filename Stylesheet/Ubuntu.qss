@@ -946,3 +946,15 @@ QToolBox::tab:selected {
         color: #2c3e50;
     }
 
+#label_64, #label_78, #label_80, #label_82, #label_84, #label_91, #label_94, #label_4, #label_5, #label_6, #label_63 , #label_90 {
+		font-family: 'Segoe UI';
+		font-size: 16px;
+		font-weight: bold;
+		color: #445469;
+	}
+#OEE_OK_qty_lbl {
+		font-family: 'Segoe UI';
+		font-size: 40px;
+		font-weight: 600;
+		color: #445469;
+	}
