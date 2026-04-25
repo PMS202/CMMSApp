@@ -380,7 +380,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
     def OEE_page(self):
         self.ui.main_stacked.setCurrentWidget(self.ui.OEE_page)
         self.set_stylesheet_change_page((self.ui.OEE_btn,self.ui.Home_btn,self.ui.Maintenance_btn,self.ui.Order_btn, self.ui.Stock_btn,self.ui.Downtime_btn))
-        self.set_stylesheet_change_page((self.ui.OEE_dashboard_btn,self.ui.OEE_data_btn,self.ui.OEE_import_data_btn))
+        self.style_button_with_shadow((self.ui.OEE_dashboard_btn,self.ui.OEE_data_btn,self.ui.OEE_import_data_btn))
         if not self.is_expanded:
             self.is_expanded = True
             self.expand_windown_animation(self.is_expanded)
@@ -408,7 +408,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                             WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params = {"line_name": lines[0][0], "model_name": OEE_model[0][0]})
             self.ui.OEE_area_cbb.clear()
             self.ui.OEE_area_cbb.addItems(self.areas)
-            self.ui.OEE_period_edit.setDate(QtCore.QDate(self.ui.today.year, self.ui.today.month-1, 1))
+            # self.ui.OEE_period_edit.setDate(QtCore.QDate(self.ui.today.year, self.ui.today.month-1, 1))
+            self.ui.OEE_period_edit.setDate(QtCore.QDate(2025, 12, 1))
             self.ui.OEE_model_cbb.clear()
             self.ui.OEE_model_cbb.addItems([model[0] for model in OEE_model])
             self.ui.OEE_model_cbb.view().setMinimumWidth(self.ui.OEE_model_cbb.view().sizeHintForColumn(0)+50)
@@ -416,16 +417,355 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.OEE_line_cbb.addItems([line[0] for line in lines])
             self.ui.OEE_process_cbb.clear()
             self.ui.OEE_process_cbb.addItems([proc[0] for proc in process])
+            self.refesh_OEE_page(area_name=self.ui.OEE_area_cbb.currentText(), model_name=self.ui.OEE_model_cbb.currentText(), month=self.ui.OEE_period_edit.date().month(), year=self.ui.OEE_period_edit.date().year(), line=self.ui.OEE_line_cbb.currentText(), process=self.ui.OEE_process_cbb.currentText())
             self.safe_connect(self.ui.OEE_calendar_widget.currentPageChanged, lambda year, month: self.update_date_from_calendar(year, month, self.ui.OEE_period_edit))
+            self.safe_connect(self.ui.OEE_period_edit.dateChanged, lambda date: self.refesh_OEE_page(area_name=self.ui.OEE_area_cbb.currentText(), model_name=self.ui.OEE_model_cbb.currentText(), month=date.month(), year=date.year(), line=self.ui.OEE_line_cbb.currentText(), process=self.ui.OEE_process_cbb.currentText()))
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load OEE page: {e}")
 
     def refesh_OEE_page(self,area_name, model_name, month, year,line,process):
+        def change_time_format(time_value:int, input_unit:str):
+            time_val_f = float(time_value)
+            if input_unit == "h":
+                hours = int(time_val_f)
+                minutes = int((time_val_f - hours) * 60)
+                seconds = int(round((time_val_f - hours - minutes/60) * 3600))
+            elif input_unit == "m":
+                hours = int(time_val_f // 60)
+                minutes = int(time_val_f % 60)
+                seconds = int(round((time_val_f - int(time_val_f)) * 60))
+            else:
+                hours = int(time_val_f // 3600)
+                minutes = int((time_val_f % 3600) // 60)
+                seconds = int(time_val_f % 60)
+            return {
+                    "h": f"{hours:02d}", 
+                    "m": f"{minutes:02d}", 
+                    "s": f"{seconds:02d}"
+                }
+        if month == 0:
+            filter_scripts = ''' AND YEAR(production_date) = :year '''
+            filter_scripts_wt = f'''YEAR(Date) = :year'''
+        else:
+            filter_scripts = ''' AND MONTH(production_date) = :month AND YEAR(production_date) = :year '''
+            filter_scripts_wt =  f'''MONTH(Date) = :month AND YEAR(Date) = :year'''
         try:
-            self.database_process.query(sql = '''SELECT OK_qty, NG_qty, ''')
-        
+            oee_data = self.database_process.query(sql = f'''SELECT * FROM `oee_report`
+                                                    WHERE area_name = :area_name 
+                                                    AND model_name = :model_name 
+                                                    {filter_scripts}
+                                                    AND line_name = :line AND process = :process;''', params = {"area_name": area_name, "model_name": model_name, "month": month, "year": year, "line": line, "process": process})
+            previous_month = month - 1 if month > 1 else 12
+            previous_year = year if month > 1 else year - 1
+            previous_oee_data = self.database_process.query(sql = f'''SELECT area_name,line_name,model_name,process,MONTH(production_date),SUM(operation_hours),SUM(`OK_qty`),
+                                                                SUM(`NG_qty`), SUM(`Total_Loss`), SUM(`Available_Time`), AVG(`Availability_percentage`), AVG(`Performance_percentage`),
+                                                                AVG(`Quality_percentage`), AVG(`OEE_percentage`) 
+                                                                FROM `oee_report`
+                                                                WHERE area_name = :area_name
+                                                                AND model_name = :model_name
+                                                                {filter_scripts}
+                                                                AND line_name = :line AND process = :process
+                                                                GROUP BY area_name,line_name,model_name,process,MONTH(production_date);''', 
+                                                                params = {"area_name": area_name, "model_name": model_name, "month": previous_month, "year": previous_year, "line": line, "process": process})
+            cycle_time = self.database_process.query(sql = '''SELECT mct.create_at, mct.cycle_time_seconds
+                                                                FROM machine_cycle_times AS mct
+                                                                JOIN product_models_oee AS pmo ON mct.model_id = pmo.model_id
+                                                                JOIN machine_oee_register AS mor ON pmo.model_id = mor.model_id
+                                                                JOIN production_lines AS pl ON mor.line_id = pl.line_id
+                                                                WHERE mor.process = :process AND pmo.model_name = :model_name AND pl.line_name = :line_name
+                                                                ORDER BY mct.create_at DESC LIMIT 2;
+                                                            ''', params = {"process": process, "model_name": model_name, "line_name": line})
+            
+            downtime_count = self.database_process.query(sql = f'''SELECT COUNT(*) AS total_records
+                                                                    FROM `downtime_report` AS dr
+                                                                    JOIN machines AS m ON m.machine_code = dr.Machine_Code
+                                                                    JOIN machine_oee_register AS mor ON m.machine_id = mor.machine_id
+                                                                    JOIN machine_oee_register AS mor2 ON mor2.machine_id = m.machine_id AND mor2.process = :process
+                                                                    WHERE Downtime_Area = :area_name AND MONTH(Date) = :month AND YEAR(Date) = :year
+                                                                    AND Line_Name = :line_name AND Current_Model = :model_name;'''
+                                                                    , params = {"area_name": area_name,"month":month,"year":year, "line_name": line, "model_name": model_name, "process": process})
+            downtime_count_previous = self.database_process.query(sql = f'''SELECT COUNT(*) AS total_records
+                                                                    FROM `downtime_report` AS dr
+                                                                    JOIN machines AS m ON m.machine_code = dr.Machine_Code
+                                                                    JOIN machine_oee_register AS mor ON m.machine_id = mor.machine_id
+                                                                    JOIN machine_oee_register AS mor2 ON mor2.machine_id = m.machine_id AND mor2.process = :process
+                                                                    WHERE Downtime_Area = :area_name AND MONTH(Date) = :month AND YEAR(Date) = :year
+                                                                    AND Line_Name = :line_name AND Current_Model = :model_name;'''
+                                                                    , params = {"area_name": area_name,"month":previous_month,"year":previous_year, "line_name": line, "model_name": model_name, "process": process})
+            
+            if not oee_data:
+                # QtWidgets.QMessageBox.information(self, "No Data", "No OEE data found for the selected criteria.")
+                return
+            self.oee_df = pd.DataFrame(oee_data, columns=[ "area_name", "line_name", "model_name", "process", "production_date", "operation_hours", "OK_qty", "NG_qty", "Total_Loss", "Available_Time", "Availability_percentage" ,"Performance_percentage", "Quality_percentage", "OEE_percentage"])
+            total_OK_qty = float(self.oee_df['OK_qty'].sum())
+            total_NG_qty = float(self.oee_df['NG_qty'].sum())
+            total_operation_hours = float(self.oee_df['operation_hours'].sum())
+            total_loss = float(self.oee_df['Total_Loss'].sum())
+            cycle_time_value = float(cycle_time[0][1]) if cycle_time else 0
+            total_runtime = float(self.oee_df['Available_Time'].sum())
+            total_A_percentage = total_runtime / (total_operation_hours*60)
+            total_P_percentage = (cycle_time_value * (total_OK_qty + total_NG_qty)) / (total_runtime*60)
+            total_Q_percentage = total_OK_qty / (total_OK_qty + total_NG_qty)
+            total_OEE = total_A_percentage * total_P_percentage * total_Q_percentage
+
+            self.ui.OEE_OK_qty_lbl.setText(f"{total_OK_qty:,.0f}")
+            self.ui.OEE_NG_qty_lbl.setText(f"{total_NG_qty:,.0f}")
+            time_format = change_time_format(total_operation_hours, 'h')
+            self.ui.OEE_WT_lbl.setText(f"{time_format['h']} hrs {time_format['m']} mins")
+            time_format = change_time_format(total_loss, 'm')
+            self.ui.OEE_DT_lbl.setText(f"{time_format['h']} hrs {time_format['m']} mins")
+            self.ui.OEE_machine_cycletime_lbl.setText(f"{cycle_time_value:.2f} sec/Pcs")
+
+            def draw_circle_chart(value, target, label, chart_widget):
+                layout = chart_widget.layout()
+                if layout is not None:
+                    while layout.count():
+                        child = layout.takeAt(0) 
+                        if child.widget():
+                            child.widget().deleteLater()
+                    layout.setContentsMargins(0, 0, 0, 0)
+                else:
+                    layout = QtWidgets.QVBoxLayout(chart_widget)
+                    layout.setContentsMargins(0, 0, 0, 0)
+                    chart_widget.setLayout(layout)
+                chart = DonutChart(target_value=target, value=value*100, parameter_name=label)
+                layout.addWidget(chart)
+            
+            draw_circle_chart(total_OEE, 70, "%OEE", self.ui.OEE_value_chart)
+            draw_circle_chart(total_A_percentage, 79, "%A", self.ui.OEE_A_value_chart)
+            draw_circle_chart(total_P_percentage, 79, "%P", self.ui.OEE_P_value_chart)
+            draw_circle_chart(total_Q_percentage, 79, "%Q", self.ui.OEE_Q_value_chart)
+
+            def make_comparison_html(current: float, previous: float, label: str) -> str:
+                diff = current - previous
+                diff = round(diff, 1)
+                if diff > 0:
+                    arrow = "&#9650;"   # ▲
+                    color = "#27ae60"   # green
+                    color_dt = "#e74c3c"
+                    sign = "+"
+                elif diff < 0:
+                    arrow = "&#9660;"   # ▼
+                    color = "#e74c3c"   # red
+                    color_dt = "#27ae60"
+                    sign = ""
+                else:
+                    arrow = "&#9654;"   # ►
+                    color = "#888888"   # grey
+                    sign = ""
+
+                if label in ["MTTR", "MTBF"]:
+                    percent = (1-current/previous)
+                    time_format = change_time_format(previous, 'm')
+                    return f"""
+                    <div style='font-family: Arial; text-align: center;'>
+                        <span style='font-size: 11px; font-weight: bold; color: #222;'>
+                        Previous:
+                        </span>
+                        <span style='font-size: 15px; font-weight: bold; color: #222;'>
+                            {f"{time_format['h']} hrs {time_format['m']} mins" if previous >= 60 else f"{time_format['m']} mins {time_format['s']} secs"}
+                        </span>
+                        <span style='font-size: 11px; color: {color_dt if label == "MTTR" else color}; font-weight: bold;'>
+                            {arrow} {"-" if percent > 0 else "+"}{abs(percent*100):.1f}% vs prev
+                        </span>
+                    </div>
+                """
+
+                else:
+                    return f"""
+                    <div style='font-family: Arial; text-align: center;'>
+                        <span style='font-size: 11px; font-weight: bold; color: #222;'>
+                        Previous:
+                        </span>
+                        <span style='font-size: 15px; font-weight: bold; color: #222;'>
+                            {previous:.1f}% 
+                        </span>
+                        <span style='font-size: 11px; color: {color}; font-weight: bold;'>
+                            {arrow} {sign}{diff:.1f}% vs prev
+                        </span>
+                    </div>
+                """
+            
+            # compare previous data
+            if previous_oee_data:
+                self.previous_oee_df = pd.DataFrame(previous_oee_data, columns=["area_name", "line_name", "model_name", "process", "month", "operation_hours", "OK_qty", "NG_qty", "Total_Loss", "Available_Time", "Availability_percentage" ,"Performance_percentage", "Quality_percentage", "OEE_percentage"])
+                pre_total_OK_qty = float(self.previous_oee_df['OK_qty'].sum())
+                pre_total_NG_qty = float(self.previous_oee_df['NG_qty'].sum())
+                pre_total_operation_hours = float(self.previous_oee_df['operation_hours'].sum())
+                if len(cycle_time) == 2:  
+                    m1 = (cycle_time[0][0].year, cycle_time[0][0].month)
+                    m2 = (cycle_time[1][0].year, cycle_time[1][0].month)
+                    if m1 > (previous_year, previous_month) and m2 <= (previous_year, previous_month):
+                        pre_cycle_time = float(cycle_time[1][1])
+                    else:
+                        pre_cycle_time = cycle_time_value
+                else:
+                    pre_cycle_time = cycle_time_value 
+                pre_total_runtime = float(self.previous_oee_df['Available_Time'].sum())
+                pre_total_A_percentage = pre_total_runtime / (pre_total_operation_hours*60)
+                pre_total_P_percentage = (pre_cycle_time * (pre_total_OK_qty + pre_total_NG_qty)) / (pre_total_runtime*60)
+                pre_total_Q_percentage = pre_total_OK_qty / (pre_total_OK_qty + pre_total_NG_qty)
+                pre_total_OEE = pre_total_A_percentage * pre_total_P_percentage * pre_total_Q_percentage
+                pre_mttr = self.previous_oee_df['Total_Loss'].mean()
+                pre_mtbf = (self.previous_oee_df['Available_Time'].sum() / downtime_count_previous[0][0] ) if downtime_count_previous[0][0] > 0 else 1
+                self.ui.pre_OEE_lbl.setText(make_comparison_html(total_OEE*100, pre_total_OEE*100, "OEE"))
+                self.ui.pre_A_lbl.setText(make_comparison_html(total_A_percentage*100, pre_total_A_percentage*100, "A"))
+                self.ui.pre_P_lbl.setText(make_comparison_html(total_P_percentage*100, pre_total_P_percentage*100, "P"))
+                self.ui.pre_Q_lbl.setText(make_comparison_html(total_Q_percentage*100, pre_total_Q_percentage*100, "Q"))
+            else:
+                # self.ui.pre_OEE_lbl.setText("No previous data")
+                # self.ui.pre_A_lbl.setText("No previous data")
+                # self.ui.pre_P_lbl.setText("No previous data")
+                # self.ui.pre_Q_lbl.setText("No previous data")
+                self.ui.pre_OEE_lbl.setText(make_comparison_html(total_OEE*100, 0.75*100, "OEE"))
+                self.ui.pre_A_lbl.setText(make_comparison_html(total_A_percentage*100, 0.99*100, "A"))
+                self.ui.pre_P_lbl.setText(make_comparison_html(total_P_percentage*100, 0.7*100, "P"))
+                self.ui.pre_Q_lbl.setText(make_comparison_html(total_Q_percentage*100, 0.998*100, "Q"))
+
+            def draw_OEE_metrics_chart(df ,target, x_lbl, y_lbl, target_widget, lengend_widget):
+                layout = target_widget.layout()
+                if layout is not None:
+                    while layout.count():
+                        child = layout.takeAt(0) 
+                        if child.widget():
+                            child.widget().deleteLater()
+                    layout.setContentsMargins(0, 0, 0, 0)
+                else:
+                    layout = QtWidgets.QVBoxLayout(target_widget)
+                    layout.setContentsMargins(0, 0, 0, 0)
+                    target_widget.setLayout(layout)
+                class DateAxisItem(pg.AxisItem):
+                    def tickValues(self, minVal, maxVal, size):
+                        step = 86400 * 3
+                        start = (int(minVal) // step) * step
+                        ticks = []
+                        v = start
+                        while v <= maxVal:
+                            ticks.append(v)
+                            v += step
+                        return [(step, ticks)]
+                    def tickStrings(self, values, scale, spacing):
+                        return [dt.datetime.fromtimestamp(v).strftime('%d/%m') for v in values]
+
+                date_axis = DateAxisItem(orientation='bottom')
+                line_chart = pg.PlotWidget(axisItems={'bottom': date_axis})
+                line_chart.setBackground('w')
+                line_chart.hideButtons()
+                line_chart.setMouseEnabled(x=False, y=False)
+                x = df[x_lbl].apply(lambda d: d.timestamp()).values.astype(float)
+                x_dense = np.linspace(x[0], x[-1], len(x) * 10)
+                OEE = (df[y_lbl] * 100).values.astype(float).round(2)
+                OEE_smooth = interp1d(x, OEE, kind='cubic')(x_dense)
+                target_array = np.full(x_dense.shape, target)
+                target_line = pg.PlotDataItem(x_dense, target_array, pen=pg.mkPen(color=(0, 206, 209), width=1, style=QtCore.Qt.DashLine), name='Target', antialias=True)
+                line_chart.addItem(target_line)
+                line_chart.plot(x_dense, OEE_smooth, pen=pg.mkPen(color=(254, 117, 114), width=2), name=y_lbl, antialias=True)
+                A = (df['Availability_percentage'] * 100).values.astype(float).round(2)
+                A_smooth = interp1d(x, A, kind='cubic')(x_dense)
+                line_chart.plot(x_dense, A_smooth, pen=pg.mkPen(color=(66, 107, 41), width=2), name='Availability', antialias=True)
+                P = (df['Performance_percentage'] * 100).values.astype(float).round(2)
+                P_smooth = interp1d(x, P, kind='cubic')(x_dense)
+                line_chart.plot(x_dense, P_smooth, pen=pg.mkPen(color=(255, 215, 0), width=2), name='Performance', antialias=True)
+                Q = (df['Quality_percentage'] * 100).values.astype(float).round(2)
+                Q_smooth = interp1d(x, Q, kind='cubic')(x_dense)
+                line_chart.plot(x_dense, Q_smooth, pen=pg.mkPen(color=(55, 81, 126), width=2), name='Quality', antialias=True)
+                OEE_dot_item = pg.ScatterPlotItem(
+                    x=x, y=OEE,
+                    size=6,
+                    pen=pg.mkPen((254, 117, 114), width=1),
+                    brush=pg.mkBrush(240, 240, 240),
+                    symbol='o',
+                    antialias=True
+                )
+                line_chart.addItem(OEE_dot_item)
+                A_dot_item = pg.ScatterPlotItem(
+                    x=x, y=A,
+                    size=6,
+                    pen=pg.mkPen((66, 107, 41), width=1),
+                    brush=pg.mkBrush(240, 240, 240),
+                    symbol='o',
+                    antialias=True
+                )
+                line_chart.addItem(A_dot_item)
+                P_dot_item = pg.ScatterPlotItem(
+                    x=x, y=P,
+                    size=6,
+                    pen=pg.mkPen((255, 215, 0), width=1),
+                    brush=pg.mkBrush(240, 240, 240),
+                    symbol='o',
+                    antialias=True
+                )
+                line_chart.addItem(P_dot_item)
+                Q_dot_item = pg.ScatterPlotItem(
+                    x=x, y=Q,
+                    size=6,
+                    pen=pg.mkPen((55, 81, 126), width=1),
+                    brush=pg.mkBrush(240, 240, 240),
+                    symbol='o',
+                    antialias=True
+                )
+                line_chart.addItem(Q_dot_item)
+                line_chart.setYRange(0, 105, padding=0)
+                line_chart.getAxis('left').setTicks([[(i, str(i)) for i in range(0, 101, 20)]])
+                line_chart.getAxis('left').setStyle(tickLength=5)
+                line_chart.getAxis('bottom').setStyle(tickLength=5)
+                line_chart.showGrid(x=False, y=True, alpha=0.2)
+                def on_hover(pos):
+                    if line_chart.sceneBoundingRect().contains(pos):
+                        mouse_point = line_chart.getViewBox().mapSceneToView(pos)
+                        x_mouse = mouse_point.x()
+                        y_mouse = mouse_point.y()
+                        closest_index = np.argmin(np.abs(x - x_mouse))
+                        if closest_index < len(x):
+                            tooltip_text = f"<b>Date:</b> {dt.datetime.fromtimestamp(x[closest_index]).strftime('%Y-%m-%d')}<br>"
+                            tooltip_text += f"<b>OEE:</b> {OEE[closest_index]:.2f}%<br>"
+                            tooltip_text += f"<b>Availability:</b> {A[closest_index]:.2f}%<br>"
+                            tooltip_text += f"<b>Performance:</b> {P[closest_index]:.2f}%<br>"
+                            tooltip_text += f"<b>Quality:</b> {Q[closest_index]:.2f}%"
+                            QtWidgets.QToolTip.showText(QtGui.QCursor.pos(), tooltip_text, line_chart)
+                line_chart.scene().sigMouseMoved.connect(on_hover)
+                layout.addWidget(line_chart)
+                if lengend_widget.layout() is not None:
+                    return
+                lengend_layout = QtWidgets.QHBoxLayout(lengend_widget)
+                lengend_layout.setContentsMargins(4, 0, 4, 0)
+                lengend_layout.setSpacing(12)
+                for color, label in [
+                    ((254, 117, 114), "OEE"),
+                    ((66, 107, 41),   "Availability"),
+                    ((255, 215, 0),   "Performance"),
+                    ((55, 81, 126),   "Quality"),
+                    ((0, 206, 209),   f"OEE Target: {target}%")
+                ]:
+                    swatch = QtWidgets.QLabel()
+                    swatch.setFixedSize(25, 4)
+                    if label == f"OEE Target: {target}%":
+                        swatch.setStyleSheet(f"background-color: transparent; border-radius: 1px; border: 2px dashed rgb{color};")
+                    else:
+                        swatch.setStyleSheet(f"background-color: rgb{color}; border-radius: 2px;")
+                    text = QtWidgets.QLabel(label)
+                    text.setStyleSheet("font-size: 11px;")
+                    lengend_layout.addWidget(swatch)
+                    lengend_layout.addWidget(text)
+                lengend_layout.addStretch()
+                lengend_widget.setLayout(lengend_layout)
+
+            self.oee_df['production_date'] = pd.to_datetime(self.oee_df['production_date'])
+            self.oee_df.sort_values('production_date', inplace=True)
+            draw_OEE_metrics_chart(self.oee_df , 70, 'production_date', 'OEE_percentage', self.ui.OEE_metrics_chart, self.ui.OEE_metrics_legend)
+            mttr = self.oee_df['Total_Loss'].mean()
+            mtbf = (self.oee_df['Available_Time'].sum() / downtime_count[0][0] ) if downtime_count[0][0] > 0 else 1
+            mttr_format = change_time_format(mttr, 'm')
+            mtbf_format = change_time_format(mtbf, 'm')
+            self.ui.OEE_MTTR_value_lbl.setText(f"{mttr_format['h']} hrs {mttr_format['m']} mins" if mttr >= 60 else f"{mttr_format['m']} mins {mttr_format['s']} secs")
+            self.ui.OEE_MTBF_value_lbl.setText(f"{mtbf_format['h']} hrs {mtbf_format['m']} mins" if mtbf >= 60 else f"{mtbf_format['m']} mins {mtbf_format['s']} secs")
+            self.ui.pre_MTTR_lbl.setText(make_comparison_html(mttr, 9.32, "MTTR"))
+            self.ui.pre_MTBF_lbl.setText(make_comparison_html(mtbf, 4100, "MTBF"))
+
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to refresh OEE page: {e}")
+
+
 #==========================Function of OEE page ====================================================================================END
 #==========================Function of OEE page ====================================================================================END
 #==========================Function of OEE page ====================================================================================END        
@@ -433,6 +773,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
 #==========================Function of Maintenance page =============================================================================BEGIN
 #==========================Function of Maintenance page =============================================================================BEGIN
 #==========================Function of Maintenance page =============================================================================BEGIN
+    
     @QtCore.pyqtSlot()
     def Maintenance_page(self):
         self.spinner.start()
@@ -3235,9 +3576,11 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         else:
             self.DT_chart_current_group = "Downtime Start Time"
             self.style_button_with_shadow((self.ui.DT_detail_chart_time_btn,self.ui.DT_detail_chart_line_btn,self.ui.DT_detail_chart_machine_btn,self.ui.DT_detail_chart_error_btn))
+            self.ui.DT_chart_legend.hide()
             self.DT_time_density_chart(data,value_col)
             return
         try:
+            self.ui.DT_chart_legend.show()
             old_layout = self.ui.DT_chart.layout()
             if old_layout is not None:
                 while old_layout.count():
@@ -3246,7 +3589,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                         item.widget().deleteLater()
             else:
                 new_layout = QtWidgets.QVBoxLayout()
-                new_layout.setContentsMargins(0, 0, 0, 30)
+                new_layout.setContentsMargins(0, 0, 0, 0)
                 new_layout.setSpacing(0)
                 self.ui.DT_chart.setLayout(new_layout)
             self.bar_item = None
@@ -3319,13 +3662,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             bar3 = pg.BarGraphItem(x=x, y0=s1+s2, y1=total,
                                 width=0.6, brush=pg.mkBrush(*colors["Shift 3"]),
                                 pen=pg.mkPen((0, 255, 235,255), width=0.5))
-            legend = plot.addLegend(offset=(230, 1), colCount=3, spacing=20)
-            scatter1 = pg.ScatterPlotItem(symbol='o', size=15, brush=pg.mkBrush(*colors["Shift 1"]), pen=None)
-            scatter2 = pg.ScatterPlotItem(symbol='o', size=15, brush=pg.mkBrush(*colors["Shift 2"]), pen=None)
-            scatter3 = pg.ScatterPlotItem(symbol='o', size=15, brush=pg.mkBrush(*colors["Shift 3"]), pen=None)
-            legend.addItem(scatter1, "Shift 1")
-            legend.addItem(scatter2, "Shift 2")
-            legend.addItem(scatter3, "Shift 3")
             plot.addItem(bar1)
             plot.addItem(bar2)
             plot.addItem(bar3)
@@ -3391,6 +3727,30 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             plot.scene().sigMouseMoved.connect(on_hover)
 
             self.ui.DT_chart.layout().addWidget(plot)
+            if self.ui.DT_chart_legend.layout() is not None:
+                return
+            legend_layout = QtWidgets.QHBoxLayout()
+            legend_layout.setContentsMargins(0, 0, 0, 0)
+            legend_layout.setSpacing(5)
+            self.ui.DT_chart_legend.setLayout(legend_layout)
+            horizontal_spacer = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+            legend_layout.addItem(horizontal_spacer)
+            for label,color in colors.items():
+                legend_item = QtWidgets.QWidget()
+                legend_item.setFixedSize(100, 30)
+                legend_layout_item = QtWidgets.QHBoxLayout(legend_item)
+                legend_layout_item.setContentsMargins(0, 0, 0, 0)
+                legend_layout_item.setSpacing(5)
+                color_box = QtWidgets.QLabel()
+                color_box.setFixedSize(12, 12)
+                color_box.setStyleSheet(f"background-color: rgba({color[0]}, {color[1]}, {color[2]}, {color[3]}); border: 1px solid rgba({color[0]}, {color[1]}, {color[2]}, 255); border-radius: 0px;")
+                legend_layout_item.addWidget(color_box)
+                legend_label = QtWidgets.QLabel()
+                legend_label.setText(label)
+                legend_label.setStyleSheet("color: gray; font-size: 8pt;")
+                legend_layout_item.addWidget(legend_label)
+                legend_layout.addWidget(legend_item)
+            legend_layout.addItem(horizontal_spacer)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to draw chart: {e}")
 
@@ -6426,7 +6786,106 @@ class New_Report_Input(QtWidgets.QDialog):
             QtWidgets.QMessageBox.warning(self, "Warning", str(e))
             return
 
+class DonutChart(QtWidgets.QWidget):
+    def __init__(self, value: float, max_value: float = 100,target_value: float = 0, background_color: str = "#E8E8E8" , foreground_color: str = "#2ECC71"
+                , target_color: str = "#affaff" , parameter_name: str = "OEE", parent=None):
+        super().__init__(parent)
+        self.value = value
+        self.max_value = max_value
+        self.target_value = target_value
+        self.background_color = background_color
+        self.foreground_color = foreground_color
+        self.target_color = target_color
+        self.parameter_name = parameter_name
+        # self.setMinimumSize(200, 400)
+        if self.value == self.target_value:
+            self.foreground_color = "#facc15"
+        elif self.value < self.target_value:
+            self.foreground_color = "#f61863"
+        else:
+            self.foreground_color = "#2ECC71"
 
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        width = self.width()
+        height = self.height()
+        size = min(width, height)*0.7
+        x = (width - size) / 2
+        y = (height - size) / 4
+
+        stroke_width = size * 0.12 
+        margin = stroke_width / 2
+
+        rect = QtCore.QRectF(x + margin, y + margin,
+                      size - stroke_width, size - stroke_width)
+
+        percentage = self.value / self.max_value
+        span_angle = int(percentage * 360 * 16)   
+        full_angle = 360 * 16
+        start_angle = 90 * 16
+
+        target_percentage = self.target_value / self.max_value
+        target_span_angle = int(target_percentage * 360 * 16)
+        def draw_circle(pen_color, pen_width, cap_style, span_angle):
+            pen = QtGui.QPen(QtGui.QColor(pen_color))
+            pen.setWidth(int(pen_width))
+            pen.setCapStyle(cap_style)
+            painter.setPen(pen)
+            painter.drawArc(rect, start_angle, -span_angle)
+
+        draw_circle(self.background_color, stroke_width, QtCore.Qt.PenCapStyle.FlatCap, full_angle)
+        draw_circle(self.foreground_color, stroke_width, QtCore.Qt.PenCapStyle.RoundCap, span_angle)
+        draw_circle(self.target_color, stroke_width*0.5, QtCore.Qt.PenCapStyle.RoundCap, target_span_angle)
+
+    
+        # Target Text
+        painter.setPen(QtGui.QColor("#333333"))
+        font = QtGui.QFont("Arial", int(size * 0.18), QtGui.QFont.Weight.Bold)
+        painter.setFont(font)
+        painter.drawText(
+            QtCore.QRectF(x, y, size, size),
+            QtCore.Qt.AlignmentFlag.AlignCenter,
+            f"{int(self.value)}%"
+        )
+
+        #Legend
+        dot_r = int(size * 0.045)
+        legend_x = int( x - x*0.05 )
+        legend_y = int(y + size + dot_r * 3)
+
+        painter.setBrush(QtGui.QColor(self.foreground_color))
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        painter.drawEllipse(legend_x, legend_y - dot_r + 3, dot_r * 2, dot_r * 2)
+
+        painter.setPen(QtGui.QColor("#555555"))
+        font_legend = QtGui.QFont("Arial", int(size * 0.07))
+        painter.setFont(font_legend)
+        painter.drawText(
+            QtCore.QRectF(legend_x + dot_r * 2 + int(size * 0.03),
+                   legend_y - dot_r,
+                   size * 0.4, dot_r * 3),
+            QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft,
+            f"{self.parameter_name}"
+        )
+
+        legend_x2 = legend_x  + dot_r * 2 + int(size * 0.4)
+
+        painter.setBrush(QtGui.QColor(self.target_color))
+        painter.setPen(QtCore.Qt.PenStyle.NoPen)
+        painter.drawEllipse(legend_x2, legend_y - dot_r + 3, dot_r * 2, dot_r * 2)
+
+        painter.setPen(QtGui.QColor("#555555"))
+        painter.setFont(font_legend)
+        painter.drawText(
+            QtCore.QRectF(legend_x2 + dot_r * 2 + int(size * 0.03),
+                legend_y - dot_r,
+                size * 0.8, dot_r * 3),
+            QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft,
+            f"Target {self.target_value}%"
+)
+        painter.end()
 
 def main():
     try:

@@ -13,7 +13,7 @@
 #         super().__init__(parent)
 #         self.value = value
 #         self.max_value = max_value
-#         self.setMinimumSize(200, 200)
+#         # self.setMinimumSize(200, 400)
 
 #     def paintEvent(self, event):
 #         painter = QPainter(self)
@@ -22,7 +22,8 @@
 #         width = self.width()
 #         height = self.height()
 #         size = min(width, height)
-
+#         print(width, height)
+#         print(size)
 #         # Căn giữa
 #         x = (width - size) / 2
 #         y = (height - size) / 2
@@ -51,6 +52,16 @@
 #         pen_fg.setCapStyle(Qt.PenCapStyle.RoundCap)
 #         painter.setPen(pen_fg)
 #         painter.drawArc(rect, start_angle, -span_angle)
+#         # thêm legend
+
+
+#         # --- Vẽ vòng target(màu xanh cyan) ---
+#         pen_fg = QPen(QColor("#e5e7eb"))
+#         pen_fg.setWidth(int(stroke_width*0.5))
+#         pen_fg.setCapStyle(Qt.PenCapStyle.RoundCap)
+#         painter.setPen(pen_fg)
+#         painter.drawArc(rect, start_angle, -270*16)
+    
 
 #         # --- Vẽ text ở giữa ---
 #         painter.setPen(QColor("#333333"))
@@ -61,7 +72,41 @@
 #             Qt.AlignmentFlag.AlignCenter,
 #             f"{int(self.value)}%"
 #         )
+#         # --- Vẽ legend: chấm tròn + text "OEE" ---
+#         dot_r = int(size * 0.045)
+#         legend_x = int( x - x*0.05 )
+#         legend_y = int(y + 70 + size * 0.88)
 
+#         painter.setBrush(QColor("#2ECC71"))
+#         painter.setPen(Qt.PenStyle.NoPen)
+#         painter.drawEllipse(legend_x, legend_y - dot_r, dot_r * 2, dot_r * 2)
+
+#         painter.setPen(QColor("#555555"))
+#         font_legend = QFont("Arial", int(size * 0.09))
+#         painter.setFont(font_legend)
+#         painter.drawText(
+#             QRectF(legend_x + dot_r * 2 + int(size * 0.03),
+#                    legend_y - dot_r,
+#                    size * 0.4, dot_r * 2),
+#             Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+#             "OEE"
+#         )
+
+#         legend_x2 = legend_x  + dot_r * 2 + int(size * 0.35)
+
+#         painter.setBrush(QColor("#e5e7eb"))
+#         painter.setPen(Qt.PenStyle.NoPen)
+#         painter.drawEllipse(legend_x2, legend_y - dot_r, dot_r * 2, dot_r * 2)
+
+#         painter.setPen(QColor("#555555"))
+#         painter.setFont(font_legend)
+#         painter.drawText(
+#             QRectF(legend_x2 + dot_r * 2 + int(size * 0.03),
+#                 legend_y - dot_r,
+#                 size * 0.4, dot_r * 2),
+#             Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+#             "Target"
+# )
 #         painter.end()
 
 
@@ -81,22 +126,53 @@
 #     window.show()
 #     sys.exit(app.exec())
 
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
+# # from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
 
-app = QApplication([])
-window = QWidget()
-layout = QVBoxLayout()
+# # app = QApplication([])
+# # window = QWidget()
+# # layout = QVBoxLayout()
 
-label = QLabel()
+# # label = QLabel()
 
-# Sử dụng HTML để định dạng các phần khác nhau
-text = """
-<span style='font-family: Arial; color: red; font-size: 20pt;'>Đoạn 1: Đỏ & Lớn</span><br>
-<span style='font-family: Comic Sans MS; color: blue; font-weight: bold; font-size: 100pt;'>Đoạn 2: Xanh & Nhỏ</span>
-"""
+# # # Sử dụng HTML để định dạng các phần khác nhau
+# # text = """
+# # <span style='font-family: Arial; color: red; font-size: 20pt;'>Đoạn 1: Đỏ & Lớn</span><br>
+# # <span style='font-family: Comic Sans MS; color: blue; font-weight: bold; font-size: 100pt;'>Đoạn 2: Xanh & Nhỏ</span>
+# # """
 
-label.setText(text)
-layout.addWidget(label)
-window.setLayout(layout)
-window.show()
-app.exec_()
+# # label.setText(text)
+# # layout.addWidget(label)
+# # window.setLayout(layout)
+# # window.show()
+# # app.exec_()
+
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+import pyqtgraph as pg
+
+class ChartWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Giám sát dữ liệu sản xuất")
+        
+        # 1. Tạo widget biểu đồ
+        self.plot_graph = pg.PlotWidget()
+        self.setCentralWidget(self.plot_graph)
+        
+        # 2. Cấu hình màu nền và tiêu đề
+        self.plot_graph.setBackground('w') # 'w' là màu trắng
+        self.plot_graph.setTitle("Biểu đồ hiệu suất", color="b", size="15pt")
+        
+        # 3. Vẽ dữ liệu
+        hour = [1, 2, 3, 4, 5, 6, 7, 8]
+        output = [10, 15, 12, 18, 20, 15, 25, 22]
+        
+        # Tạo bút vẽ (Pen) - tương đương QPen bạn đã biết
+        pen = pg.mkPen(color=(255, 0, 0), width=3) 
+        
+        self.plot_graph.plot(hour, output, pen=pen, symbol='o')
+
+app = QApplication(sys.argv)
+win = ChartWindow()
+win.show()
+sys.exit(app.exec_())

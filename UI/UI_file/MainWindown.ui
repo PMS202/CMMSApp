@@ -333,7 +333,7 @@
        <string notr="true">background: #ffffff</string>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="OEE_page">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -880,28 +880,69 @@
                           </property>
                           <layout class="QVBoxLayout" name="verticalLayout_64">
                            <item>
-                            <widget class="QLabel" name="OEE_OK_qty_lbl">
+                            <widget class="QFrame" name="frame_142">
                              <property name="sizePolicy">
-                              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                              <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
                                <horstretch>0</horstretch>
                                <verstretch>0</verstretch>
                               </sizepolicy>
                              </property>
-                             <property name="text">
-                              <string>TextLabel</string>
+                             <property name="frameShape">
+                              <enum>QFrame::StyledPanel</enum>
                              </property>
-                             <property name="alignment">
-                              <set>Qt::AlignCenter</set>
+                             <property name="frameShadow">
+                              <enum>QFrame::Raised</enum>
                              </property>
+                             <layout class="QHBoxLayout" name="horizontalLayout_95">
+                              <property name="spacing">
+                               <number>0</number>
+                              </property>
+                              <property name="leftMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="topMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="rightMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="bottomMargin">
+                               <number>0</number>
+                              </property>
+                              <item>
+                               <widget class="QLabel" name="label_79">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QLabel" name="OEE_OK_qty_lbl">
+                                <property name="sizePolicy">
+                                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                                  <horstretch>0</horstretch>
+                                  <verstretch>0</verstretch>
+                                 </sizepolicy>
+                                </property>
+                                <property name="text">
+                                 <string>TextLabel</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                             </layout>
                             </widget>
                            </item>
                            <item>
                             <widget class="QLabel" name="label_64">
-                             <property name="sizePolicy">
-                              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-                               <horstretch>0</horstretch>
-                               <verstretch>0</verstretch>
-                              </sizepolicy>
+                             <property name="font">
+                              <font>
+                               <family>MS Sans Serif</family>
+                               <weight>75</weight>
+                               <bold>true</bold>
+                              </font>
                              </property>
                              <property name="text">
                               <string>OK Quantity</string>
@@ -924,13 +965,53 @@
                           </property>
                           <layout class="QVBoxLayout" name="verticalLayout_65">
                            <item>
-                            <widget class="QLabel" name="OEE_NG_qty_lbl">
-                             <property name="text">
-                              <string>TextLabel</string>
+                            <widget class="QFrame" name="frame_143">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
                              </property>
-                             <property name="alignment">
-                              <set>Qt::AlignCenter</set>
+                             <property name="frameShape">
+                              <enum>QFrame::StyledPanel</enum>
                              </property>
+                             <property name="frameShadow">
+                              <enum>QFrame::Raised</enum>
+                             </property>
+                             <layout class="QHBoxLayout" name="horizontalLayout_96">
+                              <property name="spacing">
+                               <number>0</number>
+                              </property>
+                              <property name="leftMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="topMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="rightMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="bottomMargin">
+                               <number>0</number>
+                              </property>
+                              <item>
+                               <widget class="QLabel" name="label_81">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QLabel" name="OEE_NG_qty_lbl">
+                                <property name="text">
+                                 <string>TextLabel</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                             </layout>
                             </widget>
                            </item>
                            <item>
@@ -956,13 +1037,53 @@
                           </property>
                           <layout class="QVBoxLayout" name="verticalLayout_66">
                            <item>
-                            <widget class="QLabel" name="OEE_WT_lbl">
-                             <property name="text">
-                              <string>TextLabel</string>
+                            <widget class="QFrame" name="frame_144">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
                              </property>
-                             <property name="alignment">
-                              <set>Qt::AlignCenter</set>
+                             <property name="frameShape">
+                              <enum>QFrame::StyledPanel</enum>
                              </property>
+                             <property name="frameShadow">
+                              <enum>QFrame::Raised</enum>
+                             </property>
+                             <layout class="QHBoxLayout" name="horizontalLayout_97">
+                              <property name="spacing">
+                               <number>0</number>
+                              </property>
+                              <property name="leftMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="topMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="rightMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="bottomMargin">
+                               <number>0</number>
+                              </property>
+                              <item>
+                               <widget class="QLabel" name="label_83">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QLabel" name="OEE_WT_lbl">
+                                <property name="text">
+                                 <string>TextLabel</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                             </layout>
                             </widget>
                            </item>
                            <item>
@@ -988,13 +1109,53 @@
                           </property>
                           <layout class="QVBoxLayout" name="verticalLayout_67">
                            <item>
-                            <widget class="QLabel" name="OEE_DT_lbl">
-                             <property name="text">
-                              <string>TextLabel</string>
+                            <widget class="QFrame" name="frame_145">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
                              </property>
-                             <property name="alignment">
-                              <set>Qt::AlignCenter</set>
+                             <property name="frameShape">
+                              <enum>QFrame::StyledPanel</enum>
                              </property>
+                             <property name="frameShadow">
+                              <enum>QFrame::Raised</enum>
+                             </property>
+                             <layout class="QHBoxLayout" name="horizontalLayout_98">
+                              <property name="spacing">
+                               <number>0</number>
+                              </property>
+                              <property name="leftMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="topMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="rightMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="bottomMargin">
+                               <number>0</number>
+                              </property>
+                              <item>
+                               <widget class="QLabel" name="label_85">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QLabel" name="OEE_DT_lbl">
+                                <property name="text">
+                                 <string>TextLabel</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                             </layout>
                             </widget>
                            </item>
                            <item>
@@ -1020,19 +1181,59 @@
                           </property>
                           <layout class="QVBoxLayout" name="verticalLayout_68">
                            <item>
-                            <widget class="QLabel" name="label_85">
-                             <property name="text">
-                              <string>TextLabel</string>
+                            <widget class="QFrame" name="frame_146">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
                              </property>
-                             <property name="alignment">
-                              <set>Qt::AlignCenter</set>
+                             <property name="frameShape">
+                              <enum>QFrame::StyledPanel</enum>
                              </property>
+                             <property name="frameShadow">
+                              <enum>QFrame::Raised</enum>
+                             </property>
+                             <layout class="QHBoxLayout" name="horizontalLayout_99">
+                              <property name="spacing">
+                               <number>0</number>
+                              </property>
+                              <property name="leftMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="topMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="rightMargin">
+                               <number>0</number>
+                              </property>
+                              <property name="bottomMargin">
+                               <number>0</number>
+                              </property>
+                              <item>
+                               <widget class="QLabel" name="label_86">
+                                <property name="text">
+                                 <string/>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QLabel" name="OEE_yield_rate_lbl">
+                                <property name="text">
+                                 <string>TextLabel</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                             </layout>
                             </widget>
                            </item>
                            <item>
                             <widget class="QLabel" name="label_84">
                              <property name="text">
-                              <string>Production Line Status</string>
+                              <string>Yield Rate</string>
                              </property>
                              <property name="alignment">
                               <set>Qt::AlignCenter</set>
@@ -1052,6 +1253,12 @@
                          <horstretch>0</horstretch>
                          <verstretch>0</verstretch>
                         </sizepolicy>
+                       </property>
+                       <property name="minimumSize">
+                        <size>
+                         <width>1235</width>
+                         <height>266</height>
+                        </size>
                        </property>
                        <property name="frameShape">
                         <enum>QFrame::StyledPanel</enum>
@@ -1104,7 +1311,7 @@
                             <widget class="QWidget" name="OEE_value_chart" native="true"/>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_86">
+                            <widget class="QLabel" name="pre_OEE_lbl">
                              <property name="sizePolicy">
                               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                                <horstretch>0</horstretch>
@@ -1148,7 +1355,7 @@
                             <widget class="QWidget" name="OEE_A_value_chart" native="true"/>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_87">
+                            <widget class="QLabel" name="pre_A_lbl">
                              <property name="sizePolicy">
                               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                                <horstretch>0</horstretch>
@@ -1192,7 +1399,7 @@
                             <widget class="QWidget" name="OEE_P_value_chart" native="true"/>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_88">
+                            <widget class="QLabel" name="pre_P_lbl">
                              <property name="sizePolicy">
                               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                                <horstretch>0</horstretch>
@@ -1236,7 +1443,7 @@
                             <widget class="QWidget" name="OEE_Q_value_chart" native="true"/>
                            </item>
                            <item>
-                            <widget class="QLabel" name="label_89">
+                            <widget class="QLabel" name="pre_Q_lbl">
                              <property name="sizePolicy">
                               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                                <horstretch>0</horstretch>
@@ -1307,6 +1514,22 @@
                                 </property>
                                </widget>
                               </item>
+                              <item>
+                               <widget class="QLabel" name="pre_MTTR_lbl">
+                                <property name="sizePolicy">
+                                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                                  <horstretch>0</horstretch>
+                                  <verstretch>0</verstretch>
+                                 </sizepolicy>
+                                </property>
+                                <property name="text">
+                                 <string>TextLabel</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignCenter</set>
+                                </property>
+                               </widget>
+                              </item>
                              </layout>
                             </widget>
                            </item>
@@ -1337,6 +1560,22 @@
                               </item>
                               <item>
                                <widget class="QLabel" name="OEE_MTBF_value_lbl">
+                                <property name="text">
+                                 <string>TextLabel</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QLabel" name="pre_MTBF_lbl">
+                                <property name="sizePolicy">
+                                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                                  <horstretch>0</horstretch>
+                                  <verstretch>0</verstretch>
+                                 </sizepolicy>
+                                </property>
                                 <property name="text">
                                  <string>TextLabel</string>
                                 </property>
@@ -1381,7 +1620,7 @@
                         <item>
                          <widget class="QFrame" name="frame_139">
                           <property name="sizePolicy">
-                           <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                           <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
                             <horstretch>0</horstretch>
                             <verstretch>0</verstretch>
                            </sizepolicy>
@@ -1416,7 +1655,24 @@
                             </widget>
                            </item>
                            <item>
-                            <widget class="QWidget" name="OEE_metrics_chart" native="true"/>
+                            <widget class="QWidget" name="OEE_metrics_legend" native="true">
+                             <property name="minimumSize">
+                              <size>
+                               <width>0</width>
+                               <height>20</height>
+                              </size>
+                             </property>
+                            </widget>
+                           </item>
+                           <item>
+                            <widget class="QWidget" name="OEE_metrics_chart" native="true">
+                             <property name="sizePolicy">
+                              <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+                               <horstretch>0</horstretch>
+                               <verstretch>0</verstretch>
+                              </sizepolicy>
+                             </property>
+                            </widget>
                            </item>
                           </layout>
                          </widget>
@@ -1424,7 +1680,7 @@
                         <item>
                          <widget class="QFrame" name="frame_140">
                           <property name="sizePolicy">
-                           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
                             <horstretch>0</horstretch>
                             <verstretch>0</verstretch>
                            </sizepolicy>
@@ -1446,16 +1702,51 @@
                             <number>3</number>
                            </property>
                            <item>
-                            <widget class="QLabel" name="label_65">
+                            <widget class="QFrame" name="frame_141">
                              <property name="sizePolicy">
                               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                                <horstretch>0</horstretch>
                                <verstretch>0</verstretch>
                               </sizepolicy>
                              </property>
-                             <property name="text">
-                              <string>Maintenance</string>
+                             <property name="frameShape">
+                              <enum>QFrame::StyledPanel</enum>
                              </property>
+                             <property name="frameShadow">
+                              <enum>QFrame::Raised</enum>
+                             </property>
+                             <layout class="QHBoxLayout" name="horizontalLayout_86">
+                              <item>
+                               <widget class="QPushButton" name="pushButton">
+                                <property name="text">
+                                 <string>PushButton</string>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QLabel" name="label_65">
+                                <property name="sizePolicy">
+                                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                                  <horstretch>0</horstretch>
+                                  <verstretch>0</verstretch>
+                                 </sizepolicy>
+                                </property>
+                                <property name="text">
+                                 <string>Net operations time</string>
+                                </property>
+                                <property name="alignment">
+                                 <set>Qt::AlignCenter</set>
+                                </property>
+                               </widget>
+                              </item>
+                              <item>
+                               <widget class="QPushButton" name="pushButton_2">
+                                <property name="text">
+                                 <string>PushButton</string>
+                                </property>
+                               </widget>
+                              </item>
+                             </layout>
                             </widget>
                            </item>
                            <item>
@@ -2616,6 +2907,9 @@
                            </item>
                           </layout>
                          </widget>
+                        </item>
+                        <item>
+                         <widget class="QWidget" name="DT_chart_legend" native="true"/>
                         </item>
                         <item>
                          <widget class="QWidget" name="DT_chart" native="true"/>
