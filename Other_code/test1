@@ -1,178 +1,144 @@
 # import sys
-# from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
-# from PyQt5.QtGui import QPainter, QColor, QPen, QFont, QConicalGradient
-# from PyQt5.QtCore import Qt, QRectF
+# from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, 
+#                              QHBoxLayout, QLabel, QLineEdit, 
+#                              QListWidget, QListWidgetItem)
+# from PyQt5.QtCore import Qt
 
-
-# class DonutChart(QWidget):
-#     def __init__(self, value: float, max_value: float = 100, parent=None):
-#         """
-#         value: giá trị hiện tại (vd: 83)
-#         max_value: giá trị tối đa (vd: 100)
-#         """
+# class HoverEditWidget(QWidget):
+#     def __init__(self, text, parent=None):
 #         super().__init__(parent)
-#         self.value = value
-#         self.max_value = max_value
-#         # self.setMinimumSize(200, 400)
+#         layout = QHBoxLayout(self)
+#         layout.setContentsMargins(5, 5, 5, 5)
+        
+#         # 1. Chữ hiển thị bình thường
+#         self.label = QLabel(text)
+#         layout.addWidget(self.label)
+        
+#         # 2. Ô nhập liệu (mặc định sẽ ẩn đi)
+#         self.line_edit = QLineEdit(text)
+#         self.line_edit.hide()
+#         layout.addWidget(self.line_edit)
+        
+#         # Khi người dùng gõ xong (nhấn Enter hoặc click ra ngoài), cập nhật lại chữ
+#         self.line_edit.editingFinished.connect(self.on_editing_finished)
 
-#     def paintEvent(self, event):
-#         painter = QPainter(self)
-#         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+#     def enterEvent(self, event):
+#         """Sự kiện xảy ra khi trỏ chuột bước vào khu vực của item"""
+#         self.label.hide()
+#         self.line_edit.show()
+#         super().enterEvent(event)
 
-#         width = self.width()
-#         height = self.height()
-#         size = min(width, height)
-#         print(width, height)
-#         print(size)
-#         # Căn giữa
-#         x = (width - size) / 2
-#         y = (height - size) / 2
+#     def leaveEvent(self, event):
+#         """Sự kiện xảy ra khi chuột rời khỏi item"""
+#         # Chỉ ẩn đi nếu người dùng KHÔNG bấm vào để gõ chữ (chưa có focus)
+#         if not self.line_edit.hasFocus():
+#             self.line_edit.hide()
+#             self.label.show()
+#         super().leaveEvent(event)
 
-#         stroke_width = size * 0.12  # Độ dày vòng tròn
-#         margin = stroke_width / 2
-
-#         rect = QRectF(x + margin, y + margin,
-#                       size - stroke_width, size - stroke_width)
-
-#         percentage = self.value / self.max_value
-#         span_angle = int(percentage * 360 * 16)   # QPainter dùng 1/16 độ
-#         full_angle = 360 * 16
-#         start_angle = 90 * 16  # Bắt đầu từ trên cùng
-
-#         # --- Vẽ vòng nền (màu xám nhạt) ---
-#         pen_bg = QPen(QColor("#E8E8E8"))
-#         pen_bg.setWidth(int(stroke_width))
-#         pen_bg.setCapStyle(Qt.PenCapStyle.FlatCap)
-#         painter.setPen(pen_bg)
-#         painter.drawArc(rect, start_angle, -full_angle)
-
-#         # --- Vẽ vòng giá trị (màu xanh lá) ---
-#         pen_fg = QPen(QColor("#2ECC71"))
-#         pen_fg.setWidth(int(stroke_width))
-#         pen_fg.setCapStyle(Qt.PenCapStyle.RoundCap)
-#         painter.setPen(pen_fg)
-#         painter.drawArc(rect, start_angle, -span_angle)
-#         # thêm legend
+#     def on_editing_finished(self):
+#         """Xử lý khi người dùng đã sửa xong"""
+#         # Cập nhật chữ mới từ ô nhập liệu vào nhãn hiển thị
+#         self.label.setText(self.line_edit.text())
+#         self.line_edit.hide()
+#         self.label.show()
 
 
-#         # --- Vẽ vòng target(màu xanh cyan) ---
-#         pen_fg = QPen(QColor("#e5e7eb"))
-#         pen_fg.setWidth(int(stroke_width*0.5))
-#         pen_fg.setCapStyle(Qt.PenCapStyle.RoundCap)
-#         painter.setPen(pen_fg)
-#         painter.drawArc(rect, start_angle, -270*16)
-    
-
-#         # --- Vẽ text ở giữa ---
-#         painter.setPen(QColor("#333333"))
-#         font = QFont("Arial", int(size * 0.18), QFont.Weight.Bold)
-#         painter.setFont(font)
-#         painter.drawText(
-#             QRectF(x, y, size, size),
-#             Qt.AlignmentFlag.AlignCenter,
-#             f"{int(self.value)}%"
-#         )
-#         # --- Vẽ legend: chấm tròn + text "OEE" ---
-#         dot_r = int(size * 0.045)
-#         legend_x = int( x - x*0.05 )
-#         legend_y = int(y + 70 + size * 0.88)
-
-#         painter.setBrush(QColor("#2ECC71"))
-#         painter.setPen(Qt.PenStyle.NoPen)
-#         painter.drawEllipse(legend_x, legend_y - dot_r, dot_r * 2, dot_r * 2)
-
-#         painter.setPen(QColor("#555555"))
-#         font_legend = QFont("Arial", int(size * 0.09))
-#         painter.setFont(font_legend)
-#         painter.drawText(
-#             QRectF(legend_x + dot_r * 2 + int(size * 0.03),
-#                    legend_y - dot_r,
-#                    size * 0.4, dot_r * 2),
-#             Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
-#             "OEE"
-#         )
-
-#         legend_x2 = legend_x  + dot_r * 2 + int(size * 0.35)
-
-#         painter.setBrush(QColor("#e5e7eb"))
-#         painter.setPen(Qt.PenStyle.NoPen)
-#         painter.drawEllipse(legend_x2, legend_y - dot_r, dot_r * 2, dot_r * 2)
-
-#         painter.setPen(QColor("#555555"))
-#         painter.setFont(font_legend)
-#         painter.drawText(
-#             QRectF(legend_x2 + dot_r * 2 + int(size * 0.03),
-#                 legend_y - dot_r,
-#                 size * 0.4, dot_r * 2),
-#             Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
-#             "Target"
-# )
-#         painter.end()
-
+# class MainWindow(QWidget):
+#     def __init__(self):
+#         super().__init__()
+#         self.setWindowTitle("Danh sách chỉnh sửa khi hover")
+#         self.resize(400, 300)
+        
+#         main_layout = QVBoxLayout(self)
+        
+#         # Tạo bảng danh sách QListWidget
+#         self.list_widget = QListWidget()
+#         main_layout.addWidget(self.list_widget)
+        
+#         # Thêm một vài dữ liệu mẫu vào danh sách
+#         sample_items = ["Học lập trình Python", "Thiết kế giao diện PyQt5", "Cập nhật cơ sở dữ liệu", "Báo cáo tiến độ công việc"]
+        
+#         for text in sample_items:
+#             # Tạo item cho QListWidget
+#             list_item = QListWidgetItem(self.list_widget)
+            
+#             # Tạo custom widget của chúng ta
+#             custom_widget = HoverEditWidget(text)
+            
+#             # Ép kích thước của dòng vừa vặn với widget tự chế
+#             list_item.setSizeHint(custom_widget.sizeHint())
+            
+#             # Thêm vào list
+#             self.list_widget.addItem(list_item)
+#             self.list_widget.setItemWidget(list_item, custom_widget)
 
 # if __name__ == "__main__":
 #     app = QApplication(sys.argv)
-
-#     window = QWidget()
-#     window.setWindowTitle("Donut Chart - OEE")
-#     window.setStyleSheet("background-color: white;")
-
-#     layout = QVBoxLayout(window)
-
-#     chart = DonutChart(value=83, max_value=100)
-#     layout.addWidget(chart)
-
-#     window.resize(300, 300)
+#     window = MainWindow()
 #     window.show()
-#     sys.exit(app.exec())
-
-# # from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
-
-# # app = QApplication([])
-# # window = QWidget()
-# # layout = QVBoxLayout()
-
-# # label = QLabel()
-
-# # # Sử dụng HTML để định dạng các phần khác nhau
-# # text = """
-# # <span style='font-family: Arial; color: red; font-size: 20pt;'>Đoạn 1: Đỏ & Lớn</span><br>
-# # <span style='font-family: Comic Sans MS; color: blue; font-weight: bold; font-size: 100pt;'>Đoạn 2: Xanh & Nhỏ</span>
-# # """
-
-# # label.setText(text)
-# # layout.addWidget(label)
-# # window.setLayout(layout)
-# # window.show()
-# # app.exec_()
+#     sys.exit(app.exec_())
 
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-import pyqtgraph as pg
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout
+from PyQt5.QtCore import Qt
 
-class ChartWindow(QMainWindow):
+class SuffixLineEdit(QLineEdit):
+    def __init__(self, suffix_text="", parent=None):
+        super().__init__(parent)
+        
+        # 1. Tạo một QLabel nằm NGAY TRONG ô nhập liệu
+        self.suffix_label = QLabel(suffix_text, self)
+        # Đặt màu xám mờ cho giống một cái nhãn phụ đơn vị
+        self.suffix_label.setStyleSheet("color: #888888; background: transparent;") 
+        
+        # 2. Dùng layout để ép nhãn này luôn dính về góc bên phải
+        internal_layout = QHBoxLayout(self)
+        internal_layout.addStretch()  # Thanh lò xo đẩy label sang phải
+        internal_layout.addWidget(self.suffix_label)
+        
+        # Căn chỉnh lề nội bộ (cách mép phải 10px, trên dưới 0px)
+        internal_layout.setContentsMargins(0, 0, 10, 0)
+        internal_layout.setAlignment(Qt.AlignVCenter)
+        
+        # Đặt chữ hậu tố ban đầu
+        if suffix_text:
+            self.setSuffix(suffix_text)
+
+    def setSuffix(self, text):
+        """Hàm để thay đổi chữ hậu tố động nếu cần"""
+        self.suffix_label.setText(text)
+        self.suffix_label.adjustSize() # Ép nhãn tính toán lại kích thước chuẩn
+        
+        # MẸO QUAN TRỌNG: Tạo một vùng đệm bên phải (Text Margin) cho ô nhập liệu.
+        # Vùng đệm này bằng đúng độ rộng của chữ hậu tố + 15px khoảng cách.
+        # Nhờ vậy, chữ bạn gõ sẽ bị chặn lại trước khi chạm vào chữ hậu tố.
+        right_margin = self.suffix_label.width() + 15
+        self.setTextMargins(0, 0, right_margin, 0)
+
+
+# --- Giao diện chạy thử ---
+class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Giám sát dữ liệu sản xuất")
+        self.setWindowTitle("Persistent Right Label")
+        self.resize(350, 120)
         
-        # 1. Tạo widget biểu đồ
-        self.plot_graph = pg.PlotWidget()
-        self.setCentralWidget(self.plot_graph)
+        layout = QVBoxLayout(self)
         
-        # 2. Cấu hình màu nền và tiêu đề
-        self.plot_graph.setBackground('w') # 'w' là màu trắng
-        self.plot_graph.setTitle("Biểu đồ hiệu suất", color="b", size="15pt")
+        # Thử nghiệm với đơn vị tiền tệ
+        self.input_money = SuffixLineEdit("VND")
+        self.input_money.setPlaceholderText("Nhập số tiền...") # Vẫn dùng được placeholder gốc căn trái
         
-        # 3. Vẽ dữ liệu
-        hour = [1, 2, 3, 4, 5, 6, 7, 8]
-        output = [10, 15, 12, 18, 20, 15, 25, 22]
+        # Thử nghiệm với đơn vị phần trăm
+        self.input_percent = SuffixLineEdit("%")
+        self.input_percent.setPlaceholderText("Nhập tỉ lệ giảm giá...")
         
-        # Tạo bút vẽ (Pen) - tương đương QPen bạn đã biết
-        pen = pg.mkPen(color=(255, 0, 0), width=3) 
-        
-        self.plot_graph.plot(hour, output, pen=pen, symbol='o')
+        layout.addWidget(self.input_money)
+        layout.addWidget(self.input_percent)
 
-app = QApplication(sys.argv)
-win = ChartWindow()
-win.show()
-sys.exit(app.exec_())
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
