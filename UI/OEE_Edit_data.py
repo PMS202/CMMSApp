@@ -51,7 +51,7 @@ class SuffixLineEdit(QtWidgets.QLineEdit):
 class UI_OEE_Edit_Data(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("OEE_Edit_Data")
-        Dialog.resize(550, 500)
+        Dialog.resize(600, 700)
         Dialog.setStyleSheet("background-color: rgb(255, 255, 255);")
         qss = load_qss_file(resource_path("Stylesheet\\Ubuntu.qss"))
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
@@ -111,11 +111,13 @@ class UI_OEE_Edit_Data(object):
         self.OEEsub_groupBox_2.setFont(font)
         self.OEEsub_groupBox_2.setObjectName("OEEsub_groupBox_2")
         self.OEEsub_groupBox_2.setStyleSheet(qss)
+        self.OEEsub_groupBox_2.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.OEEsub_groupBox_2)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.downtime_records_widget = QtWidgets.QListWidget(self.OEEsub_groupBox_2)
         self.downtime_records_widget.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.downtime_records_widget.setObjectName("downtime_records_widget")
+        self.downtime_records_widget.setSpacing(5)
         self.verticalLayout_2.addWidget(self.downtime_records_widget)
         self.verticalLayout_3.addWidget(self.OEEsub_groupBox_2)
         self.OEEsub_groupBox_3 = QtWidgets.QGroupBox(self.frame_2)
