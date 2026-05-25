@@ -87,7 +87,14 @@
            </property>
            <layout class="QHBoxLayout" name="horizontalLayout_2">
             <item>
-             <widget class="QLineEdit" name="working_shift_lnedit"/>
+             <widget class="QLineEdit" name="working_shift_lnedit">
+              <property name="alignment">
+               <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+              </property>
+              <property name="placeholderText">
+               <string/>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>

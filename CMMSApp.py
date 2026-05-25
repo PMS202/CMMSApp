@@ -40,6 +40,7 @@ import fitz
 import shutil
 import datetime as dt
 import re
+from decimal import Decimal
 from dateutil.relativedelta import relativedelta
 from pyqtspinner.spinner import WaitingSpinner
 from sqlalchemy import text
@@ -67,6 +68,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                            QtWidgets.QSizePolicy.Expanding)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.setWindowIcon(QtGui.QIcon(resource_path("Icons/Tokin-logo.ico")))
         self.setup_signals()
         self.login_info = login_info
         self.Setting_windown = None
@@ -1216,14 +1218,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             total_NG_qty = float(self.OEE_data_frame['defect_pcs'].sum())
             total_operation_hours = float(self.OEE_data_frame['working_shift_hours'].sum())
             total_loss = float(self.OEE_data_frame['total_loss_mins'].sum())
-            cycle_time_value = float(cycle_time[0][1]) if cycle_time else 0
+            self.cycle_time_value = float(cycle_time[0][1]) if cycle_time else 0
             total_runtime = float(self.OEE_data_frame['available_time_mins'].sum())
             total_A_percentage = total_runtime / (total_operation_hours*60)
             total_P_percentage = (
-                cycle_time_value * (total_OK_qty + total_NG_qty)) / (total_runtime*60)
+                self.cycle_time_value * (total_OK_qty + total_NG_qty)) / (total_runtime*60)
             total_Q_percentage = total_OK_qty / (total_OK_qty + total_NG_qty)
             total_OEE = total_A_percentage * total_P_percentage * total_Q_percentage
-            item0 = QtGui.QStandardItem(self.change_time_format(cycle_time_value, 's')['s'] + " secs")
+            item0 = QtGui.QStandardItem(self.change_time_format(self.cycle_time_value, 's')['s'] + " secs")
             item0.setTextAlignment(QtCore.Qt.AlignCenter)
             self.OEE_Data_summary_model.setItem(0, 1, item0)
             item1 = QtGui.QStandardItem(f"{total_A_percentage*100:.2f} %")
@@ -1253,14 +1255,68 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to load OEE detail data: {e}")
 
+    @QtCore.pyqtSlot()
     def edit_OEE_data(self, index):
         row = index.row()
         temp_data_frame = self.OEE_data_frame.iloc[row].copy()
-        self.edit_dialog = OEE_Edit_Data(database = self.database_process ,data = temp_data_frame)         
-        self.edit_dialog.accepted.connect(lambda: self.on_oee_edit_accepted(row))
+        self.edit_dialog = OEE_Edit_Data(database = self.database_process ,data = temp_data_frame, cycle_time = self.cycle_time_value)        
+        self.edit_dialog.accepted.connect(lambda: self.on_oee_edit_accepted(row,temp_data_frame,self.edit_dialog.downtime_records))
         self.edit_dialog.show()    
         
+    @QtCore.pyqtSlot()
+    def on_oee_edit_accepted(self, row, data, downtime_records):
+        downtime_changes = []
+        downtime_news = []
+        for idx in range(len(downtime_records)):
+            if downtime_records[idx].id is None:
+                downtime_news.append({ 
+                    "date": downtime_records[idx].date,
+                    "start_time": downtime_records[idx].start_time,
+                    "repair_time": downtime_records[idx].repair_time,
+                    "end_time": downtime_records[idx].end_time,
+                    "staff_name": downtime_records[idx].staff_name,
+                    "error_code": downtime_records[idx].error_code,
+                    "machine_code": downtime_records[idx].machine_code,
+                    "line_name": downtime_records[idx].line_name })
+                continue
+            downtime_changes.append({
+                "id": downtime_records[idx].id,
+                "date": downtime_records[idx].date,
+                "start_time": downtime_records[idx].start_time,
+                "repair_time": downtime_records[idx].repair_time,
+                "end_time": downtime_records[idx].end_time,
+                "staff_name": downtime_records[idx].staff_name,
+                "error_code": downtime_records[idx].error_code,
+                "machine_code": downtime_records[idx].machine_code,
+                "line_name": downtime_records[idx].line_name })
+        try:
+            self.database_process.query(sql='''UPDATE `line_operation_times`
+                                                SET operation_hours = :working_shift_hours
+                                                WHERE line_id = (SELECT line_id FROM production_lines WHERE line_name = :line_name) 
+                                                AND operation_date = :production_date;
+                                            ''', params={"working_shift_hours": data["working_shift_hours"], "line_name": data["line_name"], "production_date": data["production_date"]})
+            self.database_process.query(sql='''UPDATE `production_output`
+                                                SET OK_qty = :fgs_output_pcs, NG_qty = :defect_pcs
+                                                WHERE line_id = (SELECT line_id FROM production_lines WHERE line_name = :line_name)
+                                                AND model_name = :model_name
+                                                AND production_date = :production_date;
+                                            ''', params={"fgs_output_pcs": data["fgs_output_pcs"], "defect_pcs": data["defect_pcs"], "line_name": data["line_name"], "model_name": data["model_name"], "production_date": data["production_date"]})
+            if downtime_changes:
+                self.database_process.executemany(sql='''UPDATE `downtime_records`
+                                                        SET downtime_date = :date, downtime_start_time = :start_time, downtime_start_repair_time = :repair_time
+                                                        , downtime_end_time = :end_time, staff_name = :staff_name, error_code = :error_code
+                                                        WHERE downtime_record_id = :id;''', params_list=downtime_changes)
+            if downtime_news:
+                self.database_process.executemany(sql='''INSERT INTO `downtime_records`
+                                                        (downtime_date, downtime_start_time, downtime_start_repair_time, downtime_end_time, staff_name, error_code, machine_id, line_id)
+                                                        VALUES (:date, :start_time, :repair_time, :end_time, :staff_name, :error_code, 
+                                                  (SELECT machine_id FROM machines WHERE machine_code = :machine_code), 
+                                                  (SELECT line_id FROM production_lines WHERE line_name = :line_name));''', params_list=downtime_news)
+            self.OEE_detail_data()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to update OEE data: {e}")
 
+    @QtCore.pyqtSlot()
     def delete_OEE_data(self, index):
         print("Delete OEE data at row:", index.row(), "Column:", index.column())
 
@@ -8100,12 +8156,17 @@ class DonutChart(QtWidgets.QWidget):
         painter.end()
 
 class OEE_Edit_Data(QtWidgets.QDialog):
-    def __init__(self, parent=None, database = None, data=None):
+    def __init__(self, parent=None, database = None, data=None, cycle_time = 0):
         super().__init__(parent)
         self.ui = UI_OEE_Edit_Data()
         self.ui.setupUi(self)
         self.database = database
         self.data = data
+        for i in range(5,len(self.data)):
+            if isinstance(self.data.iloc[i], Decimal):
+                self.data.iloc[i] = float(self.data.iloc[i])
+        self.cycle_time = cycle_time
+        self.setWindowIcon(QtGui.QIcon(resource_path("Icons/OEE.ico")))
         vertical_headers = ["Date", "Working Shift", "Total Loss Time (min)", "Available Time (min)", "FGs (pcs)", "Defect (pcs)", "Availability (%)", "Performance (%)", "Quality (%)", "OEE (%)"]
         self.data_model = QtGui.QStandardItemModel(len(vertical_headers), 2)
         data_for_table = list(self.data[4:] if len(self.data) > 4 else [None] * (len(vertical_headers) - 4))
@@ -8118,24 +8179,318 @@ class OEE_Edit_Data(QtWidgets.QDialog):
             self.data_model.setItem(row, 1, item)
         self.ui.result_table.setModel(self.data_model)
         self.ui.result_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        class downtime_record_widgetItem(QtWidgets.QWidget):
+            delete_requested = QtCore.pyqtSignal(object)
+            edit_completed = QtCore.pyqtSignal(object)
+            def __init__(self, record):
+                super().__init__()
+                self.id = record[0]
+                self.date = record[1]
+                self.start_time = record[2]
+                self.repair_time = record[3]
+                self.end_time = record[4]
+                self.staff_name = record[5]
+                self.error_code = record[6]
+                self.machine_code = record[7]
+                self.line_name = record[8]
+                self.total_loss_time = self.calculate_loss_time()
+                layout = QtWidgets.QVBoxLayout(self)
+                layout.setContentsMargins(8, 8, 8, 8)
+                layout.setSpacing(4)
+                date_label = QtWidgets.QLabel(f"Date: {self.date} | Machine: {self.machine_code} ")
+                date_label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+                date_label.setStyleSheet("font-weight: bold;")
+                frame_1 = QtWidgets.QFrame()
+                frame_1.setFrameShape(QtWidgets.QFrame.NoFrame)
+                layout_1 = QtWidgets.QHBoxLayout(frame_1)
+                layout_1.setContentsMargins(0, 0, 0, 0)
+                layout_1.addWidget(QtWidgets.QLabel("Staff: "))
+                staff_name_lnedit = QtWidgets.QLineEdit(f"{self.staff_name}")
+                staff_name_lnedit.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+                layout_1.addWidget(staff_name_lnedit)
+                frame_2 = QtWidgets.QFrame()
+                frame_2.setFrameShape(QtWidgets.QFrame.NoFrame)
+                layout_2 = QtWidgets.QHBoxLayout(frame_2)
+                layout_2.setContentsMargins(0, 0, 0, 0)
+                layout_2.addWidget(QtWidgets.QLabel("Error Code: "))
+                error_code_lnedit = QtWidgets.QLineEdit(f"{self.error_code}")
+                error_code_lnedit.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+                layout_2.addWidget(error_code_lnedit)
+                frame_3 = QtWidgets.QFrame()
+                frame_3.setFrameShape(QtWidgets.QFrame.NoFrame)
+                layout_3 = QtWidgets.QHBoxLayout(frame_3)
+                layout_3.setContentsMargins(0, 0, 0, 0)
+                layout_3.addWidget(QtWidgets.QLabel("Start Time:"))
+                self.start_time_lnedit = QtWidgets.QLineEdit(str(self.start_time) if self.start_time else "")
+                self.start_time_lnedit.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
+                layout_3.addWidget(self.start_time_lnedit)
+                frame_4 = QtWidgets.QFrame()
+                frame_4.setFrameShape(QtWidgets.QFrame.NoFrame)
+                layout_4 = QtWidgets.QHBoxLayout(frame_4)
+                layout_4.setContentsMargins(0, 0, 0, 0)
+                layout_4.addWidget(QtWidgets.QLabel("Repair Time (min):"))
+                self.repair_time_lnedit = QtWidgets.QLineEdit(str(self.repair_time) if self.repair_time else "")
+                self.repair_time_lnedit.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
+                layout_4.addWidget(self.repair_time_lnedit)
+                frame_5 = QtWidgets.QFrame()
+                frame_5.setFrameShape(QtWidgets.QFrame.NoFrame)
+                layout_5 = QtWidgets.QHBoxLayout(frame_5)
+                layout_5.setContentsMargins(0, 0, 0, 0)
+                layout_5.addWidget(QtWidgets.QLabel("End Time:"))
+                self.end_time_lnedit = QtWidgets.QLineEdit(str(self.end_time) if self.end_time else "")
+                self.end_time_lnedit.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
+                layout_5.addWidget(self.end_time_lnedit)
+                self.total_loss_time_label = QtWidgets.QLabel(f"Total Loss Time: {self.total_loss_time} min")
+                layout.addWidget(date_label)
+                layout.addWidget(frame_1)
+                layout.addWidget(frame_2)
+                layout.addWidget(frame_3)
+                layout.addWidget(frame_4)
+                layout.addWidget(frame_5)
+                layout.addWidget(self.total_loss_time_label)
+                self.setObjectName("downtime_card")
+                self.setAttribute(QtCore.Qt.WA_StyledBackground, True)
+                self.setStyleSheet("""
+                QWidget#downtime_card {
+                    background: #ffffff;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    border-left: 4px solid #007acc;
+                }
+                QWidget#downtime_card:hover {
+                    background: #f0f7ff;
+                    border: 1px solid #007acc;
+                    border-left: 4px solid #007acc;
+                }
+                QLabel {
+                    background-color: transparent;
+                    border: none;
+                    color: #012d4b;
+                }
+                QFrame {
+                    background-color: transparent;
+                    border: none;
+                }
+                QLineEdit {
+                    background-color: rgba(255, 255, 255, 0.15);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 4px;
+                    padding: 2px 6px;
+                    color: #012d4b;
+                }
+                QLineEdit:focus {
+                    border: 1px solid rgba(255, 255, 255, 0.7);
+                    background-color: rgba(255, 255, 255, 0.22);
+                }               
+            """)
+                self.start_time_lnedit.returnPressed.connect(self.update_loss_time)
+                self.end_time_lnedit.returnPressed.connect(self.update_loss_time)
+                staff_name_lnedit.editingFinished.connect(lambda: setattr(self, 'staff_name', staff_name_lnedit.text().strip()))
+                error_code_lnedit.editingFinished.connect(lambda: setattr(self, 'error_code', error_code_lnedit.text().strip()))
+                self.repair_time_lnedit.editingFinished.connect(lambda: setattr(self, 'repair_time', self.repair_time_lnedit.text().strip()))
+                self.context_menu = QtWidgets.QMenu(self)
+                self.context_menu.addAction("Delete Record", lambda: self.delete_record())
+                self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+                self.customContextMenuRequested.connect(lambda pos: self.show_context_menu(pos))
+            
+            @QtCore.pyqtSlot()
+            def show_context_menu(self, pos):
+                self.context_menu.exec_(self.mapToGlobal(pos))
+
+            @QtCore.pyqtSlot()    
+            def delete_record(self):
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Confirm", "Are you sure you want to delete this downtime record?\nThis action cannot be undone.",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                if reply == QtWidgets.QMessageBox.Yes:
+                    self.delete_requested.emit(self) 
+                    
+
+            @QtCore.pyqtSlot()
+            def update_loss_time(self):
+                self.start_time = self.start_time_lnedit.text().strip()
+                self.end_time = self.end_time_lnedit.text().strip()
+                self.total_loss_time = self.calculate_loss_time()
+                self.total_loss_time_label.setText(f"Total Loss Time: {self.total_loss_time} min")
+                self.edit_completed.emit(self)
+
+            @QtCore.pyqtSlot()
+            def calculate_loss_time(self):
+                try:
+                    if self.start_time and self.end_time:
+                        def to_time(t):
+                            if isinstance(t, dt.timedelta):
+                                total = int(t.total_seconds())
+                                return dt.time(total // 3600, (total % 3600) // 60, total % 60)
+                            return dt.datetime.strptime(str(t), "%H:%M:%S").time()
+
+                        base = self.date if isinstance(self.date, dt.date) else dt.date.fromisoformat(str(self.date))
+                        start_dt = dt.datetime.combine(base, to_time(self.start_time))
+                        end_dt = dt.datetime.combine(base, to_time(self.end_time))
+
+                        if end_dt < start_dt:
+                            end_dt += dt.timedelta(days=1)
+                        return int((end_dt - start_dt).total_seconds() / 60)
+                except Exception:
+                    pass
+                return 0
+        self.downtime_record_widgetItem = downtime_record_widgetItem 
         try:
             area =  self.data["area_name"]
             line = self.data["line_name"]
             model = self.data["model_name"]
             process = self.data["process"]
             production_date = self.data["production_date"]
-            working_shift = self.database.query(sql=''' SELECT operation_id,operation_hours,change_model,change_from
+            self.working_shift = self.database.query(sql=''' SELECT operation_id,operation_hours,change_model,change_from
                                                                 FROM `line_operation_times` as lot
                                                                 JOIN `production_lines` as pl ON lot.line_id = pl.line_id
                                                                 WHERE pl.line_name = :line AND lot.operation_date = :date'''
                                                             , params={'line': line, 'date': production_date})
             
-            self.ui.working_shift_lnedit.setText(str(working_shift[0][1]) if working_shift else "")
-            self.ui.working_shift_lnedit.setSuffix(f" Bf: {working_shift[0][1]}" if working_shift else "")
+            self.downtime_records  = self.database.query(sql='''SELECT dr.Downtime_ID, dr.Date, dr.Start_Time, dr.Start_Repair_Time, dr.End_Time,dr.Staff_Name, dr.Error_Code, dr.Machine_Code, dr.Line_Name
+                                                            FROM `downtime_report` as dr
+                                                            JOIN machines as m ON dr.Machine_Code = m.machine_code
+                                                            JOIN machine_oee_register as mor ON m.machine_id = mor.machine_id
+                                                            JOIN production_lines as pl ON mor.line_id = pl.line_id AND pl.line_name = dr.Line_Name
+                                                            JOIN product_models_oee as pmo ON mor.model_id = pmo.model_id AND pmo.model_name = dr.Current_Model
+                                                            WHERE dr.Line_Name = :line AND dr.Current_Model = :model AND dr.Date = :date AND mor.process = :process; ''', 
+                                                            params={'line': line, 'model': model, 'date': production_date, 'process': process})
+            self.production_outputs = self.database.query(sql = '''SELECT po.output_id, po.OK_qty, po.NG_qty 
+                                                            FROM production_output as po
+                                                            JOIN production_lines as pl ON po.line_id = pl.line_id
+                                                            WHERE pl.line_name = :line AND po.model_name = :model 
+                                                            AND po.production_date = :date;''',
+                                                            params={'line': line, 'model': model, 'date': production_date})
+            self.ui.working_shift_lnedit.setText(str(self.working_shift[0][1]) if self.working_shift else "")
+            self.ui.working_shift_lnedit.setSuffix(f" Bf: {self.working_shift[0][1]}" if self.working_shift else "")
+            self.downtime_records = [self.downtime_record_widgetItem(record ) for record in self.downtime_records]
+            self.ui.downtime_records_widget.clear()
+            for record in self.downtime_records:
+                record.delete_requested.connect(lambda widget=record: self.remove_downtime_record(widget))
+                record.edit_completed.connect(lambda widget=record: self.calculate_oee(edit_object="downtime_record"))
+                list_item = QtWidgets.QListWidgetItem(self.ui.downtime_records_widget)
+                list_item.setSizeHint(QtCore.QSize(0, 160))
+                self.ui.downtime_records_widget.addItem(list_item)
+                self.ui.downtime_records_widget.setItemWidget(list_item, record)
+            self.ui.FGs_lnedit.setText(str(self.production_outputs[0][1]) if self.production_outputs else "")
+            self.ui.FGs_lnedit.setSuffix(f" Bf: {self.production_outputs[0][1]}" if self.production_outputs else "")
+            self.ui.defect_lnedit.setText(str(self.production_outputs[0][2]) if self.production_outputs else "")
+            self.ui.defect_lnedit.setSuffix(f" Bf: {self.production_outputs[0][2]}" if self.production_outputs else "")
+            self.DT_context_menu = QtWidgets.QMenu(self)
+            self.DT_context_menu.addAction("Add Record", self.add_record)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
+        
+        self.setup_signals()
+    
+    def setup_signals(self):
+        self.ui.working_shift_lnedit.returnPressed.connect(lambda: self.calculate_oee("working_shift"))
+        self.ui.FGs_lnedit.returnPressed.connect(lambda: self.calculate_oee("FGs"))
+        self.ui.defect_lnedit.returnPressed.connect(lambda: self.calculate_oee("defect"))
+        self.ui.OEEsub_groupBox_2.customContextMenuRequested.connect(lambda pos: self.show_downtime_context_menu(pos))
 
+    @QtCore.pyqtSlot()
+    def calculate_oee(self,edit_object=None):
+        if not self.ui.working_shift_lnedit.text() or not self.ui.FGs_lnedit.text() or not self.ui.defect_lnedit.text():
+            return
+        try:
+            if edit_object == "working_shift" or edit_object == "downtime_record":
+                if edit_object == "working_shift":
+                    working_shift = float(self.ui.working_shift_lnedit.text().strip())
+                    if working_shift <= 0 or working_shift > 24:
+                        QtWidgets.QMessageBox.warning(self, "Warning", "Please enter a valid number for working shift (1-24).")
+                        self.ui.working_shift_lnedit.clear()
+                        return
+                    self.data["working_shift_hours"] = working_shift
+                    item = QtGui.QStandardItem(str(working_shift))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.data_model.setItem(1, 1, item)
+                else:
+                    self.data["total_loss_mins"] = sum(record.total_loss_time for record in self.downtime_records)
+                    item = QtGui.QStandardItem(str(self.data["total_loss_mins"]))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.data_model.setItem(2, 1, item)
+                available_time = self.data["working_shift_hours"] * 60 - self.data["total_loss_mins"]
+                self.data["available_time_mins"] = available_time
+                item = QtGui.QStandardItem(str(available_time))
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                self.data_model.setItem(3, 1, item)
+                self.data["availability_percentage"] = self.data["available_time_mins"] / (self.data["working_shift_hours"] * 60) * 100 if self.data["working_shift_hours"] > 0 else 0
+                item = QtGui.QStandardItem(f"{self.data['availability_percentage']:.2f}")
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                self.data_model.setItem(6, 1, item)
+            elif edit_object == "FGs" or edit_object == "defect":
+                if edit_object == "FGs":
+                    fgs_output = float(self.ui.FGs_lnedit.text().strip())
+                    self.data["fgs_output_pcs"] = fgs_output
+                    item = QtGui.QStandardItem(str(fgs_output))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.data_model.setItem(4, 1, item)
+                else:
+                    defect_output = float(self.ui.defect_lnedit.text().strip())
+                    self.data["defect_pcs"] = defect_output
+                    item = QtGui.QStandardItem(str(defect_output))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.data_model.setItem(5, 1, item)
+                self.data["quality_percentage"] = self.data["fgs_output_pcs"] / (self.data["fgs_output_pcs"] + self.data["defect_pcs"]) * 100 if (self.data["fgs_output_pcs"] + self.data["defect_pcs"]) > 0 else 0
+                item = QtGui.QStandardItem(f"{self.data['quality_percentage']:.2f}")
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                self.data_model.setItem(8, 1, item)
+            self.data["performance_percentage"] = self.cycle_time * (self.data["fgs_output_pcs"] + self.data["defect_pcs"]) / (self.data["available_time_mins"]*60) * 100 if self.data["available_time_mins"] > 0 else 0
+            item = QtGui.QStandardItem(f"{self.data['performance_percentage']:.2f}")
+            item.setTextAlignment(QtCore.Qt.AlignCenter)
+            self.data_model.setItem(7, 1, item)
+            self.data["OEE_percentage"] = (self.data["availability_percentage"] * self.data["performance_percentage"] * self.data["quality_percentage"]) / 10000
+            item = QtGui.QStandardItem(f"{self.data['OEE_percentage']:.2f}")
+            item.setTextAlignment(QtCore.Qt.AlignCenter)
+            self.data_model.setItem(9, 1, item)
+        except ValueError:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please enter a valid number for working shift.")
+            return             
 
+        
+    @QtCore.pyqtSlot()
+    def show_downtime_context_menu(self, pos):
+        self.DT_context_menu.exec_(self.ui.OEEsub_groupBox_2.mapToGlobal(pos))
+
+    @QtCore.pyqtSlot()
+    def add_record(self):
+        try:
+            new_record = (None, self.data["production_date"], None, None, None, None, None, self.downtime_records[0].machine_code if self.downtime_records else None, self.data["line_name"])
+            downtime_record = self.downtime_record_widgetItem(new_record)
+            downtime_record.delete_requested.connect(lambda widget=downtime_record: self.remove_downtime_record(widget))
+            downtime_record.edit_completed.connect(lambda widget=downtime_record: self.calculate_oee(edit_object="downtime_record"))
+            self.downtime_records.append(downtime_record)
+            list_item = QtWidgets.QListWidgetItem(self.ui.downtime_records_widget)
+            list_item.setSizeHint(QtCore.QSize(0, 160))
+            self.ui.downtime_records_widget.addItem(list_item)
+            self.ui.downtime_records_widget.setItemWidget(list_item, downtime_record)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to add new downtime record: {e}")
+    
+    @QtCore.pyqtSlot()    
+    def remove_downtime_record(self, widget):
+        list_widget = self.ui.downtime_records_widget
+        for i in range(list_widget.count()):
+            item = list_widget.item(i)
+            if list_widget.itemWidget(item) is widget:
+                list_widget.takeItem(i)
+                if widget in self.downtime_records:
+                    if widget.id is not None:
+                        try:
+                            self.database.query(sql=''' DELETE FROM `downtime_records` WHERE downtime_record_id = :id ''', params={'id': widget.id})
+                        except Exception as e:
+                            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to delete downtime record: {e}")
+                            return
+                    self.downtime_records.remove(widget)
+                    self.calculate_oee(edit_object="downtime_record")
+                break
+
+    def keyPressEvent(self, event):
+        if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
+            event.ignore()
+        else:
+            super().keyPressEvent(event)
     
 def main():
     try:
