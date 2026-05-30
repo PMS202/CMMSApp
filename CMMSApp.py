@@ -17,6 +17,7 @@ from UI.Downtime_input_window import Ui_DowntimeInputWindow
 from UI.Group_choose import Ui_Group_choose
 from UI.Error_code_management import Ui_Error_Code_Management
 from UI.OEE_Edit_data import UI_OEE_Edit_Data
+from UI.OEE_other_data import UI_OEE_Other_Data
 from Database.MariaDB import Database_process
 from Stock_control.stock_delegate import StockItemDelegate, ImageCache
 from Stock_control.image_loader import ImageLoaderRunnable
@@ -430,47 +431,47 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.style_button_with_shadow((self.ui.OEE_dashboard_btn, self.ui.OEE_data_btn, self.ui.OEE_import_data_btn))
         if Dashboard_init or self.ui.OEE_area_cbb.count() > 0:
             return
+        self.ui.OEE_period_edit.setDate(QtCore.QDate(self.ui.today.year, self.ui.today.month-1, 1))
         try:
             if not hasattr(self, "areas") or not self.areas:
                 self.areas = [area[0] for area in self.database_process.query(sql='''SELECT downtime_area_name
                                                                                     FROM `downtime_areas`;''')]
-            OEE_model = self.database_process.query(sql='''SELECT model_name 
+                self.ui.OEE_area_cbb.clear()
+                self.ui.OEE_area_cbb.addItems(self.areas)
+            OEE_model = self.database_process.query(sql='''SELECT DISTINCT model_name 
                                                             FROM `product_models_oee` as pmo
                                                             JOIN `departments` as d
                                                             ON pmo.department_id = d.department_id
                                                             JOIN downtime_areas as da
                                                             ON da.department_id = d.department_id
                                                             WHERE da.downtime_area_name = :area_name;''', params={"area_name": self.areas[0]})
+            self.ui.OEE_model_cbb.clear()
+            self.ui.OEE_model_cbb.addItems([model[0] for model in OEE_model])
+            self.ui.OEE_model_cbb.view().setMinimumWidth(self.ui.OEE_model_cbb.view().sizeHintForColumn(0))
             lines = self.database_process.query(sql='''SELECT DISTINCT pl.line_name
                                                             FROM `production_lines` as pl
                                                             JOIN `production_output` as po
                                                             ON pl.line_id = po.line_id
-                                                            WHERE po.model_name = :model_name AND MONTH(po.production_date) = :month AND YEAR(po.production_date) = :year;''', params={"model_name": OEE_model[0][0], "month": 12, "year": 2025})
-            process = self.database_process.query(sql='''SELECT mor.process 
-                                                            FROM `machine_OEE_register` as mor
-                                                            JOIN `machines` as m ON mor.machine_id = m.machine_id
-                                                            JOIN `production_lines` as pl ON m.line_id = pl.line_id
-                                                            JOIN `product_models_oee` as pmo ON mor.model_id = pmo.model_id
-                                                            WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params={"line_name": lines[0][0], "model_name": OEE_model[0][0]})
-            self.ui.OEE_area_cbb.clear()
-            self.ui.OEE_area_cbb.addItems(self.areas)
-            # self.ui.OEE_period_edit.setDate(QtCore.QDate(self.ui.today.year, self.ui.today.month-1, 1))
-            self.ui.OEE_period_edit.setDate(QtCore.QDate(2025, 12, 1))
-            self.ui.OEE_model_cbb.clear()
-            self.ui.OEE_model_cbb.addItems([model[0] for model in OEE_model])
-            self.ui.OEE_model_cbb.view().setMinimumWidth(
-                self.ui.OEE_model_cbb.view().sizeHintForColumn(0))
+                                                            WHERE po.model_name = :model_name;''', params={"model_name": OEE_model[0][0]})
             self.ui.OEE_line_cbb.clear()
-            self.ui.OEE_line_cbb.addItems([line[0] for line in lines])
-            self.ui.OEE_process_cbb.clear()
-            self.ui.OEE_process_cbb.addItems([proc[0] for proc in process])
-            self.refesh_OEE_page(area_name=self.ui.OEE_area_cbb.currentText(), model_name=self.ui.OEE_model_cbb.currentText(), month=self.ui.OEE_period_edit.date(
-            ).month(), year=self.ui.OEE_period_edit.date().year(), line=self.ui.OEE_line_cbb.currentText(), process=self.ui.OEE_process_cbb.currentText())
+            if lines:
+                self.ui.OEE_line_cbb.addItems([line[0] for line in lines])
+                process = self.database_process.query(sql='''SELECT DISTINCT mor.process 
+                                                                FROM `machine_OEE_register` as mor
+                                                                JOIN `machines` as m ON mor.machine_id = m.machine_id
+                                                                JOIN `production_lines` as pl ON m.line_id = pl.line_id
+                                                                JOIN `product_models_oee` as pmo ON mor.model_id = pmo.model_id
+                                                                WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params={"line_name": lines[0][0], "model_name": OEE_model[0][0]})
+
+
+                self.ui.OEE_process_cbb.clear()
+                self.ui.OEE_process_cbb.addItems([proc[0] for proc in process])
+                self.refesh_OEE_page(area_name=self.ui.OEE_area_cbb.currentText(), model_name=self.ui.OEE_model_cbb.currentText(), month=self.ui.OEE_period_edit.date().month(), year=self.ui.OEE_period_edit.date().year(), line=self.ui.OEE_line_cbb.currentText(), process=self.ui.OEE_process_cbb.currentText())
             self.safe_connect(self.ui.OEE_calendar_widget.currentPageChanged, lambda year,
-                              month: self.update_date_from_calendar(year, month, self.ui.OEE_period_edit))
-            self.safe_connect(self.ui.OEE_area_cbb.currentIndexChanged, lambda: self.OEE_filter_changing("area"))
-            self.safe_connect(self.ui.OEE_model_cbb.currentIndexChanged, lambda: self.OEE_filter_changing("model"))
-            self.safe_connect(self.ui.OEE_line_cbb.currentIndexChanged, lambda: self.OEE_filter_changing("line"))
+                            month: self.update_date_from_calendar(year, month, self.ui.OEE_period_edit))
+            self.safe_connect(self.ui.OEE_area_cbb.currentIndexChanged, lambda: self.OEE_filter_changing(change_object="area", area_cbb = self.ui.OEE_area_cbb, model_cbb = self.ui.OEE_model_cbb, line_cbb = self.ui.OEE_line_cbb, process_cbb = self.ui.OEE_process_cbb))
+            self.safe_connect(self.ui.OEE_model_cbb.currentIndexChanged, lambda: self.OEE_filter_changing(change_object="model", area_cbb = self.ui.OEE_area_cbb, model_cbb = self.ui.OEE_model_cbb, line_cbb = self.ui.OEE_line_cbb, process_cbb = self.ui.OEE_process_cbb))
+            self.safe_connect(self.ui.OEE_line_cbb.currentIndexChanged, lambda: self.OEE_filter_changing(change_object="line", area_cbb = self.ui.OEE_area_cbb, model_cbb = self.ui.OEE_model_cbb, line_cbb = self.ui.OEE_line_cbb, process_cbb = self.ui.OEE_process_cbb))
             self.safe_connect(self.ui.OEE_load_filter_btn.clicked, lambda: self.OEE_load_filter())
         except Exception as e:
             QtWidgets.QMessageBox.critical(
@@ -497,6 +498,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 }
 
     def refesh_OEE_page(self, area_name, model_name, month, year, line, process):
+        self.spinner.start()
         if month == 0:
             filter_scripts = ''' AND YEAR(production_date) = :year '''
             filter_scripts_wt = f'''YEAR(Date) = :year'''
@@ -506,7 +508,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             filter_scripts_wt = f'''MONTH(Date) = :month AND YEAR(Date) = :year'''
             previous_month = month - 1 if month > 1 else 12
             previous_year = year if month > 1 else year - 1
-        try:
+
+        def fetch_data():
             oee_data = self.database_process.query(sql=f'''SELECT * FROM `oee_report`
                                                     WHERE area_name = :area_name 
                                                     AND model_name = :model_name 
@@ -536,9 +539,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                 JOIN product_models_oee AS pmo ON mct.model_id = pmo.model_id
                                                                 JOIN machine_oee_register AS mor ON pmo.model_id = mor.model_id
                                                                 JOIN production_lines AS pl ON mor.line_id = pl.line_id
-                                                                WHERE mor.process = :process AND pmo.model_name = :model_name AND pl.line_name = :line_name
-                                                                ORDER BY mct.create_at DESC LIMIT 2;
-                                                            ''', params={"process": process, "model_name": model_name, "line_name": line})      
+                                                                WHERE mor.process = :process AND pmo.model_name = :model_name AND pl.line_name = :line_name and mct.create_at <= :date
+                                                                ORDER BY mct.create_at DESC LIMIT 1;
+                                                            ''', params={"process": process, "model_name": model_name, "line_name": line, "date": f"{year}-{month:02d}-{calendar.monthrange(year, month)[1]}"})      
             downtime_count = self.database_process.query(sql=f'''SELECT COUNT(*) AS total_records
                                                                     FROM `downtime_report` AS dr
                                                                     JOIN machines AS m ON m.machine_code = dr.Machine_Code
@@ -553,10 +556,19 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                     JOIN machine_oee_register AS mor2 ON mor2.machine_id = m.machine_id AND mor2.process = :process
                                                                     WHERE Downtime_Area = :area_name AND MONTH(Date) = :month AND YEAR(Date) = :year
                                                                     AND Line_Name = :line_name AND Current_Model = :model_name;''', params={"area_name": area_name, "month": previous_month, "year": previous_year, "line_name": line, "model_name": model_name, "process": process})       
+            return (oee_data, oee_targets, previous_oee_data, cycle_time, downtime_count, downtime_count_previous)
+        
+        def on_data_fetched(result):
+            oee_data = result[0]
+            oee_targets = result[1]
+            previous_oee_data = result[2]
+            cycle_time = result[3]
+            downtime_count = result[4]
+            downtime_count_previous = result[5]
             if not oee_data:
                 QtWidgets.QMessageBox.information(self, "No Data", "No OEE data found for the selected criteria.")
                 return
-            self.oee_df = pd.DataFrame(oee_data, columns=["area_name", "line_name", "model_name", "process", "production_date", "operation_hours", "OK_qty",
+            self.oee_df = pd.DataFrame(oee_data, columns=["area_name", "line_name", "model_name", "process", "production_date", "operation_hours", "break_time", "setup_time", "OK_qty",
                                        "NG_qty", "Total_Loss", "Available_Time", "Availability_percentage", "Performance_percentage", "Quality_percentage", "OEE_percentage"])
             total_OK_qty = float(self.oee_df['OK_qty'].sum())
             total_NG_qty = float(self.oee_df['NG_qty'].sum())
@@ -657,7 +669,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                         </span>
                     </div>
                 """
-            # compare previous data
             pre_mttr = None
             pre_mtbf = None
             if previous_oee_data:
@@ -1019,7 +1030,16 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 column_chart.scene().sigMouseMoved.connect(on_hover)
             draw_output_nettime_chart(
                 self.oee_df, 'production_date', 'Available_Time', self.ui.OEE_information_chart, self.ui.OEE_infor_chart_legend)
+            self.spinner.stop()
+        try:
+            if hasattr(self, 'OEE_dashboard_worker') and self.OEE_dashboard_worker.isRunning():
+                self.spinner.stop()
+                return
+            self.OEE_dashboard_worker = WorkerThread(fetch_data)
+            self.OEE_dashboard_worker.finished.connect(lambda res: on_data_fetched(res))
+            self.OEE_dashboard_worker.start()
         except Exception as e:
+            self.spinner.stop()
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to refresh OEE page: {e}")
     
@@ -1043,20 +1063,20 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self, "Error", f"Failed to load OEE filters: {e}")
     
     @QtCore.pyqtSlot()
-    def OEE_filter_changing(self,change_object):
+    def OEE_filter_changing(self,change_object,area_cbb = None, model_cbb = None, line_cbb = None , process_cbb = None):
         try:
-            if self.ui.OEE_month_radio.isChecked():
-                month = self.ui.OEE_period_edit.date().month()
-                year = self.ui.OEE_period_edit.date().year()
-            if self.ui.OEE_year_radio.isChecked():
-                month = None
-                year = self.ui.OEE_period_edit.date().year()
+            # if self.ui.OEE_month_radio.isChecked():
+            #     month = self.ui.OEE_period_edit.date().month()
+            #     year = self.ui.OEE_period_edit.date().year()
+            # if self.ui.OEE_year_radio.isChecked():
+            #     month = None
+            #     year = self.ui.OEE_period_edit.date().year()
             if change_object == "area":
-                self.ui.OEE_line_cbb.clear()
-                self.ui.OEE_model_cbb.clear()
-                self.ui.OEE_process_cbb.clear()
-                area_name = self.ui.OEE_area_cbb.currentText()
-                OEE_model = self.database_process.query(sql='''SELECT model_name 
+                line_cbb.clear()
+                model_cbb.clear()
+                process_cbb.clear()
+                area_name = area_cbb.currentText()
+                OEE_model = self.database_process.query(sql='''SELECT DISTINCT model_name 
                                                             FROM `product_models_oee` as pmo
                                                             JOIN `departments` as d
                                                             ON pmo.department_id = d.department_id
@@ -1067,44 +1087,44 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                 FROM `production_lines` as pl
                                                                 JOIN `production_output` as po
                                                                 ON pl.line_id = po.line_id
-                                                                WHERE po.model_name = :model_name AND MONTH(po.production_date) = :month AND YEAR(po.production_date) = :year;''', params={"model_name": OEE_model[0][0], "month": month, "year": year})
-                process = self.database_process.query(sql='''SELECT mor.process 
+                                                                WHERE po.model_name = :model_name;''', params={"model_name": OEE_model[0][0]})
+                process = self.database_process.query(sql='''SELECT DISTINCT mor.process 
                                                                 FROM `machine_OEE_register` as mor
                                                                 JOIN `machines` as m ON mor.machine_id = m.machine_id
                                                                 JOIN `production_lines` as pl ON m.line_id = pl.line_id
                                                                 JOIN `product_models_oee` as pmo ON mor.model_id = pmo.model_id
                                                                 WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params={"line_name": lines[0][0], "model_name": OEE_model[0][0]})
-                self.ui.OEE_model_cbb.addItems([model[0] for model in OEE_model])
-                self.ui.OEE_line_cbb.addItems([line[0] for line in lines])
-                self.ui.OEE_process_cbb.addItems([p[0] for p in process])
+                model_cbb.addItems([model[0] for model in OEE_model])
+                line_cbb.addItems([line[0] for line in lines])
+                process_cbb.addItems([p[0] for p in process])
             elif change_object == "model":
-                self.ui.OEE_line_cbb.clear()
-                self.ui.OEE_process_cbb.clear()
-                model_name = self.ui.OEE_model_cbb.currentText()
+                line_cbb.clear()
+                process_cbb.clear()
+                model_name = model_cbb.currentText()
                 lines = self.database_process.query(sql='''SELECT DISTINCT pl.line_name
                                                                 FROM `production_lines` as pl
                                                                 JOIN `production_output` as po
                                                                 ON pl.line_id = po.line_id
-                                                                WHERE po.model_name = :model_name AND MONTH(po.production_date) = :month AND YEAR(po.production_date) = :year;''', params={"model_name": model_name, "month": month, "year": year})
-                process = self.database_process.query(sql='''SELECT mor.process 
+                                                                WHERE po.model_name = :model_name;''', params={"model_name": model_name})
+                process = self.database_process.query(sql='''SELECT DISTINCT mor.process 
                                                                 FROM `machine_OEE_register` as mor
                                                                 JOIN `machines` as m ON mor.machine_id = m.machine_id
                                                                 JOIN `production_lines` as pl ON m.line_id = pl.line_id
                                                                 JOIN `product_models_oee` as pmo ON mor.model_id = pmo.model_id
                                                                 WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params={"line_name": lines[0][0], "model_name": model_name})
-                self.ui.OEE_line_cbb.addItems([line[0] for line in lines])
-                self.ui.OEE_process_cbb.addItems([p[0] for p in process])
+                line_cbb.addItems([line[0] for line in lines])
+                process_cbb.addItems([p[0] for p in process])
             elif change_object == "line":
-                self.ui.OEE_process_cbb.clear()
-                line_name = self.ui.OEE_line_cbb.currentText()
-                model_name = self.ui.OEE_model_cbb.currentText()
-                process = self.database_process.query(sql='''SELECT mor.process 
+                process_cbb.clear()
+                line_name = line_cbb.currentText()
+                model_name = model_cbb.currentText()
+                process = self.database_process.query(sql='''SELECT DISTINCT mor.process 
                                                                 FROM `machine_OEE_register` as mor
                                                                 JOIN `machines` as m ON mor.machine_id = m.machine_id
                                                                 JOIN `production_lines` as pl ON m.line_id = pl.line_id
                                                                 JOIN `product_models_oee` as pmo ON mor.model_id = pmo.model_id
                                                                 WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params={"line_name": line_name, "model_name": model_name})
-                self.ui.OEE_process_cbb.addItems([p[0] for p in process])
+                process_cbb.addItems([p[0] for p in process])
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to apply OEE filters: {e}")
@@ -1116,35 +1136,39 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         if self.ui.OEE_Data_Area_cbb.count() > 0:
             return
         try:
+            if self.ui.OEE_Data_Area_cbb.count() > 0:
+                return
             areas = self.database_process.query(
                 sql="SELECT downtime_area_name FROM downtime_areas;")
             self.ui.OEE_Data_Area_cbb.addItems([area[0] for area in areas])
-            
-            OEE_model = self.database_process.query(sql='''SELECT model_name 
+            self.ui.OEE_Data_period_edit.setDate(QtCore.QDate.currentDate().addMonths(-1))
+            OEE_model = self.database_process.query(sql='''SELECT DISTINCT model_name 
                                                             FROM `product_models_oee` as pmo
                                                             JOIN `departments` as d
                                                             ON pmo.department_id = d.department_id
                                                             JOIN downtime_areas as da
                                                             ON da.department_id = d.department_id
                                                             WHERE da.downtime_area_name = :area_name;''', params={"area_name": areas[0][0]})
+            self.ui.OEE_Data_Model_cbb.clear()
             self.ui.OEE_Data_Model_cbb.addItems([model[0] for model in OEE_model])
-            
+
             lines = self.database_process.query(sql='''SELECT DISTINCT pl.line_name
                                                             FROM `production_lines` as pl
                                                             JOIN `production_output` as po
                                                             ON pl.line_id = po.line_id
-                                                            WHERE po.model_name = :model_name AND MONTH(po.production_date) = :month AND YEAR(po.production_date) = :year;''', params={"model_name": OEE_model[0][0], "month": 12, "year": 2025})
-            self.ui.OEE_Data_Line_cbb.addItems([line[0] for line in lines])
-            
-            process = self.database_process.query(sql='''SELECT mor.process 
-                                                            FROM `machine_OEE_register` as mor
-                                                            JOIN `machines` as m ON mor.machine_id = m.machine_id
-                                                            JOIN `production_lines` as pl ON m.line_id = pl.line_id
-                                                            JOIN `product_models_oee` as pmo ON mor.model_id = pmo.model_id
-                                                            WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params={"line_name": lines[0][0], "model_name": OEE_model[0][0]})
-            self.ui.OEE_Data_Process_cbb.addItems([p[0] for p in process])
-            self.safe_connect(self.ui.OEE_Data_Load_btn.clicked, self.OEE_detail_data)
-            headers = ["Area", "Line", "Model", "Process", "Production Date", "Working Shift\n(hours)", "Total Loss\n(mins)","Available Time\n(mins)", "FGs Output\n(pcs)", "Defect\n(pcs)", "Availability\n(%)", "Performance\n(%)", "Quality\n(%)", "OEE\n(%)"]
+                                                            WHERE po.model_name = :model_name ''', 
+                                                            params={"model_name": OEE_model[0][0]})
+            self.ui.OEE_Data_Line_cbb.clear()
+            if lines:
+                self.ui.OEE_Data_Line_cbb.addItems([line[0] for line in lines])
+                process = self.database_process.query(sql='''SELECT DISTINCT mor.process 
+                                                                FROM `machine_OEE_register` as mor
+                                                                JOIN `machines` as m ON mor.machine_id = m.machine_id
+                                                                JOIN `production_lines` as pl ON m.line_id = pl.line_id
+                                                                JOIN `product_models_oee` as pmo ON mor.model_id = pmo.model_id
+                                                                WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params={"line_name": lines[0][0], "model_name": OEE_model[0][0]})
+                self.ui.OEE_Data_Process_cbb.addItems([p[0] for p in process])
+            headers = ["Area", "Line", "Model", "Process", "Production\nDate", "Working Shift\n(hours)", "Break Time\n(mins)", "Setup Time\n(mins)", "Total Loss\n(mins)","Available Time\n(mins)", "FGs Output\n(pcs)", "Defect\n(pcs)", "Availability\n(%)", "Performance\n(%)", "Quality\n(%)", "OEE\n(%)"]
             self.OEE_Data_model = QtGui.QStandardItemModel(0, len(headers))
             self.OEE_Data_model.setHorizontalHeaderLabels(headers)
             self.ui.OEE_Data_table.setModel(self.OEE_Data_model)
@@ -1153,8 +1177,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.OEE_Data_table.setColumnHidden(1, True)
             self.ui.OEE_Data_table.setColumnHidden(2, True)
             self.ui.OEE_Data_table.setColumnHidden(3, True)
+            self.ui.OEE_Data_table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)  
             self.ui.OEE_Data_table.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-            vetical_header = ["Cycle Time" , "Total Availability (%)", "Total Performance (%)", "Total Quality (%)", "Total OEE (%)", "MTTR", "MTBF"]
+            vetical_header = ["Cycle Time" , "Total Availability (%)", "Total Performance (%)", "Total Quality (%)", "Total OEE (%)"]
             self.OEE_Data_summary_model = QtGui.QStandardItemModel(len(vetical_header), 2)
             for i in range(len(vetical_header)):
                 item = QtGui.QStandardItem(vetical_header[i])
@@ -1167,7 +1192,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.safe_connect(self.ui.OEE_Data_table.customContextMenuRequested, lambda pos: self.table_context_menu(pos = pos,table = self.ui.OEE_Data_table, actions= ["edit", "separator", "delete"],
                                                                                                                      functions_dict={"edit": self.edit_OEE_data, "delete": self.delete_OEE_data}))
             self.safe_connect(self.ui.OEE_Data_calendar_widget.currentPageChanged, lambda year,
-                              month: self.update_date_from_calendar(year, month, self.ui.OEE_Data_period_edit))
+                                month: self.update_date_from_calendar(year, month, self.ui.OEE_Data_period_edit))
+            self.safe_connect(self.ui.OEE_Data_Load_btn.clicked, self.OEE_detail_data)
+            self.safe_connect(self.ui.OEE_Data_Other_btn.clicked, lambda: self.Load_OEE_Data_Other())
+            self.safe_connect(self.ui.OEE_Data_Area_cbb.currentIndexChanged, lambda: self.OEE_filter_changing(change_object="area", area_cbb=self.ui.OEE_Data_Area_cbb, model_cbb=self.ui.OEE_Data_Model_cbb, line_cbb=self.ui.OEE_Data_Line_cbb, process_cbb=self.ui.OEE_Data_Process_cbb))
+            self.safe_connect(self.ui.OEE_Data_Model_cbb.currentIndexChanged, lambda: self.OEE_filter_changing(change_object="model", area_cbb=self.ui.OEE_Data_Area_cbb, model_cbb=self.ui.OEE_Data_Model_cbb, line_cbb=self.ui.OEE_Data_Line_cbb, process_cbb=self.ui.OEE_Data_Process_cbb))
+            self.safe_connect(self.ui.OEE_Data_Line_cbb.currentIndexChanged, lambda: self.OEE_filter_changing(change_object="line", area_cbb=self.ui.OEE_Data_Area_cbb, model_cbb=self.ui.OEE_Data_Model_cbb, line_cbb=self.ui.OEE_Data_Line_cbb, process_cbb=self.ui.OEE_Data_Process_cbb))
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to load OEE detail page: {e}")
@@ -1201,23 +1231,22 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                 JOIN product_models_oee AS pmo ON mct.model_id = pmo.model_id
                                                                 JOIN machine_oee_register AS mor ON pmo.model_id = mor.model_id
                                                                 JOIN production_lines AS pl ON mor.line_id = pl.line_id
-                                                                WHERE mor.process = :process AND pmo.model_name = :model_name AND pl.line_name = :line_name
-                                                                ORDER BY mct.create_at DESC LIMIT 2;
-                                                            ''', params={"process": process, "model_name": model_name, "line_name": line})
-            self.OEE_data_frame = pd.DataFrame(oee_data, columns=["area_name", "line_name", "model_name", "process", "production_date", "working_shift_hours", "fgs_output_pcs", "defect_pcs", "total_loss_mins", "available_time_mins", "availability_percentage", "performance_percentage", "quality_percentage", "oee_percentage"])
+                                                                WHERE mor.process = :process AND pmo.model_name = :model_name AND pl.line_name = :line_name AND mct.create_at <= :date
+                                                                ORDER BY mct.create_at DESC LIMIT 1;
+                                                            ''', params={"process": process, "model_name": model_name, "line_name": line, "date": f"{year}-{month:02d}-{calendar.monthrange(year, month)[1]}"})
+            self.OEE_data_frame = pd.DataFrame(oee_data, columns=["area_name", "line_name", "model_name", "process", "production_date", "working_shift_hours","break_time", "setup_time", "fgs_output_pcs", "defect_pcs", "total_loss_mins", "available_time_mins", "availability_percentage", "performance_percentage", "quality_percentage", "oee_percentage"])
             col = self.OEE_data_frame.pop("total_loss_mins")
-            self.OEE_data_frame.insert(6, "total_loss_mins", col)
+            self.OEE_data_frame.insert(8, "total_loss_mins", col)
             col = self.OEE_data_frame.pop("available_time_mins")
-            self.OEE_data_frame.insert(7, "available_time_mins", col)
+            self.OEE_data_frame.insert(9, "available_time_mins", col)
             self.OEE_data_frame["availability_percentage"] = self.OEE_data_frame["availability_percentage"].apply(lambda x: round(x*100, 2))
             self.OEE_data_frame["performance_percentage"] = self.OEE_data_frame["performance_percentage"].apply(lambda x: round(x*100, 2))
             self.OEE_data_frame["quality_percentage"] = self.OEE_data_frame["quality_percentage"].apply(lambda x: round(x*100, 2))
             self.OEE_data_frame["oee_percentage"] = self.OEE_data_frame["oee_percentage"].apply(lambda x: round(x*100, 2))
-            self.add_data_to_model(self.OEE_data_frame.values.tolist(), self.ui.OEE_Data_table, self.OEE_Data_model, tooltip_Enable=False, target_for_item = {10: oee_targets[0][0], 11: oee_targets[0][1], 12: oee_targets[0][2], 13: oee_targets[0][3]}, highlight_color= (239, 141, 205,100))
+            self.add_data_to_model(self.OEE_data_frame.values.tolist(), self.ui.OEE_Data_table, self.OEE_Data_model, tooltip_Enable=False, target_for_item = {12: oee_targets[0][0], 13: oee_targets[0][1], 14: oee_targets[0][2], 15: oee_targets[0][3]}, highlight_color= (239, 141, 205,100))
             total_OK_qty = float(self.OEE_data_frame['fgs_output_pcs'].sum())
             total_NG_qty = float(self.OEE_data_frame['defect_pcs'].sum())
             total_operation_hours = float(self.OEE_data_frame['working_shift_hours'].sum())
-            total_loss = float(self.OEE_data_frame['total_loss_mins'].sum())
             self.cycle_time_value = float(cycle_time[0][1]) if cycle_time else 0
             total_runtime = float(self.OEE_data_frame['available_time_mins'].sum())
             total_A_percentage = total_runtime / (total_operation_hours*60)
@@ -1291,10 +1320,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 "line_name": downtime_records[idx].line_name })
         try:
             self.database_process.query(sql='''UPDATE `line_operation_times`
-                                                SET operation_hours = :working_shift_hours
+                                                SET operation_hours = :working_shift_hours, break_time = :break_time, setup_time = :setup_time
                                                 WHERE line_id = (SELECT line_id FROM production_lines WHERE line_name = :line_name) 
                                                 AND operation_date = :production_date;
-                                            ''', params={"working_shift_hours": data["working_shift_hours"], "line_name": data["line_name"], "production_date": data["production_date"]})
+                                            ''', params={"working_shift_hours": data["working_shift_hours"], "break_time": data["break_time"], "setup_time": data["setup_time"], "line_name": data["line_name"], "production_date": data["production_date"]})
             self.database_process.query(sql='''UPDATE `production_output`
                                                 SET OK_qty = :fgs_output_pcs, NG_qty = :defect_pcs
                                                 WHERE line_id = (SELECT line_id FROM production_lines WHERE line_name = :line_name)
@@ -1315,6 +1344,11 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.OEE_detail_data()
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to update OEE data: {e}")
+    
+    @QtCore.pyqtSlot()
+    def Load_OEE_Data_Other(self):
+        self.OEE_Other_data_dialog = OEE_Other_Data(parent = self, database=self.database_process)
+        self.OEE_Other_data_dialog.exec()
 
     @QtCore.pyqtSlot()
     def delete_OEE_data(self, index):
@@ -4070,8 +4104,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                           self.Import_data_Downtime_page)
         self.safe_connect(self.ui.DT_problem_report_btn.clicked,
                           self.Problem_report_Downtime_page)
-        self.safe_connect(self.ui.DT_date_edit_2.dateChanged,
-                          lambda: self.DT_filtering(changed_object="date_range"))
 
     @QtCore.pyqtSlot()
     def Dashboard_Downtime_page(self):
@@ -4080,6 +4112,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_Dashboard_widget)
         if self.ui.DT_area_cbb.count() > 0:
             return
+        else:
+            self.safe_connect(self.ui.DT_date_edit_2.dateChanged,
+                          lambda: self.DT_filtering(changed_object="date_range"))
         self.DT_calendar_widget = self.ui.DT_date_edit_2.calendarWidget()
         self.table_view_of_DTcalendar = self.DT_calendar_widget.findChild(
             QtWidgets.QTableView)
@@ -4099,8 +4134,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 sql='''SELECT MAX(downtime_date) FROM `downtime_records`;''')[0][0]
             self.ui.DT_date_edit_2.setDate(
                 QtCore.QDate.fromString(str(nearest_date), "yyyy-MM-dd"))
+            year = pd.to_datetime(nearest_date).year
             self.Dashboard_Downtime_page_refresh(
-                area_name=area_name, target=nearest_date, view_by="day")
+                area_name=area_name, target=nearest_date, year=year, view_by="day")
             self.DT_filtered_dict = {
                 "area": area_name,
                 "view_by": "day",
@@ -4119,10 +4155,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self, "Error", f"Failed to load data: {e}")
             return
 
-    def Dashboard_Downtime_page_refresh(self, area_name, target, view_by="day"):
+    def Dashboard_Downtime_page_refresh(self, area_name, target, year, view_by="day"):
         self.style_button_with_shadow((self.ui.DT_detail_chart_line_btn, self.ui.DT_detail_chart_machine_btn,
                                       self.ui.DT_detail_chart_error_btn, self.ui.DT_detail_chart_time_btn))
-
+        self.spinner.start()
         def assign_shift(t):
             hours = t.seconds // 3600
             if 6 <= hours < 14:
@@ -4131,13 +4167,11 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 return "Shift 2"
             else:
                 return "Shift 3"
-        year = "2026"
         if view_by == "day":
             filer_scripts = "Date = :object"
             filter_scripts_wt = f"lot.operation_date = :object AND YEAR(lot.operation_date) = {year}"
             filer_scripts_report = f"pr.report_date = :object AND YEAR(pr.report_date) = {year}"
         elif view_by == "week":
-            # {self.year_num}
             filer_scripts = f"Working_Week = :object AND YEAR(Date) = {year}"
             filter_scripts_wt = f''' lot.operation_date IN (SELECT DISTINCT Date FROM downtime_report 
                                         WHERE Downtime_Area = :area_name AND YEAR(Date) = {year} AND `Working_Week` = :object
@@ -4149,7 +4183,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                         WHERE Downtime_Area = :area_name AND YEAR(Date) = {year} AND `Working_Month` = :object
                                         ORDER BY Date)'''
             filer_scripts_report = f"MONTH(pr.report_date) = :object AND YEAR(pr.report_date) = {year}"
-        try:
+        def fetch_data():
             data = self.database_process.query(sql=f'''SELECT Date ,Start_Time, Start_Repair_Time, End_Time, 
                                                             Total_Loss, Wait_Technical, Staff_Name, Error_Code, Machine_Code, Line_Name
                                                         FROM `downtime_report`
@@ -4164,14 +4198,31 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                     FROM `problem_reports` as pr
                                                                     JOIN `downtime_areas` da ON pr.department_id = da.department_id
                                                                     WHERE da.downtime_area_name = :area_name AND {filer_scripts_report};''', params={"area_name": area_name, "object": target})
+            return {"data": data, "working_time": working_time, "problem_report": problem_report}
+        
+        def on_data_fetched_dashboard(res, area_name, target, year, view_by):
+            data = res["data"]
+            working_time = res["working_time"]
+            problem_report = res["problem_report"]
             if not data and not working_time:
                 QtWidgets.QMessageBox.information(
                     self, "No data", "No downtime records found for the selected area and date.")
+                self.ui.DTime_value.clear()
+                self.ui.DEvent_value.clear()
+                self.ui.MTTR_value.clear()
+                self.ui.MTBF_value.clear()
+                self.ui.DTime_chart.layout().takeAt(0).widget().deleteLater()
+                self.ui.DEvent_chart.layout().takeAt(0).widget().deleteLater()
+                self.ui.MTTR_chart.layout().takeAt(0).widget().deleteLater()
+                self.ui.MTBF_chart.layout().takeAt(0).widget().deleteLater()
+                self.ui.DT_table.model().removeRows(0, self.ui.DT_table.model().rowCount())
+                self.ui.DT_chart.layout().takeAt(0).widget().deleteLater()
+                self.ui.DT_problem_listwidget.clear()
+                self.spinner.stop()
                 return
             self.data = pd.DataFrame(data, columns=["Date", "Downtime Start Time", "Downtime Start Repair Time", "Downtime End Time",
                                      "Total Loss Time", "Wait Technical Time", "Staff Name", "Error Code", "Machine Code", "Line Name"])
-            self.data["Shift"] = self.data["Downtime Start Time"].apply(
-                assign_shift)
+            self.data["Shift"] = self.data["Downtime Start Time"].apply(assign_shift)
             self.working_time = pd.DataFrame(
                 working_time, columns=["Line Name", "Working Time"])
             total_loss = self.data["Total Loss Time"].sum()
@@ -4278,10 +4329,18 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 group_col="Error Code", value_col="Total Loss Time", data=self.data, title="Downtime By Error Code"))
             self.safe_connect(self.ui.DT_detail_chart_time_btn.clicked, lambda: self.DT_detail_chart_drawing(
                 group_col="Downtime Start Time", value_col="Total Loss Time", data=self.data, title="Downtime By Time"))
+            self.spinner.stop()
+        try:
+            if hasattr(self, 'DT_dashboard_worker') and self.DT_dashboard_worker.isRunning():
+                self.spinner.stop()
+                return
+            self.DT_dashboard_worker = WorkerThread(fetch_data)
+            self.DT_dashboard_worker.finished.connect(lambda res: on_data_fetched_dashboard(res, area_name, target, year, view_by))
+            self.DT_dashboard_worker.start()
         except Exception as e:
+            self.spinner.stop()
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to load data: {e}")
-            return
 
     @QtCore.pyqtSlot()
     def show_sorting_filter_Downtime(self):
@@ -4343,6 +4402,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self, "No data", "No downtime records found for the selected area and date.")
             return
         try:
+            if hasattr(self, 'DT_dashboard_summary_model'):
+                self.DT_dashboard_summary_model.removeRows(0, self.DT_dashboard_summary_model.rowCount())
             gb = data.groupby("Line Name")
             summary_df = pd.DataFrame({
                 "Line": gb["Total Loss Time"].sum().index,
@@ -4408,6 +4469,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         if data is None or len(data) == 0:
             return
         try:
+            self.ui.DT_problem_listwidget.clear()
             self.ui.DT_problem_listwidget.setSpacing(4)
             for report in data:
                 icon = self.icon_from_path(file_extension=report[7])
@@ -4705,10 +4767,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def DT_Viewby(self, changed_object):
+
         if changed_object == self.DT_filtered_dict.get(changed_object):
             return
         try:
             area_name = self.ui.DT_area_cbb.currentText()
+            year = self.ui.DT_date_edit_2.date().year()
             if self.ui.DT_day_radiobtn.isChecked():
                 self.ui.frame_91.setEnabled(False)
                 self.ui.frame_91.setMaximumWidth(0)
@@ -4754,10 +4818,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.DT_calendar_widget.setFixedSize(250, 30)
                 self.safe_connect(self.DT_calendar_widget.currentPageChanged, lambda year,
                                   month: self.update_date_from_calendar(year, month, self.ui.DT_date_edit_2))
+                self.safe_connect(self.ui.DT_date_edit_2.dateChanged, lambda: self.DT_filtering(
+                    changed_object="month_range"))
                 target = self.ui.DT_date_edit_2.date().month()
 
             self.Dashboard_Downtime_page_refresh(
-                area_name=area_name, target=target, view_by=changed_object)
+                area_name=area_name, target=target, year=year, view_by=changed_object)
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to filter data: {e}")
@@ -4773,21 +4839,22 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         if changed_object == None:
             return
         try:
+            year = self.ui.DT_date_edit_2.date().year()
             if changed_object == "date_range":
                 area_name = self.ui.DT_area_cbb.currentText()
                 date = self.ui.DT_date_edit_2.date().toString("yyyy-MM-dd")
                 self.Dashboard_Downtime_page_refresh(
-                    area_name, date, view_by="day")
+                    area_name, date, year, view_by="day")
             elif changed_object == "week_range":
                 area_name = self.ui.DT_area_cbb.currentText()
                 week_num = int(self.ui.DT_week_cbb_2.currentText())
                 self.Dashboard_Downtime_page_refresh(
-                    area_name, week_num, view_by="week")
+                    area_name, week_num, year, view_by="week")
             elif changed_object == "month_range":
                 area_name = self.ui.DT_area_cbb.currentText()
                 month_num = self.ui.DT_date_edit_2.date().month()
                 self.Dashboard_Downtime_page_refresh(
-                    area_name, month_num, view_by="month")
+                    area_name, month_num, year, view_by="month")
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to filter data: {e}")
@@ -4946,13 +5013,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.DT_DD_record_table.setUpdatesEnabled(True)
             self.ui.DT_DD_record_table.setSortingEnabled(True)
             self.ui.DT_DD_date_edit.setDisplayFormat("MMM-yyyy")
-            self.DT_calendar_widget = self.ui.DT_DD_date_edit.calendarWidget()
-            self.table_view_of_DTcalendar = self.DT_calendar_widget.findChild(
+            self.DT_DD_calendar_widget = self.ui.DT_DD_date_edit.calendarWidget()
+            self.table_view_of_DTcalendar = self.DT_DD_calendar_widget.findChild(
                 QtWidgets.QTableView)
             if self.table_view_of_DTcalendar:
                 self.table_view_of_DTcalendar.hide()
-            self.DT_calendar_widget.setFixedSize(250, 30)
-            self.DT_calendar_widget.currentPageChanged.connect(
+            self.DT_DD_calendar_widget.setFixedSize(250, 30)
+            self.DT_DD_calendar_widget.currentPageChanged.connect(
                 lambda year, month: self.update_date_from_calendar(year, month, self.ui.DT_DD_date_edit))
             self.ui.DT_DD_area_cbb.addItems(self.areas)
             self.Load_production_line_base_area()
@@ -4981,7 +5048,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
     def Load_production_line_base_area(self):
         area_name = self.ui.DT_DD_area_cbb.currentText()
         try:
-            result = self.database_process.query(sql='''SELECT pl.line_name
+            result = self.database_process.query(sql='''SELECT DISTINCT pl.line_name
                                                             FROM `production_lines` pl
                                                             JOIN `downtime_areas_production_lines` dapl ON pl.line_id = dapl.line_id
                                                             JOIN `downtime_areas` da ON dapl.downtime_area_id = da.downtime_area_id
@@ -5335,7 +5402,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 }
                 for _, row in working_time_reframe.iterrows()
             ]
-            sql = '''INSERT INTO `downtime_records`
+            sql = '''INSERT IGNORE INTO `downtime_records`
                         (`machine_id`, `line_id`, `downtime_date`, `downtime_start_time`,
                         `downtime_start_repair_time`, `downtime_end_time`, `staff_name`, `error_code`)
                     SELECT
@@ -5527,8 +5594,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot()
     def table_context_menu(self, pos, table, actions, functions_dict=None):
         index = table.indexAt(pos)
-        if table == self.ui.OEE_Data_table and index.column() not in [5, 6, 8, 9]:
-            return
         if not index.isValid():
             return
         default_config = {
@@ -5537,6 +5602,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             "update": (resource_path("Icons\\Update_doc.ico"), "Update File", self.DT_update_report),
             "edit":   (resource_path("Icons\\new_register.ico"), "Edit",      None),
             "delete": (resource_path("Icons\\delete.ico"),     "Delete",      self.DT_delete_report),
+            "add": (resource_path("Icons\\Add_new.ico"),     "Add",      None)
         }
         if functions_dict:
             for k, fn in functions_dict.items():
@@ -8167,7 +8233,7 @@ class OEE_Edit_Data(QtWidgets.QDialog):
                 self.data.iloc[i] = float(self.data.iloc[i])
         self.cycle_time = cycle_time
         self.setWindowIcon(QtGui.QIcon(resource_path("Icons/OEE.ico")))
-        vertical_headers = ["Date", "Working Shift", "Total Loss Time (min)", "Available Time (min)", "FGs (pcs)", "Defect (pcs)", "Availability (%)", "Performance (%)", "Quality (%)", "OEE (%)"]
+        vertical_headers = ["Date", "Working Shift", "Break Time (min)", "Setup Time (min)", "Total Loss Time (min)", "Available Time (min)", "FGs (pcs)", "Defect (pcs)", "Availability (%)", "Performance (%)", "Quality (%)", "OEE (%)"]
         self.data_model = QtGui.QStandardItemModel(len(vertical_headers), 2)
         data_for_table = list(self.data[4:] if len(self.data) > 4 else [None] * (len(vertical_headers) - 4))
         for row in range(len(vertical_headers)):
@@ -8341,7 +8407,7 @@ class OEE_Edit_Data(QtWidgets.QDialog):
             model = self.data["model_name"]
             process = self.data["process"]
             production_date = self.data["production_date"]
-            self.working_shift = self.database.query(sql=''' SELECT operation_id,operation_hours,change_model,change_from
+            self.working_shift = self.database.query(sql=''' SELECT operation_id,operation_hours,change_model,change_from, break_time, setup_time
                                                                 FROM `line_operation_times` as lot
                                                                 JOIN `production_lines` as pl ON lot.line_id = pl.line_id
                                                                 WHERE pl.line_name = :line AND lot.operation_date = :date'''
@@ -8363,6 +8429,10 @@ class OEE_Edit_Data(QtWidgets.QDialog):
                                                             params={'line': line, 'model': model, 'date': production_date})
             self.ui.working_shift_lnedit.setText(str(self.working_shift[0][1]) if self.working_shift else "")
             self.ui.working_shift_lnedit.setSuffix(f" Bf: {self.working_shift[0][1]}" if self.working_shift else "")
+            self.ui.breaktime_lnedit.setText(str(self.working_shift[0][4]) if self.working_shift else "")
+            self.ui.breaktime_lnedit.setSuffix(f" Bf: {self.working_shift[0][4]}" if self.working_shift else "")
+            self.ui.setuptime_lnedit.setText(str(self.working_shift[0][5]) if self.working_shift else "")
+            self.ui.setuptime_lnedit.setSuffix(f" Bf: {self.working_shift[0][5]}" if self.working_shift else "")
             self.downtime_records = [self.downtime_record_widgetItem(record ) for record in self.downtime_records]
             self.ui.downtime_records_widget.clear()
             for record in self.downtime_records:
@@ -8385,6 +8455,8 @@ class OEE_Edit_Data(QtWidgets.QDialog):
     
     def setup_signals(self):
         self.ui.working_shift_lnedit.returnPressed.connect(lambda: self.calculate_oee("working_shift"))
+        self.ui.breaktime_lnedit.returnPressed.connect(lambda: self.calculate_oee("breaktime"))
+        self.ui.setuptime_lnedit.returnPressed.connect(lambda: self.calculate_oee("setuptime"))
         self.ui.FGs_lnedit.returnPressed.connect(lambda: self.calculate_oee("FGs"))
         self.ui.defect_lnedit.returnPressed.connect(lambda: self.calculate_oee("defect"))
         self.ui.OEEsub_groupBox_2.customContextMenuRequested.connect(lambda pos: self.show_downtime_context_menu(pos))
@@ -8394,7 +8466,7 @@ class OEE_Edit_Data(QtWidgets.QDialog):
         if not self.ui.working_shift_lnedit.text() or not self.ui.FGs_lnedit.text() or not self.ui.defect_lnedit.text():
             return
         try:
-            if edit_object == "working_shift" or edit_object == "downtime_record":
+            if edit_object == "working_shift" or edit_object == "downtime_record" or edit_object == "breaktime" or edit_object == "setuptime":
                 if edit_object == "working_shift":
                     working_shift = float(self.ui.working_shift_lnedit.text().strip())
                     if working_shift <= 0 or working_shift > 24:
@@ -8405,45 +8477,55 @@ class OEE_Edit_Data(QtWidgets.QDialog):
                     item = QtGui.QStandardItem(str(working_shift))
                     item.setTextAlignment(QtCore.Qt.AlignCenter)
                     self.data_model.setItem(1, 1, item)
-                else:
+                elif edit_object == "downtime_record":
                     self.data["total_loss_mins"] = sum(record.total_loss_time for record in self.downtime_records)
                     item = QtGui.QStandardItem(str(self.data["total_loss_mins"]))
                     item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.data_model.setItem(4, 1, item)
+                elif edit_object == "breaktime":
+                    self.data["break_time"] = float(self.ui.breaktime_lnedit.text().strip())
+                    item = QtGui.QStandardItem(str(self.data["break_time"]))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
                     self.data_model.setItem(2, 1, item)
-                available_time = self.data["working_shift_hours"] * 60 - self.data["total_loss_mins"]
+                elif edit_object == "setuptime":
+                    self.data["setup_time"] =  float(self.ui.setuptime_lnedit.text().strip())
+                    item = QtGui.QStandardItem(str(self.data["setup_time"]))
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    self.data_model.setItem(3, 1, item)
+                available_time = self.data["working_shift_hours"] * 60 - self.data["total_loss_mins"] - self.data.get("break_time", 0) - self.data.get("setup_time", 0)
                 self.data["available_time_mins"] = available_time
                 item = QtGui.QStandardItem(str(available_time))
                 item.setTextAlignment(QtCore.Qt.AlignCenter)
-                self.data_model.setItem(3, 1, item)
+                self.data_model.setItem(5, 1, item)
                 self.data["availability_percentage"] = self.data["available_time_mins"] / (self.data["working_shift_hours"] * 60) * 100 if self.data["working_shift_hours"] > 0 else 0
                 item = QtGui.QStandardItem(f"{self.data['availability_percentage']:.2f}")
                 item.setTextAlignment(QtCore.Qt.AlignCenter)
-                self.data_model.setItem(6, 1, item)
+                self.data_model.setItem(8, 1, item)
             elif edit_object == "FGs" or edit_object == "defect":
                 if edit_object == "FGs":
                     fgs_output = float(self.ui.FGs_lnedit.text().strip())
                     self.data["fgs_output_pcs"] = fgs_output
                     item = QtGui.QStandardItem(str(fgs_output))
                     item.setTextAlignment(QtCore.Qt.AlignCenter)
-                    self.data_model.setItem(4, 1, item)
+                    self.data_model.setItem(6, 1, item)
                 else:
                     defect_output = float(self.ui.defect_lnedit.text().strip())
                     self.data["defect_pcs"] = defect_output
                     item = QtGui.QStandardItem(str(defect_output))
                     item.setTextAlignment(QtCore.Qt.AlignCenter)
-                    self.data_model.setItem(5, 1, item)
+                    self.data_model.setItem(7, 1, item)
                 self.data["quality_percentage"] = self.data["fgs_output_pcs"] / (self.data["fgs_output_pcs"] + self.data["defect_pcs"]) * 100 if (self.data["fgs_output_pcs"] + self.data["defect_pcs"]) > 0 else 0
                 item = QtGui.QStandardItem(f"{self.data['quality_percentage']:.2f}")
                 item.setTextAlignment(QtCore.Qt.AlignCenter)
-                self.data_model.setItem(8, 1, item)
+                self.data_model.setItem(10, 1, item)
             self.data["performance_percentage"] = self.cycle_time * (self.data["fgs_output_pcs"] + self.data["defect_pcs"]) / (self.data["available_time_mins"]*60) * 100 if self.data["available_time_mins"] > 0 else 0
             item = QtGui.QStandardItem(f"{self.data['performance_percentage']:.2f}")
             item.setTextAlignment(QtCore.Qt.AlignCenter)
-            self.data_model.setItem(7, 1, item)
+            self.data_model.setItem(9, 1, item)
             self.data["OEE_percentage"] = (self.data["availability_percentage"] * self.data["performance_percentage"] * self.data["quality_percentage"]) / 10000
             item = QtGui.QStandardItem(f"{self.data['OEE_percentage']:.2f}")
             item.setTextAlignment(QtCore.Qt.AlignCenter)
-            self.data_model.setItem(9, 1, item)
+            self.data_model.setItem(11, 1, item)
         except ValueError:
             QtWidgets.QMessageBox.warning(self, "Warning", "Please enter a valid number for working shift.")
             return             
@@ -8491,7 +8573,335 @@ class OEE_Edit_Data(QtWidgets.QDialog):
             event.ignore()
         else:
             super().keyPressEvent(event)
+
+class OEE_Other_Data(QtWidgets.QDialog):
+    def __init__(self, parent = None, database=None, data=None):
+        super().__init__(parent)
+        self.ui = UI_OEE_Other_Data()
+        self.ui.setupUi(self)
+        self.database = database
+        self.parent = parent
+        self.operation_edit_item_dict = {"new":[] , "edit":[]}
+        try:
+            areas = self.database.query(sql='''SELECT downtime_area_name FROM downtime_areas''')
+            self.ui.OEE_OD_area_cbb.addItems([row[0] for row in areas])
+            models = self.database.query(sql='''SELECT model_name 
+                                                            FROM `product_models_oee` as pmo
+                                                            JOIN `departments` as d
+                                                            ON pmo.department_id = d.department_id
+                                                            JOIN downtime_areas as da
+                                                            ON da.department_id = d.department_id
+                                                            WHERE da.downtime_area_name = :area_name;''', params={"area_name": areas[0][0]})
+            self.ui.OEE_OD_model_cbb.addItems([row[0] for row in models])
+            lines = self.database.query(sql='''SELECT DISTINCT pl.line_name
+                                                            FROM `production_lines` as pl
+                                                            JOIN `production_output` as po
+                                                            ON pl.line_id = po.line_id
+                                                            WHERE  MONTH(po.production_date) = :month AND YEAR(po.production_date) = :year;''', 
+                                                            params={ "month": self.ui.OEE_OD_period_edit.date().month(), "year": self.ui.OEE_OD_period_edit.date().year()})
+            self.ui.OEE_OD_line_cbb.addItems([row[0] for row in lines])
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
+        self.setWindowIcon(QtGui.QIcon(resource_path("Icons/OEE.ico")))
+        header = ["Cycle Time ID", "Model Name", "Machine Code", "Cycle Time (s)", "Recorded At", "Notes"]
+        self.data_cycle_time_model = QtGui.QStandardItemModel(0, 5)
+        self.data_cycle_time_model.setHorizontalHeaderLabels(header)
+        header = ["Operation ID", "Line Name", "Operation\nDate", "Operation\nHours", "Break Time\n(min)", "Setup Time\n(min)", "Change\nModel", "Change\nFrom", "OK Qty"]
+        self.data_operation_time_model = QtGui.QStandardItemModel(0 , 9)
+        self.data_operation_time_model.setHorizontalHeaderLabels(header)
+        self.tab_changing(self.ui.Tab_widget.currentIndex())
+
+        self.show_data()
+        self.setup_signals()
+        
+    def setup_signals(self):
+        self.ui.cancel_btn.clicked.connect(lambda: self.reject())
+        self.ui.Tab_widget.currentChanged.connect(lambda index: self.tab_changing(index))
+        self.ui.OEE_OD_calendar_widget.currentPageChanged.connect(lambda year,
+                              month: self.parent.update_date_from_calendar(year, month, self.ui.OEE_OD_period_edit))
+        self.ui.machine_cycle_table.customContextMenuRequested.connect(lambda pos: self._cycle_table_context_menu(pos))
+        self.ui.confirm_btn.clicked.connect(self.accept_action)
+        self.ui.line_operation_table.doubleClicked.connect(lambda index: self.edit_operation_time_record(index))
+        self.ui.OEE_OD_area_cbb.currentTextChanged.connect(lambda: self.filter_process())
+        self.ui.OEE_OD_model_cbb.currentTextChanged.connect(lambda: self.show_data())
+        self.ui.OEE_OD_line_cbb.currentTextChanged.connect(lambda: self.show_data())
+        self.ui.OEE_OD_period_edit.dateChanged.connect(lambda: self.show_data())
     
+    @QtCore.pyqtSlot()
+    def tab_changing(self, index):
+        if index == 0:
+            self.ui.OEE_OD_groupBox_3.setHidden(False)
+            self.ui.OEE_OD_groupBox.setHidden(True)
+            self.ui.OEE_OD_groupBox_2.setHidden(True)
+        else:
+            self.ui.OEE_OD_groupBox_3.setHidden(True)
+            self.ui.OEE_OD_groupBox.setHidden(False)
+            self.ui.OEE_OD_groupBox_2.setHidden(False)
+        self.show_data()
+    
+    @QtCore.pyqtSlot()
+    def show_data(self):
+        current_page = self.ui.Tab_widget.currentIndex()
+        try:
+            if current_page == 0:
+                self.data_cycle_time_model.removeRows(0, self.data_cycle_time_model.rowCount())
+                model_name = self.ui.OEE_OD_model_cbb.currentText()
+                cycle_time_log = self.database.query(sql='''SELECT mct.cycle_time_id, pmo.model_name, m.machine_code, mct.cycle_time_seconds, mct.create_at, mct.Notes
+                                                        FROM `machine_cycle_times` as mct
+                                                        JOIN `product_models_oee` as pmo ON mct.model_id = pmo.model_id
+                                                        JOIN `machines` as m ON mct.machine_id = m.machine_id
+                                                        WHERE pmo.model_name = :model_name
+                                                        ORDER BY mct.create_at DESC
+                                                        LIMIT 10;''',
+                                                        params={"model_name": model_name})
+                self.cycle_time_df = pd.DataFrame(cycle_time_log, columns=["id", "model_name", "machine_code", "cycle_time_seconds", "create_at", "notes"])
+                for row in range(self.cycle_time_df.shape[0]):
+                    for col in range(self.cycle_time_df.shape[1]):
+                        if col == 4:
+                            item = QtGui.QStandardItem(self.cycle_time_df.iat[row, col].strftime("%Y-%m-%d") if self.cycle_time_df.iat[row, col] else "")
+                        else:
+                            item = QtGui.QStandardItem(str(self.cycle_time_df.iat[row, col]) if self.cycle_time_df.iat[row, col] is not None else "")
+                        item.setTextAlignment(QtCore.Qt.AlignCenter)
+                        item.setEditable(False)
+                        item.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Normal))
+                        self.data_cycle_time_model.setItem(row, col, item)
+                
+                self.ui.machine_cycle_table.setModel(self.data_cycle_time_model)
+                self.ui.machine_cycle_table.setColumnHidden(0, True)
+                self.ui.machine_cycle_table.setColumnHidden(1, True)
+            else:
+                line_name = self.ui.OEE_OD_line_cbb.currentText()
+                month = self.ui.OEE_OD_period_edit.date().month()
+                year = self.ui.OEE_OD_period_edit.date().year()
+                self.data_operation_time_model.removeRows(0, self.data_operation_time_model.rowCount())
+                operetion_time = self.database.query(sql = '''  SELECT lot.operation_id, pl.line_name, po.production_date, 
+                                                                    lot.operation_hours, lot.break_time, lot.setup_time, 
+                                                                    lot.change_model, lot.change_from , po.OK_qty
+                                                                FROM production_output AS po
+                                                                JOIN production_lines AS pl ON po.line_id = pl.line_id
+                                                                LEFT JOIN line_operation_times AS lot 
+                                                                    ON po.line_id = lot.line_id AND po.production_date = lot.operation_date
+                                                                WHERE MONTH(po.production_date) = :month AND YEAR(po.production_date) = :year
+                                                                AND pl.line_name = :line_name AND po.`OK_qty`> 50;''',
+                                                                params={"line_name": line_name, "month": month, "year": year})
+                self.operation_time_df = pd.DataFrame(operetion_time, columns=["operation_id", "line_name", "operation_date", "operation_hours", "break_time", "setup_time", "change_model", "change_from", "OK_qty"])
+                for row in range(self.operation_time_df.shape[0]):
+                    for col in range(self.operation_time_df.shape[1]):
+                        if col == 2:
+                            item = QtGui.QStandardItem(self.operation_time_df.iat[row, col].strftime("%Y-%m-%d") if self.operation_time_df.iat[row, col] else "")
+                        elif col == 7:
+                            val = self.operation_time_df.iat[row, col]
+                            if val is None or (hasattr(pd, 'NaT') and val is pd.NaT):
+                                item = QtGui.QStandardItem("")
+                            elif isinstance(val, pd.Timedelta) or hasattr(val, 'total_seconds'):
+                                total_seconds = int(val.total_seconds())
+                                hours, remainder = divmod(abs(total_seconds), 3600)
+                                minutes, seconds = divmod(remainder, 60)
+                                item = QtGui.QStandardItem(f"{hours:02d}:{minutes:02d}:{seconds:02d}")
+                            elif hasattr(val, 'strftime'):
+                                item = QtGui.QStandardItem(val.strftime("%H:%M:%S"))
+                            else:
+                                item = QtGui.QStandardItem(str(val))
+                        else:
+                            item = QtGui.QStandardItem(str(self.operation_time_df.iat[row, col]) if self.operation_time_df.iat[row, col] is not None else "")
+                        item.setTextAlignment(QtCore.Qt.AlignCenter)
+                        item.setEditable(False)
+                        item.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Normal))
+                        self.data_operation_time_model.setItem(row, col, item)
+                self.ui.line_operation_table.setModel(self.data_operation_time_model)
+                self.ui.line_operation_table.setColumnHidden(0, True)
+                self.ui.line_operation_table.setColumnHidden(1, True)
+                self.ui.line_operation_table.horizontalHeader().setSectionResizeMode(6, QtWidgets.QHeaderView.Fixed)
+                self.ui.line_operation_table.setColumnWidth(6, 200)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to load data: {e}")
+    
+    @QtCore.pyqtSlot()
+    def filter_process(self):
+        try:
+            area_name = self.ui.OEE_OD_area_cbb.currentText()
+            models = self.database.query(sql='''SELECT model_name 
+                                                            FROM `product_models_oee` as pmo
+                                                            JOIN `departments` as d
+                                                            ON pmo.department_id = d.department_id
+                                                            JOIN downtime_areas as da
+                                                            ON da.department_id = d.department_id
+                                                            WHERE da.downtime_area_name = :area_name;''', params={"area_name": area_name})
+            self.ui.OEE_OD_model_cbb.clear()
+            self.ui.OEE_OD_model_cbb.addItems([row[0] for row in models])
+            month = self.ui.OEE_OD_period_edit.date().month()
+            year = self.ui.OEE_OD_period_edit.date().year()
+            lines = self.database.query(sql='''SELECT DISTINCT pl.line_name
+                                                            FROM `production_lines` as pl
+                                                            JOIN `production_output` as po
+                                                            ON pl.line_id = po.line_id
+                                                            WHERE MONTH(po.production_date) = :month AND YEAR(po.production_date) = :year;''', 
+                                                            params={ "month": month, "year": year})
+            self.ui.OEE_OD_line_cbb.clear()
+            self.ui.OEE_OD_line_cbb.addItems([row[0] for row in lines])
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to filter models: {e}")
+        
+
+    @QtCore.pyqtSlot()
+    def _cycle_table_context_menu(self, pos):
+        index = self.ui.machine_cycle_table.indexAt(pos)
+        menu = QtWidgets.QMenu(self.ui.machine_cycle_table)
+        add_act = menu.addAction("Add")
+        add_act.triggered.connect(lambda: self.add_cycle_time_record(index))
+        if index.isValid():
+            menu.addSeparator()
+            del_act = menu.addAction("Delete")
+            del_act.triggered.connect(lambda: self.delete_cycle_time_record(index))
+        menu.exec_(self.ui.machine_cycle_table.viewport().mapToGlobal(pos))
+
+    @QtCore.pyqtSlot()
+    def add_cycle_time_record(self,index):
+        self.edit_cycle_time_flag = True
+        try:
+            self.data_cycle_time_model.insertRow(self.cycle_time_df.shape[0])
+            new_record = {"id": None, "model_name": self.ui.OEE_OD_model_cbb.currentText(), "machine_code": self.cycle_time_df.iat[0, 2], "cycle_time_seconds": None, "create_at": dt.datetime.now().date(), "notes": None}
+            self.cycle_time_df = pd.concat([pd.DataFrame([new_record]), self.cycle_time_df], ignore_index=True)
+            for col in range(self.cycle_time_df.shape[1]):
+                item = QtGui.QStandardItem(str(self.cycle_time_df.iat[0, col]) if self.cycle_time_df.iat[0, col] is not None else "")
+                item.setTextAlignment(QtCore.Qt.AlignCenter)
+                item.setEditable(True)
+                item.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Normal))
+                item.setBackground(QtGui.QColor(34, 57, 40, 30))
+                self.data_cycle_time_model.setItem(len(self.cycle_time_df) - 1, col, item)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to add cycle time record: {e}")
+
+
+    @QtCore.pyqtSlot()
+    def delete_cycle_time_record(self,index):
+        try:
+            record_id = self.cycle_time_df.iat[index.row(), 0]
+            if record_id is not None:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Confirm", "Are you sure you want to delete this cycle time record?\nThis action cannot be undone.",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                if reply != QtWidgets.QMessageBox.Yes:
+                    return
+                self.database.query(sql=''' DELETE FROM `machine_cycle_times` WHERE cycle_time_id = :id ''', params={'id': record_id})
+            self.data_cycle_time_model.removeRow(index.row())
+            self.cycle_time_df = self.cycle_time_df.drop(index.row()).reset_index(drop=True)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to delete cycle time record: {e}")
+    
+    @QtCore.pyqtSlot()
+    def edit_operation_time_record(self,index):
+        self.edit_operation_time_flag = True
+        row = index.row()
+        try:
+            operation_id = self.operation_time_df.iat[index.row(), 0]
+            for col in range(3,8):
+                item = self.data_operation_time_model.item(row, col)
+                item.setEditable(True)
+                item.setBackground(QtGui.QColor(34, 57, 40, 30))
+                item.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Normal))
+            if operation_id is None:
+                self.operation_edit_item_dict["new"].append(row)
+            else:
+                self.operation_edit_item_dict["edit"].append(row)
+                
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to edit operation time record: {e}")
+            return
+
+    @QtCore.pyqtSlot()
+    def accept_action(self):
+        insert_params = []
+        def update_cycle_time():
+            for row in range(self.cycle_time_df.shape[0]):
+                record_id = self.data_cycle_time_model.index(row, 0).data()
+                if not record_id:
+                    model_name = self.data_cycle_time_model.index(row, 1).data()
+                    machine_code = self.data_cycle_time_model.index(row, 2).data()
+                    cycle_time_seconds = self.data_cycle_time_model.index(row, 3).data()
+                    note = self.data_cycle_time_model.index(row, 5).data()
+                    if cycle_time_seconds is not None:
+                        insert_params.append({'model_name': model_name, 'machine_code': machine_code, 'cycle_time_seconds': cycle_time_seconds, 'notes': note})
+            if insert_params:
+                self.database.executemany(sql=''' INSERT INTO `machine_cycle_times` (model_id, machine_id, cycle_time_seconds, notes)
+                                                    VALUES ((SELECT model_id FROM product_models_oee WHERE model_name = :model_name),
+                                                    (SELECT machine_id FROM machines WHERE machine_code = :machine_code),
+                                                    :cycle_time_seconds,:notes)''', params_list=insert_params)
+
+        def update_operations():
+            line_name = self.ui.line_operation_table.model().index(0, 1).data()
+            if self.operation_edit_item_dict["new"]:
+                params_list = []
+                for row in set(self.operation_edit_item_dict["new"]):
+                    operation_date = self.ui.line_operation_table.model().index(row, 2).data()
+                    operation_hours = self.ui.line_operation_table.model().index(row, 3).data()
+                    break_time = self.ui.line_operation_table.model().index(row, 4).data() 
+                    setup_time = self.ui.line_operation_table.model().index(row, 5).data()
+                    change_model = self.ui.line_operation_table.model().index(row, 6).data()
+                    change_from = self.ui.line_operation_table.model().index(row, 7).data()
+                    params_list.append({'line_name': line_name, 'operation_date': operation_date, 'operation_hours': operation_hours, 
+                                        'break_time': break_time if break_time.strip() != "" else 0, 
+                                        'setup_time': setup_time if setup_time.strip() != "" else 0, 
+                                        'change_model': change_model if change_model.strip() != "" else None, 
+                                        'change_from': change_from if change_from.strip() != "" else None})
+                self.database.executemany(sql = ''' INSERT INTO line_operation_times (line_id, operation_date, operation_hours, change_model, change_from,  break_time, setup_time)
+                                                    VALUES ((SELECT line_id FROM production_lines WHERE line_name = :line_name), 
+                                                            :operation_date, :operation_hours, :change_model, :change_from, :break_time, :setup_time)'''
+                                          , params_list=params_list)
+            if self.operation_edit_item_dict["edit"]:
+                params_list = []
+                for row in set(self.operation_edit_item_dict["edit"]):
+                    operation_id = self.operation_time_df.iat[row, 0]
+                    operation_date = self.ui.line_operation_table.model().index(row, 2).data()
+                    operation_hours = self.ui.line_operation_table.model().index(row, 3).data()
+                    break_time = self.ui.line_operation_table.model().index(row, 4).data()
+                    setup_time = self.ui.line_operation_table.model().index(row, 5).data()
+                    change_model = self.ui.line_operation_table.model().index(row, 6).data()
+                    change_from = self.ui.line_operation_table.model().index(row, 7).data()
+                    params_list.append({'operation_id': operation_id, 'operation_date': operation_date, 'operation_hours': operation_hours, 
+                                        'break_time': break_time if break_time.strip() != "" else 0, 
+                                        'setup_time': setup_time if setup_time.strip() != "" else 0, 
+                                        'change_model': change_model if change_model.strip() != "" else None, 
+                                        'change_from': change_from if change_from.strip() != "" else None})
+                self.database.executemany(sql = ''' UPDATE line_operation_times SET operation_date = :operation_date, operation_hours = :operation_hours, break_time = :break_time, setup_time = :setup_time, change_model = :change_model, change_from = :change_from
+                                                    WHERE operation_id = :operation_id''',
+                                        params_list=params_list)
+        try:
+            if hasattr(self, 'edit_cycle_time_flag') and hasattr(self, 'edit_operation_time_flag'):
+                msgBox = QtWidgets.QMessageBox(self)
+                msgBox.setWindowTitle("Update Content")
+                msgBox.setText("What would you like to update?")
+                cycle_time_btn = msgBox.addButton("Cycle Time", QtWidgets.QMessageBox.ActionRole)
+                operations_btn = msgBox.addButton("Operations", QtWidgets.QMessageBox.ActionRole)
+                both_btn = msgBox.addButton("Both", QtWidgets.QMessageBox.ActionRole)
+                msgBox.exec()
+                clicked_button = msgBox.clickedButton()
+                if clicked_button == cycle_time_btn:
+                    update_cycle_time()
+                    QtWidgets.QMessageBox.information(self, "Success", "Cycle time records have been updated successfully.")
+                elif clicked_button == operations_btn:
+                    update_operations()
+                    QtWidgets.QMessageBox.information(self, "Success", "Operation time records have been updated successfully.")
+                elif clicked_button == both_btn:
+                    update_cycle_time()
+                    update_operations()
+                    QtWidgets.QMessageBox.information(self, "Success", "Cycle time and operation time records have been updated successfully.")
+                else:
+                    return
+            elif hasattr(self, 'edit_cycle_time_flag'):
+                update_cycle_time()
+                QtWidgets.QMessageBox.information(self, "Success", "Cycle time records have been updated successfully.")
+            elif hasattr(self, 'edit_operation_time_flag'):
+                update_operations()
+                QtWidgets.QMessageBox.information(self, "Success", "Operation time records have been updated successfully.")
+            else:
+                return
+        
+            self.show_data()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to save cycle time record: {e}")
+        
+
 def main():
     try:
         import ctypes

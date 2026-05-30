@@ -645,7 +645,8 @@ QToolBox::tab:selected {
     border-right: 1px solid #888b8b;
 }
 #groupBox_2, #groupBox_3, #groupBox_4, #groupBox_5, #groupBox_6, #groupBox_7, #groupBox_8, #groupBox_9, #groupBox_10, #groupBox_11,
- #groupBox_86, #groupBox_90, #groupBox, #OEEsub_groupBox ,#OEEsub_groupBox_2, #OEEsub_groupBox_3, #OEEsub_groupBox_4 {
+ #groupBox_86, #groupBox_90, #groupBox, #OEEsub_groupBox ,#OEEsub_groupBox_2, #OEEsub_groupBox_3, #OEEsub_groupBox_4, #OEEsub_groupBox_5, #OEEsub_groupBox_6,
+ #OEE_OD_groupBox, #OEE_OD_groupBox_2, #OEE_OD_groupBox_3, #OEE_OD_groupBox_4 {
     border: 1px solid gray;
     border-radius: 5px;
     margin-top: 10px;
@@ -654,7 +655,8 @@ QToolBox::tab:selected {
 
 #groupBox_2::title, #groupBox_3::title, #groupBox_4::title, #groupBox_5::title, #groupBox_6::title, #groupBox_7::title, 
 #groupBox_8::title, #groupBox_9::title, #groupBox_10::title, #groupBox_11::title, #groupBox_86::title, #groupBox_90::title , #groupBox::title,
-#OEEsub_groupBox::title, #OEEsub_groupBox_2::title, #OEEsub_groupBox_3::title, #OEEsub_groupBox_4::title {
+#OEEsub_groupBox::title, #OEEsub_groupBox_2::title, #OEEsub_groupBox_3::title, #OEEsub_groupBox_4::title, #OEEsub_groupBox_5::title, #OEEsub_groupBox_6::title,
+#OEE_OD_groupBox::title, #OEE_OD_groupBox_2::title, #OEE_OD_groupBox_3::title ,#OEE_OD_groupBox_4::title {
     subcontrol-origin: margin;
     left: 10px;
     padding: 0 3px 0 3px;
