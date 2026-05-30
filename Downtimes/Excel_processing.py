@@ -51,12 +51,13 @@ class Downtime_Excel_Processor:
             machine_code_list = [code[0] for code in temp]
             excel_file = pd.ExcelFile(self.file_path)
             
-            self.working_time = pd.read_excel(excel_file, sheet_name="Working time", skiprows=13)
+            self.working_time = pd.read_excel(excel_file, sheet_name=f"WT-{self.sheet_name}", skiprows=13)
             self.working_time = self.working_time.loc[:, ~self.working_time.columns.astype(str).str.contains(r"^Unnamed", case=False, na=False)]
             self.working_time["Date"] = pd.to_datetime(self.working_time["Date"], errors='coerce')
             self.working_time = self.working_time[self.working_time["Date"].notna()]
             self.working_time = self.working_time.fillna(0)
             self.working_time["Date"] = self.working_time["Date"].dt.strftime("%Y-%m-%d")
+            print(self.working_time)
 
             self.data = pd.read_excel(excel_file, sheet_name=self.sheet_name, skiprows=4, 
                                       header=None, usecols=[0,1,2,3,4,9,10,17], dtype={10: str, 17: str})

@@ -1057,9 +1057,13 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_105.addItem(self.horizontalSpacer_3)
 
+        self.OEE_Data_Other_btn = QtWidgets.QPushButton(self.frame_147)
+        self.OEE_Data_Other_btn.setObjectName(u"OEE_Data_Other_btn")
+        self.OEE_Data_Other_btn.setMinimumSize(QtCore.QSize(100, 35))
+        self.OEE_Data_Other_btn.setStyleSheet(qss)
 
+        self.horizontalLayout_105.addWidget(self.OEE_Data_Other_btn)
         self.verticalLayout_81.addWidget(self.frame_147)
-
         self.OEE_Data_table = QtWidgets.QTableView(self.frame_141)
         self.OEE_Data_table.setObjectName(u"OEE_Data_table")
         sizePolicy5.setHeightForWidth(self.OEE_Data_table.sizePolicy().hasHeightForWidth())
@@ -1896,6 +1900,7 @@ class Ui_MainWindow(object):
 
         self.DT_DD_date_edit = QtWidgets.QDateEdit(self.frame_117)
         self.DT_DD_date_edit.setObjectName(u"DT_DD_date_edit")
+        self.DT_DD_date_edit.setMinimumSize(QtCore.QSize(100, 20))
         self.DT_DD_date_edit.setCalendarPopup(True)
         self.DT_DD_date_edit.setStyleSheet(qss)
         calendar_widget = self.DT_DD_date_edit.calendarWidget()
@@ -4871,6 +4876,7 @@ class Ui_MainWindow(object):
         self.OEE_Data_period_edit.setDisplayFormat(_translate("MainWindow", u"MMM-yy", None))
         self.OEE_Data_Load_btn.setText(_translate("MainWindow", u"Load", None))
         self.label_87.setText(_translate("MainWindow", u"Summary Report", None))
+        self.OEE_Data_Other_btn.setText(_translate("MainWindow", u"Other Data", None))
     
     def company_week_number(self, date: datetime.date) -> int:
         year_start = datetime.date(date.year, 1, 1)

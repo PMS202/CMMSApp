@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1512</width>
+    <width>1572</width>
     <height>797</height>
    </rect>
   </property>
@@ -333,7 +333,7 @@
        <string notr="true">background: #ffffff</string>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="OEE_page">
        <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -1926,6 +1926,19 @@
                        </property>
                       </spacer>
                      </item>
+                     <item>
+                      <widget class="QPushButton" name="OEE_Data_Other_btn">
+                       <property name="minimumSize">
+                        <size>
+                         <width>100</width>
+                         <height>35</height>
+                        </size>
+                       </property>
+                       <property name="text">
+                        <string>Other Data</string>
+                       </property>
+                      </widget>
+                     </item>
                     </layout>
                    </widget>
                   </item>
@@ -2242,7 +2255,7 @@
            <item>
             <widget class="QStackedWidget" name="DT_stacked_widget">
              <property name="currentIndex">
-              <number>0</number>
+              <number>1</number>
              </property>
              <widget class="QWidget" name="DT_Dashboard_widget">
               <layout class="QHBoxLayout" name="horizontalLayout_67">

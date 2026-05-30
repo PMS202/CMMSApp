@@ -15,6 +15,7 @@ class Production_API:
         self.database = database
  
     def get_inspection_output(self,API=None,params: tuple=None):
+        last_day_of_month = lambda year, month: (dt(year, month % 12 + 1, 1) - dt(year, month, 1)).days
         if API is None:
             API = self.API_URL
         if params is None:
@@ -25,22 +26,22 @@ class Production_API:
         if not isinstance(date_tuple, tuple):
             raise ValueError("params values must be a tuple")
         begin_date, end_date = date_tuple[0].split("-"), date_tuple[-1].split("-")
-        month = begin_date[1]
         year = begin_date[0]
         key = list(params.keys())[0]
         result = []
-        for date in range(int(begin_date[2]), int(end_date[2])+1):
-            fdate = f"{year}-{month}-{date:02d}"
-            resp = requests.get(API, params={key: fdate}, timeout=10)
-            resp.raise_for_status()
-            time.sleep(0.2)
-            with_date = resp.json()
-            with_date["productionDate"] = fdate
-            result.append(with_date)
+        for month in range(int(begin_date[1]), int(end_date[1])+1):
+            for date in range(int(begin_date[2]), last_day_of_month(int(year), month)+1):
+                fdate = f"{year}-{month:02d}-{date:02d}"
+                resp = requests.get(API, params={key: fdate}, timeout=10)
+                resp.raise_for_status()
+                time.sleep(0.2)
+                with_date = resp.json()
+                with_date["productionDate"] = fdate
+                result.append(with_date)
         return result
 
 if __name__ == "__main__":
-    params_dict = {"productionDate": ("2025-12-01", "2025-12-31")}
+    params_dict = {"productionDate": ("2026-01-01", "2026-05-29")}
     API_URL = "http://172.30.73.149:1810/ScaMonitor/GetInspectionOkNg_All?"
     production_api = Production_API(params_dict, API_URL)
     data = production_api.get_inspection_output()
@@ -72,21 +73,34 @@ if __name__ == "__main__":
         print(f"Error inserting data into database: {e}")
         sys.exit(1)
     params_list  = []
-    current_model_flag = {  "A02": "SCFN3323XV-450-1R5A052H-T",
-                            "A03": "SCF29-300-1R8A018JV",
-                            "A04": "SC14-250-1R4A55UH",
-                            "A05": "SCF29-300-1R8A018JV",
-                            "A06": "Unknown",
-                            "A07": "SCF25XV-280-2R1A005JH",
-                            "A08": "SCF29XV-210-1R9A012JH-CG(SA)",
-                            "A09": "SCFN3021-300-1R2A051H",
-                            "A10": "SCF25-000-2R1B002JV-VT",
-                            "A11": "SCF14XV-1250-1R6A94UJH",
-                            "A12": "SCN46-320-2R2AJH-BW",
-                            "A13": "SCF29-300-1R8A018JV",
-                            "A14": "SCN3222-300-1R3A008H",
-                            "A15": "SCN3222-300-1R3A008H"
-                          } # cần lấy model của tháng trước
+    # current_model_flag = {  "A02": "SCFN3323XV-450-1R5A052H-T",
+    #                         "A03": "SCF29-300-1R8A018JV",
+    #                         "A04": "SC14-250-1R4A55UH",
+    #                         "A05": "SCF29-300-1R8A018JV",
+    #                         "A06": "Unknown",
+    #                         "A07": "SCF25XV-280-2R1A005JH",
+    #                         "A08": "SCF29XV-210-1R9A012JH-CG(SA)",
+    #                         "A09": "SCFN3021-300-1R2A051H",
+    #                         "A10": "SCF25-000-2R1B002JV-VT",
+    #                         "A11": "SCF14XV-1250-1R6A94UJH",
+    #                         "A12": "SCN46-320-2R2AJH-BW",
+    #                         "A13": "SCF29-300-1R8A018JV",
+    #                         "A14": "SCN3222-300-1R3A008H",
+    #                         "A15": "SCN3222-300-1R3A008H"
+    #                       } # cần lấy model của tháng trước
+    
+    SELECT_CURRENT_MODEL_SQL = ''' SELECT pl.line_name, po.model_name
+                                            FROM `production_lines` as pl
+                                            JOIN `production_output` as po ON pl.line_id = po.line_id
+                                            WHERE po.production_date = (SELECT MAX(production_date) FROM production_output WHERE line_id = pl.line_id);'''
+    current_model_flag = {}
+    try:
+        current_models = database.query(sql=SELECT_CURRENT_MODEL_SQL)
+        for line, model in current_models:
+            current_model_flag[line] = model
+    except Exception as e:
+        print(f"Error fetching current models from database: {e}")
+        sys.exit(1)
     start_date = dt.strptime("06:00:00", "%H:%M:%S")
     
     for item in data:
@@ -122,10 +136,12 @@ if __name__ == "__main__":
                 param = {"line_name": line, "production_date": production_date, "model_name": model_info["model"] if model_info["model"] is not None else "Unknown", "OK_qty": item[line]["OkQty"], "NG_qty": item[line]["NgQty"]}
                 params_list.append(param)
     try:
-        database.executemany(sql = ''' INSERT INTO `production_output` (line_id, production_date, model_name, OK_qty, NG_qty)
+        database.executemany(sql = ''' INSERT IGNORE INTO `production_output` (line_id, production_date, model_name, OK_qty, NG_qty)
                                         VALUES ((SELECT line_id FROM production_lines WHERE line_name = :line_name), 
                                                 :production_date, :model_name, :OK_qty, :NG_qty)
-                                                ON DUPLICATE KEY UPDATE output_id = output_id;''', params_list = params_list)
+                                                ON DUPLICATE KEY UPDATE 
+                                                OK_qty     = VALUES(OK_qty),
+                                                NG_qty     = VALUES(NG_qty);''', params_list = params_list)
     except Exception as e:
         print(f"Error inserting data into database: {e}")
         sys.exit(1)

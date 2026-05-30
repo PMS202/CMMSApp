@@ -51,7 +51,7 @@ class SuffixLineEdit(QtWidgets.QLineEdit):
 class UI_OEE_Edit_Data(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("OEE_Edit_Data")
-        Dialog.resize(600, 700)
+        Dialog.resize(700, 700)
         Dialog.setStyleSheet("background-color: rgb(255, 255, 255);")
         qss = load_qss_file(resource_path("Stylesheet\\Ubuntu.qss"))
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
@@ -101,6 +101,34 @@ class UI_OEE_Edit_Data(object):
         self.working_shift_lnedit.setObjectName("working_shift_lnedit")
         self.horizontalLayout_2.addWidget(self.working_shift_lnedit)
         self.verticalLayout_3.addWidget(self.OEEsub_groupBox)
+
+        self.OEEsub_groupBox_5 = QtWidgets.QGroupBox(self.frame_2)
+        self.OEEsub_groupBox_5.setObjectName(u"OEEsub_groupBox_5")
+        self.OEEsub_groupBox_5.setFont(font)
+        self.OEEsub_groupBox_5.setStyleSheet(qss)
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout(self.OEEsub_groupBox_5)
+        self.horizontalLayout_5.setObjectName(u"horizontalLayout_5")
+        self.breaktime_lnedit = SuffixLineEdit(self.OEEsub_groupBox_5)
+        self.breaktime_lnedit.setObjectName(u"breaktime_lnedit")
+
+        self.horizontalLayout_5.addWidget(self.breaktime_lnedit)
+
+
+        self.verticalLayout_3.addWidget(self.OEEsub_groupBox_5)
+
+        self.OEEsub_groupBox_6 = QtWidgets.QGroupBox(self.frame_2)
+        self.OEEsub_groupBox_6.setObjectName(u"OEEsub_groupBox_6")
+        self.OEEsub_groupBox_6.setFont(font)
+        self.OEEsub_groupBox_6.setStyleSheet(qss)
+        self.horizontalLayout_6 = QtWidgets.QHBoxLayout(self.OEEsub_groupBox_6)
+        self.horizontalLayout_6.setObjectName(u"horizontalLayout_6")
+        self.setuptime_lnedit = SuffixLineEdit(self.OEEsub_groupBox_6)
+        self.setuptime_lnedit.setObjectName(u"setuptime_lnedit")
+
+        self.horizontalLayout_6.addWidget(self.setuptime_lnedit)
+
+        self.verticalLayout_3.addWidget(self.OEEsub_groupBox_6)
+
         self.OEEsub_groupBox_2 = QtWidgets.QGroupBox(self.frame_2)
         font = QtGui.QFont()
         font.setFamily("MS Sans Serif")
@@ -221,6 +249,8 @@ class UI_OEE_Edit_Data(object):
         self.OEEsub_groupBox_2.setTitle(_translate("Dialog", "Downtime Records"))
         self.OEEsub_groupBox_3.setTitle(_translate("Dialog", "FGs Output"))
         self.OEEsub_groupBox_4.setTitle(_translate("Dialog", "Defect"))
+        self.OEEsub_groupBox_5.setTitle(_translate("Dialog", "Break Time"))
+        self.OEEsub_groupBox_6.setTitle(_translate("Dialog", "Setup Time"))
         self.label_2.setText(_translate("Dialog", "Result"))
 
 
