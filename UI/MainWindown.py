@@ -122,17 +122,17 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_82.addWidget(self.OEE_data_btn)
 
-        self.OEE_import_data_btn = QtWidgets.QPushButton(
-            self.OEE_function_frame)
-        self.OEE_import_data_btn.setObjectName(u"OEE_import_data_btn")
-        icon8 = QtGui.QIcon()
-        icon8.addFile(resource_path(u"Icons/Import.ico"),
-                      QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.OEE_import_data_btn.setIcon(icon8)
-        self.OEE_import_data_btn.setIconSize(QtCore.QSize(25, 25))
-        self.OEE_import_data_btn.setFlat(True)
+        # self.OEE_import_data_btn = QtWidgets.QPushButton(
+        #     self.OEE_function_frame)
+        # self.OEE_import_data_btn.setObjectName(u"OEE_import_data_btn")
+        # icon8 = QtGui.QIcon()
+        # icon8.addFile(resource_path(u"Icons/Import.ico"),
+        #               QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        # self.OEE_import_data_btn.setIcon(icon8)
+        # self.OEE_import_data_btn.setIconSize(QtCore.QSize(25, 25))
+        # self.OEE_import_data_btn.setFlat(True)
 
-        self.horizontalLayout_82.addWidget(self.OEE_import_data_btn)
+        # self.horizontalLayout_82.addWidget(self.OEE_import_data_btn)
 
         self.verticalLayout_58.addWidget(self.OEE_function_frame)
 
@@ -212,7 +212,7 @@ class Ui_MainWindow(object):
 
         self.OEE_year_radio = QtWidgets.QRadioButton(self.groupBox_3)
         self.OEE_year_radio.setObjectName(u"OEE_year_radio")
-
+        self.OEE_year_radio.setEnabled(False)
         self.verticalLayout_76.addWidget(self.OEE_year_radio)
 
         self.OEE_period_edit = QtWidgets.QDateEdit(self.groupBox_3)
@@ -1431,7 +1431,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_41.addWidget(self.frame_72)
         self.frame_74 = QtWidgets.QFrame(self.frame_73)
         self.frame_74.setObjectName(u"frame_74")
-        self.frame_74.setMaximumSize(QtCore.QSize(16777215, 200))
+        self.frame_74.setMinimumSize(QtCore.QSize(0, 180))
         self.frame_74.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.horizontalLayout_52 = QtWidgets.QHBoxLayout(self.frame_74)
         self.horizontalLayout_52.setSpacing(10)
@@ -1485,11 +1485,11 @@ class Ui_MainWindow(object):
         font7.setPointSize(32)
         font7.setBold(True)
         self.DTime_value.setFont(font7)
-        self.DTime_value.setMargin(10)
+        self.DTime_value.setAlignment(QtCore.Qt.AlignCenter)
         self.horizontalLayout_53.addWidget(self.DTime_value)
-        self.DTime_chart = QtWidgets.QWidget(self.frame_81)
-        self.DTime_chart.setObjectName(u"DTime_chart")
-        self.horizontalLayout_53.addWidget(self.DTime_chart)
+        # self.DTime_chart = QtWidgets.QWidget(self.frame_81)
+        # self.DTime_chart.setObjectName(u"DTime_chart")
+        # self.horizontalLayout_53.addWidget(self.DTime_chart)
 
         self.verticalLayout_42.addWidget(self.frame_81)
 
@@ -1544,10 +1544,10 @@ class Ui_MainWindow(object):
         self.DEvent_value.setFont(font7)
         self.DEvent_value.setAlignment(QtCore.Qt.AlignCenter)
         self.horizontalLayout_54.addWidget(self.DEvent_value)
-        self.DEvent_chart = QtWidgets.QWidget(self.frame_85)
-        self.DEvent_chart.setObjectName(u"DEvent_chart")
+        # self.DEvent_chart = QtWidgets.QWidget(self.frame_85)
+        # self.DEvent_chart.setObjectName(u"DEvent_chart")
 
-        self.horizontalLayout_54.addWidget(self.DEvent_chart)
+        # self.horizontalLayout_54.addWidget(self.DEvent_chart)
 
         self.verticalLayout_43.addWidget(self.frame_85)
 
@@ -4592,8 +4592,6 @@ class Ui_MainWindow(object):
             _translate("MainWindow", u"Dashboard", None))
         self.OEE_data_btn.setText(_translate(
             "MainWindow", u"Detail Data", None))
-        self.OEE_import_data_btn.setText(
-            _translate("MainWindow", u"Import Data", None))
         self.groupBox_2.setTitle(_translate("MainWindow", u"Area", None))
         self.groupBox_3.setTitle(_translate("MainWindow", u"Date", None))
         self.OEE_month_radio.setText(_translate("MainWindow", u"Month", None))
