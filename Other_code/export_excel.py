@@ -25,10 +25,12 @@ db = Database_process()
 #                             WHERE department_name = 'PE3' COLLATE utf8mb4_unicode_ci  AND status = "Near due" COLLATE utf8mb4_unicode_ci;''')
 
 
-frame = db.query(sql = '''SELECT machine_code,machine_name,line_name,department_name
-                            FROM view_record_pending
-                            WHERE department_name = 'PE3';''')
+frame = db.query(sql = '''SELECT pr.report_title, report_date, pr.line_id, pl.line_name, d.department_name, pr.report_type_id, rt.report_type_name, pr.issue_description, pr.corrective_action, pr.reported_by, pr.status, pr.notes, pr.report_file_path, pr.path_type
+FROM problem_reports as pr
+JOIN production_lines as pl ON pr.line_id = pl.line_id
+JOIN departments AS d ON pr.department_id = d.department_id
+JOIN report_types AS rt ON pr.report_type_id = rt.report_type_id;''')
 
-df = pd.DataFrame(frame, columns=['machine_code', 'machine_name', 'line_name', 'department_name'])
-output_path = os.path.join(PROJECT_ROOT, 'exported_files', 'PE3_PENDING_MAR.xlsx')
+df = pd.DataFrame(frame, columns=['report_title', 'report_date', 'line_id', 'line_name', 'department_name', 'report_type_id', 'report_type_name', 'issue_description', 'corrective_action', 'reported_by', 'status', 'notes', 'report_file_path', 'path_type'])
+output_path = os.path.join(PROJECT_ROOT, 'exported_files', 'problem_reports.xlsx')
 df.to_excel(output_path, index=False)

@@ -107,7 +107,7 @@ class UI_OEE_Other_Data(object):
         self.OEE_OD_period_edit = QtWidgets.QDateEdit(self.OEE_OD_groupBox_2)
         self.OEE_OD_period_edit.setMinimumSize(QtCore.QSize(100, 0))
         self.OEE_OD_period_edit.setReadOnly(False)
-        self.OEE_OD_period_edit.setDateTime(QtCore.QDateTime(QtCore.QDate(2025, 12, 1), QtCore.QTime(0, 0, 0)))
+        self.OEE_OD_period_edit.setDateTime(QtCore.QDateTime(QtCore.QDate.currentDate().addMonths(-1), QtCore.QTime(0, 0, 0)))
         self.OEE_OD_period_edit.setCalendarPopup(True)
         self.OEE_OD_period_edit.setObjectName("OEE_OD_period_edit")
         self.OEE_OD_period_edit.setAccelerated(False)

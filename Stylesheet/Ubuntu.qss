@@ -623,7 +623,8 @@ QToolBox::tab:selected {
         border: 1px solid rgb(179, 179, 179);
         border-radius: 20px;
     }
-#near_due_frame, #frame_61,#frame_76, #frame_77,#frame_78,#frame_79,#frame_82, #frame_83, #frame_94
+#near_due_frame, #frame_61,#frame_76, #frame_77,#frame_78,#frame_79,#frame_82, #frame_83, #frame_94, #Detail_percent_frame, #Detail_byshift_frame,
+ #Detail_bytime_frame, #Detail_topN_frame
 {
         border: 1px solid rgb(179, 179, 179);
         border-radius: 20px;
