@@ -1258,8 +1258,8 @@ class Ui_MainWindow(object):
         self.frame_106.setObjectName(u"frame_106")
         self.frame_106.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_106.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame_106.setMaximumWidth(0)
-        self.frame_106.setEnabled(False)
+        self.frame_106.setMaximumWidth(500)
+        # self.frame_106.setEnabled(False)
         self.frame_106.setStyleSheet(qss)
         self.shadow = QtWidgets.QGraphicsDropShadowEffect()
         self.shadow.setBlurRadius(30)
@@ -1306,7 +1306,7 @@ class Ui_MainWindow(object):
 
         self.DT_month_radiobtn = QtWidgets.QRadioButton(self.groupBox_90)
         self.DT_month_radiobtn.setObjectName(u"DT_month_radiobtn")
-
+        # self.DT_month_radiobtn.setChecked(True)
         self.horizontalLayout_63.addWidget(self.DT_month_radiobtn)
 
         self.horizontalLayout_76.addWidget(self.groupBox_90)
@@ -1402,27 +1402,27 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_65.addWidget(self.frame_106)
 
-        self.DT_show_sorting_btn = QtWidgets.QPushButton(self.frame_72)
-        self.DT_show_sorting_btn.setObjectName(u"DT_show_sorting_btn")
-        self.DT_show_sorting_btn.setStyleSheet("#DT_show_sorting_btn {\n"
-                                               "    background-color: transparent;\n"
-                                               "    border: none;\n"
-                                               "}")
-        self.DT_show_sorting_btn.setMaximumWidth(70)
-        self.DT_show_sorting_btn.setMinimumWidth(70)
-        icon18 = QtGui.QIcon()
-        icon18.addPixmap(QtGui.QPixmap(resource_path(
-            "Icons/Next.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        icon18.addPixmap(QtGui.QPixmap(resource_path(
-            "Icons/Back.ico")), QtGui.QIcon.Normal, QtGui.QIcon.On)
-        self.DT_show_sorting_btn.setIcon(icon18)
-        self.DT_show_sorting_btn.setIconSize(QtCore.QSize(25, 25))
-        self.DT_show_sorting_btn.setCheckable(True)
-        self.DT_show_sorting_btn.setAutoRepeat(False)
-        self.DT_show_sorting_btn.setAutoExclusive(False)
-        self.DT_show_sorting_btn.setFlat(True)
-        self.DT_show_sorting_btn.setChecked(False)
-        self.horizontalLayout_65.addWidget(self.DT_show_sorting_btn)
+        # self.DT_show_sorting_btn = QtWidgets.QPushButton(self.frame_72)
+        # self.DT_show_sorting_btn.setObjectName(u"DT_show_sorting_btn")
+        # self.DT_show_sorting_btn.setStyleSheet("#DT_show_sorting_btn {\n"
+        #                                        "    background-color: transparent;\n"
+        #                                        "    border: none;\n"
+        #                                        "}")
+        # self.DT_show_sorting_btn.setMaximumWidth(70)
+        # self.DT_show_sorting_btn.setMinimumWidth(70)
+        # icon18 = QtGui.QIcon()
+        # icon18.addPixmap(QtGui.QPixmap(resource_path(
+        #     "Icons/Next.ico")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        # icon18.addPixmap(QtGui.QPixmap(resource_path(
+        #     "Icons/Back.ico")), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        # self.DT_show_sorting_btn.setIcon(icon18)
+        # self.DT_show_sorting_btn.setIconSize(QtCore.QSize(25, 25))
+        # self.DT_show_sorting_btn.setCheckable(True)
+        # self.DT_show_sorting_btn.setAutoRepeat(False)
+        # self.DT_show_sorting_btn.setAutoExclusive(False)
+        # self.DT_show_sorting_btn.setFlat(True)
+        # self.DT_show_sorting_btn.setChecked(False)
+        # self.horizontalLayout_65.addWidget(self.DT_show_sorting_btn)
 
         self.horizontalSpacer = QtWidgets.QSpacerItem(
             200, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
