@@ -1,116 +1,105 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
-from PyQt5.QtGui import QPainter, QColor, QBrush, QTextDocument
-from PyQt5.QtCore import Qt, QRectF
+import pyqtgraph as pg
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtGui import QColor, QFont
+from PyQt5.QtCore import Qt
 
-class KPICardWidget(QWidget):
-    def __init__(self, label="MTTR", current=45.0, previous=60.0, parent=None):
-        super().__init__(parent)
-        self.label = label
-        self.current = current
-        self.previous = previous
-        self.setFixedSize(250, 140) # Kích thước thẻ KPI mẫu
-
-    # Hàm chuyển đổi định dạng thời gian của bạn
-    def change_time_format(self, value_in_minutes, mode='m'):
-        # Giả lập logic chuyển đổi format thời gian của bạn
-        hrs = int(value_in_minutes // 60)
-        mins = int(value_in_minutes % 60)
-        secs = int((value_in_minutes * 60) % 60)
-        return {'h': hrs, 'm': mins, 's': secs}
-
-    # Giữ nguyên hàm logic HTML của bạn (chỉ thêm self)
-    def make_comparison_html(self, current: float, previous: float, label: str) -> str:
-        diff = current - previous
-        diff = round(diff, 1)
-        if diff > 0:
-            arrow = "&#9650;"   # ▲
-            color = "#27ae60"   # green
-            color_dt = "#e74c3c"
-            sign = "+"
-        elif diff < 0:
-            arrow = "&#9660;"   # ▼
-            color = "#e74c3c"   # red
-            color_dt = "#27ae60"
-            sign = ""
-        else:
-            arrow = "&#9654;"   # ►
-            color = "#888888"   # grey
-            color_dt = "#888888"
-            sign = ""
-            
-        if label in ["MTTR", "MTBF"]:
-            percent = (1-current/previous) if previous != 0 else 0
-            time_format = self.change_time_format(previous, 'm')
-            return f"""
-            <div style='font-family: Arial; text-align: center;'>
-                <span style='font-size: 11px; font-weight: bold; color: #222;'>Previous:</span>
-                <span style='font-size: 14px; font-weight: bold; color: #222;'>
-                    {f"{time_format['h']} hrs {time_format['m']} mins" if previous >= 60 else f"{time_format['m']} mins {time_format['s']} secs"}
-                </span>
-                <br/>
-                <span style='font-size: 12px; color: {color_dt if label == "MTTR" else color}; font-weight: bold;'>
-                    {arrow} {"-" if percent > 0 else "+"}{abs(percent*100):.1f}% vs prev
-                </span>
-            </div>
-            """
-        else:
-            return f"""
-            <div style='font-family: Arial; text-align: center;'>
-                <span style='font-size: 11px; font-weight: bold; color: #222;'>Previous:</span>
-                <span style='font-size: 14px; font-weight: bold; color: #222;'>{previous:.1f}%</span>
-                <br/>
-                <span style='font-size: 12px; color: {color}; font-weight: bold;'>
-                    {arrow} {sign}{diff:.1f}% vs prev
-                </span>
-            </div>
-            """
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-
-        # 1. Vẽ nền Card bằng QPainter (Ví dụ: Thẻ màu trắng bo góc)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QBrush(QColor("#FFFFFF")))
-        painter.drawRoundedRect(self.rect(), 15, 15)
-
-        # Vẽ tiêu đề tĩnh hoặc giá trị Current bằng Painter nếu muốn
-        painter.setPen(QColor("#555555"))
-        painter.drawText(20, 30, f"{self.label} (Current: {self.current})")
-
-        # 2. LẤY CHUỖI HTML TỪ HÀM CỦA BẠN VÀ RENDER LÊN WIDGET
-        html_content = self.make_comparison_html(self.current, self.previous, self.label)
+class CompactHorizontalBarChart(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Compact Downtime By Machine")
         
-        doc = QTextDocument()
-        doc.setHtml(html_content)
-        # Đặt độ rộng cố định cho khối HTML để canh lề 'text-align: center' hoạt động chính xác
-        doc.setTextWidth(self.width() - 40) 
+        # Thiết lập kích thước cửa sổ giả lập cực nhỏ (phù hợp với kích thước card thực tế của bạn)
+        self.resize(320, 200) 
 
-        # 3. Dịch chuyển Painter đến vị trí bạn muốn đặt cụm HTML trên Card
-        # Ví dụ: đẩy cụm so sánh này xuống nửa dưới của thẻ (x=20, y=70)
-        painter.save()
-        painter.translate(20, 70)
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
+        # Triệt tiêu margin của layout ngoài cùng để tận dụng tối đa diện tích card
+        layout.setContentsMargins(2, 2, 2, 2)
+
+        self.plot_widget = pg.PlotWidget()
+        self.plot_widget.setBackground('#f4f4f6')
+        layout.addWidget(self.plot_widget)
+
+        # Tối ưu hóa margin nội bộ của PlotWidget
+        self.plot_widget.getPlotItem().layout.setContentsMargins(0, 0, 5, 0)
+
+        # DỮ LIỆU TINH GỌN: Chỉ lấy Top 5 máy có downtime cao nhất để không bị chật chội
+        machines = ["1714217", "1714218", "1714216", "MCG210027", "1688266"]
+        downtimes = [800, 796, 780, 779, 325]
+
+        # Đảo ngược thứ tự để vẽ từ trên xuống dưới
+        machines.reverse()
+        downtimes.reverse()
+
+        y_positions = list(range(len(machines)))
+
+        # --- 1. THIẾT LẬP TRỤC Y (TÊN MÁY) SIÊU NHỎ ---
+        y_axis = self.plot_widget.getAxis('left')
+        ticks = [(y, mac) for y, mac in zip(y_positions, machines)]
+        y_axis.setTicks([ticks])
+        y_axis.setPen(pg.mkPen('#aaaaaa', width=1))
+        y_axis.setTextPen(pg.mkPen('#444444'))
         
-        # Tiến hành vẽ tài liệu HTML lên widget thông qua Painter
-        doc.drawContents(painter)
-        painter.restore()
+        # Thiết lập font chữ cực nhỏ cho mã máy
+        font_axis = QFont("Arial", 7)
+        y_axis.setTickFont(font_axis)
+        y_axis.setWidth(55) # Co hẹp chiều rộng cột nhãn bên trái
 
-        painter.end()
+        # --- 2. THIẾT LẬP TRỤC X ---
+        x_axis = self.plot_widget.getAxis('bottom')
+        x_axis.setPen(pg.mkPen('#aaaaaa', width=1))
+        x_axis.setTextPen(pg.mkPen('#444444'))
+        x_axis.setTickFont(font_axis)
+        
+        # Chỉ hiện lưới mờ theo trục đứng để dễ ước lượng khoảng cách
+        self.plot_widget.showGrid(x=True, y=False, alpha=0.1)
 
-# --- Chạy kiểm tra thử giao diện ---
+        # --- 3. VẼ LỚP BÓNG ĐỔ SIÊU MỎNG (Tương thích kích thước nhỏ) ---
+        shadow_color = QColor(0, 0, 0, 25) # Giảm độ đậm của bóng
+        shadow_bars = pg.BarGraphItem(
+            x0=0,
+            y=[y - 0.04 for y in y_positions], # Độ lệch bóng cực nhỏ để tránh bị nhòe
+            width=downtimes,
+            height=0.45,                       # Thanh mảnh hơn một chút
+            brush=pg.mkBrush(shadow_color),
+            pen=pg.mkPen(None)
+        )
+        self.plot_widget.addItem(shadow_bars)
+
+        # --- 4. VẼ THANH CHÍNH ---
+        bar_color = QColor("#0026e6")
+        main_bars = pg.BarGraphItem(
+            x0=0,
+            y=y_positions,
+            width=downtimes,
+            height=0.45,
+            brush=pg.mkBrush(bar_color),
+            pen=pg.mkPen(color="#001cb3", width=0.8)
+        )
+        self.plot_widget.addItem(main_bars)
+
+        # --- 5. HIỂN THỊ TRỊ SỐ Ở ĐẦU THANH (Cỡ chữ siêu nhỏ) ---
+        max_val = max(downtimes) if downtimes else 1
+        offset = max_val * 0.03 # Khoảng cách nhỏ vừa phải
+
+        for y, val in zip(y_positions, downtimes):
+            text_item = pg.TextItem(text=str(val), color="black", anchor=(0, 0.5))
+            text_item.setFont(QFont("Arial", 7, QFont.Bold)) # Chữ cỡ 7 để không bị tràn
+            text_item.setPos(val + offset, y)
+            self.plot_widget.addItem(text_item)
+
+        # Chừa lề phải khoảng 15% để hiển thị con số mà không bị mất nét
+        self.plot_widget.setXRange(0, max_val * 1.15)
+        self.plot_widget.setYRange(-0.5, len(machines) - 0.5)
+
+        # Khóa tương tác kéo/zoom để biểu đồ tĩnh, sạch sẽ
+        self.plot_widget.setMenuEnabled(False)
+        self.plot_widget.setMouseEnabled(x=False, y=False)
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    
-    main_win = QWidget()
-    main_win.setWindowTitle("Test Render HTML inside QPainter")
-    main_win.setStyleSheet("background-color: #EFEFEF;") # Nền xám cho nổi bật Card trắng
-    
-    layout = QVBoxLayout(main_win)
-    
-    # Test thử 1 thẻ MTTR (Giảm thời gian sửa chữa -> Hiển thị phần trăm màu XANH LÁ nhờ logic color_dt của bạn)
-    card_mttr = KPICardWidget(label="MTTR", current=45.0, previous=60.0)
-    layout.addWidget(card_mttr)
-    
-    main_win.show()
+    demo = CompactHorizontalBarChart()
+    demo.show()
     sys.exit(app.exec_())

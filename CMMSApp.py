@@ -480,7 +480,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to load OEE page: {e}")
 
-    def change_time_format(self,time_value: int, input_unit: str, output_unit: bool = False):
+    def change_time_format(self,time_value: float, input_unit: str, output_unit: bool = False):
                 time_val_f = float(time_value)
                 if input_unit == "h":
                     hours = int(time_val_f)
@@ -641,11 +641,17 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                    value=value*100, parameter_name=label)
                 layout.addWidget(chart)     
             draw_circle_chart(total_OEE, float(oee_targets[0][3]), "%OEE", self.ui.OEE_value_chart)
-            draw_circle_chart(total_A_percentage, float(oee_targets[0][0]), "%A",
+            # draw_circle_chart(total_A_percentage, float(oee_targets[0][0]), "%A",
+            #                   self.ui.OEE_A_value_chart)
+            # draw_circle_chart(total_P_percentage, float(oee_targets[0][1]), "%P",
+            #                   self.ui.OEE_P_value_chart)
+            # draw_circle_chart(total_Q_percentage, float(oee_targets[0][2]), "%Q",
+            #                   self.ui.OEE_Q_value_chart)        
+            draw_circle_chart(total_A_percentage, 0, "%A",
                               self.ui.OEE_A_value_chart)
-            draw_circle_chart(total_P_percentage, float(oee_targets[0][1]), "%P",
+            draw_circle_chart(total_P_percentage, 0, "%P",
                               self.ui.OEE_P_value_chart)
-            draw_circle_chart(total_Q_percentage, float(oee_targets[0][2]), "%Q",
+            draw_circle_chart(total_Q_percentage, 0, "%Q",
                               self.ui.OEE_Q_value_chart)        
             def make_comparison_html(current: float, previous: float, label: str) -> str:
                 diff = current - previous
@@ -919,7 +925,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 column_chart = pg.PlotWidget(axisItems={'bottom': date_axis})
                 column_chart.setBackground('w')
                 column_chart.hideButtons()
-                column_chart.setMouseEnabled(x=False, y=False)
                 column_chart.setLabel('left', '<b>Net Time (mins)</b>', color='#8676DD', size='10pt')
                 x = df[x_lbl].apply(lambda d: d.timestamp()
                                     ).values.astype(float)
@@ -1059,6 +1064,15 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                             QtWidgets.QToolTip.showText(
                                 QtGui.QCursor.pos(), tooltip_text, column_chart)
                 column_chart.scene().sigMouseMoved.connect(on_hover)
+                main_vb = column_chart.getViewBox()
+                main_vb.mouseDragEvent = lambda ev, axis=None: ev.ignore()
+                main_vb.wheelEvent = lambda ev: ev.ignore()
+
+                vb2.mouseDragEvent = lambda ev, axis=None: ev.ignore()
+                vb2.wheelEvent = lambda ev: ev.ignore()
+
+                vb3.mouseDragEvent = lambda ev, axis=None: ev.ignore()
+                vb3.wheelEvent = lambda ev: ev.ignore()
             draw_output_nettime_chart(
                 self.oee_df, 'production_date', 'Available_Time', self.ui.OEE_information_chart, self.ui.OEE_infor_chart_legend)
             self.spinner.stop()
@@ -3012,13 +3026,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             else:
                 QtWidgets.QMessageBox.warning(
                     self, "No Change", "Không có bản ghi nào được cập nhật.")
+            self.ui.Main_scan_result_table.clearContents()
+            self.ui.Main_scan_result_table.setRowCount(0)
+            self.scan_QRcode.link = ""
+            self.change_text_pending()
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to load data: {e}")
-        self.ui.Main_scan_result_table.clearContents()
-        self.ui.Main_scan_result_table.setRowCount(0)
-        self.scan_QRcode.link = ""
-        self.change_text_pending()
 
     def add_item_to_scan_result(self, row, col, scan_result):
         if col < 6:
@@ -4132,6 +4146,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                           self.Import_data_Downtime_page)
         self.safe_connect(self.ui.DT_problem_report_btn.clicked,
                           self.Problem_report_Downtime_page)
+        self.DT_detail_report_list = []
 
     @QtCore.pyqtSlot()
     def Dashboard_Downtime_page(self):
@@ -4152,11 +4167,11 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                                     FROM `downtime_areas`;''')]
             self.ui.DT_area_cbb.clear()
             self.ui.DT_area_cbb.addItems(self.areas)
-            self.DT_silde_bar_animation = QtCore.QPropertyAnimation(
-                self.ui.frame_106, b"maximumWidth")
-            self.DT_silde_bar_animation.setDuration(310)
-            self.safe_connect(self.ui.DT_show_sorting_btn.clicked,
-                              self.show_sorting_filter_Downtime)
+            # self.DT_silde_bar_animation = QtCore.QPropertyAnimation(
+            #     self.ui.frame_106, b"maximumWidth")
+            # self.DT_silde_bar_animation.setDuration(310)
+            # self.safe_connect(self.ui.DT_show_sorting_btn.clicked,
+            #                   self.show_sorting_filter_Downtime)
             area_name = self.ui.DT_area_cbb.currentText()
             nearest_date = self.database_process.query(
                 sql='''SELECT MAX(downtime_date) FROM `downtime_records`;''')[0][0]
@@ -4244,7 +4259,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                     FROM `problem_reports` as pr
                                                                     JOIN `downtime_areas` da ON pr.department_id = da.department_id
                                                                     WHERE da.downtime_area_name = :area_name AND {filer_scripts_report};''', params={"area_name": area_name, "object": target})
-            KPI_data = self.database_process.query(sql= f''' SELECT pl.line_name, dtg.mttr_target_value, dtg.mtbf_target_value
+            KPI_data = self.database_process.query(sql= f''' SELECT pl.line_name, m.machine_code, dtg.mttr_target_value, dtg.mtbf_target_value
                                                                 FROM `mttr_mtbf_targets` AS dtg
                                                                 JOIN `downtime_areas` AS da ON dtg.downtime_area_id = da.downtime_area_id
                                                                 LEFT JOIN `production_lines` AS pl ON dtg.line_id = pl.line_id
@@ -4253,6 +4268,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                     WHERE downtime_area_id = (SELECT downtime_area_id FROM downtime_areas WHERE downtime_area_name = :area_name) and {filter_scripts_tg}
                                                                     GROUP BY line_id
                                                                 ) AS latest ON dtg.line_id = latest.line_id AND dtg.created_at = latest.max_created_at
+                                                                LEFT JOIN `machines` AS m ON dtg.machine_id = m.machine_id
+                                                                LEFT JOIN (SELECT machine_id , MAX(created_at) AS max_created_at
+                                                                    FROM mttr_mtbf_targets
+                                                                    WHERE downtime_area_id = (SELECT downtime_area_id FROM downtime_areas WHERE downtime_area_name = :area_name) and {filter_scripts_tg}
+                                                                    GROUP BY machine_id
+                                                                ) AS latest_machine ON dtg.machine_id = latest_machine.machine_id AND dtg.created_at = latest_machine.max_created_at
                                                                 WHERE da.downtime_area_name = :area_name;''', params={"area_name": area_name, "object": target, "year": year})
             return {"data": data, "working_time": working_time, "problem_report": problem_report , "prev_data": prev_data, "prev_working_time": prev_working_time, "KPI_data": KPI_data}
         
@@ -4280,7 +4301,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.data = pd.DataFrame(data, columns=["Date", "Downtime Start Time", "Downtime Start Repair Time", "Downtime End Time",
                                      "Total Loss Time", "Wait Technical Time", "Staff Name", "Error Code", "Machine Code", "Line Name"])
             prev_working_time = pd.DataFrame(prev_working_time, columns=["Line Name", "Working Time"])
-            self.downtime_target = pd.DataFrame(KPI_data, columns=["Line Name", "MTTR Target", "MTBF Target"]).replace({None: f"{area_name}"})
+            self.downtime_target = pd.DataFrame(KPI_data, columns=["Line Name","Machine Code" , "MTTR Target", "MTBF Target"])
+            mask = self.downtime_target["Line Name"].isna() & self.downtime_target["Machine Code"].isna()
+            self.downtime_target.loc[mask, "Line Name"] = "SC-A"
             self.data["Shift"] = self.data["Downtime Start Time"].apply(assign_shift)
             error_code = self.data["Error Code"].unique().tolist()
             error_code = ",".join([f'"{code}"' for code in error_code if code])
@@ -4315,20 +4338,22 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.MTBF_value.setText(f"{mtbf['h']}:{mtbf['m']}:{mtbf['s']}")
             mttr_prev_value = float(prev_data[0][0] / prev_data[0][1] if prev_data[0][1] > 0 else 0)
             mtbf_prev_value = float((prev_working_time["Working Time"].sum() * 60 - prev_data[0][0]) / prev_data[0][1] if prev_data[0][1] > 0 else prev_working_time["Working Time"].sum() * 60)
+            mttr_target = self.downtime_target.loc[self.downtime_target["Line Name"] == area_name, "MTTR Target"].iloc[0]
+            mtbf_target = self.downtime_target.loc[self.downtime_target["Line Name"] == area_name, "MTBF Target"].iloc[0]
             self.DT_chart_current_group = None
             self.DT_detail_chart_drawing(
-                group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line")
-            self.DT_KPI_chart(widget=self.ui.MTTR_chart, value=mttr_value, target_value=self.downtime_target.loc[self.downtime_target["Line Name"] == area_name, "MTTR Target"].iloc[0], previous_value=mttr_prev_value, label="MTTR")
-            self.DT_KPI_chart(widget=self.ui.MTBF_chart, value=float(mtbf_value), target_value=self.downtime_target.loc[self.downtime_target["Line Name"] == area_name, "MTBF Target"].iloc[0], previous_value=mtbf_prev_value, label="MTBF")
+                area_name = area_name, group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target , target_df=self.downtime_target)
+            self.DT_KPI_chart(widget=self.ui.MTTR_chart, value=mttr_value, target_value=mttr_target, previous_value=mttr_prev_value, label="MTTR")
+            self.DT_KPI_chart(widget=self.ui.MTBF_chart, value=float(mtbf_value), target_value=mtbf_target, previous_value=mtbf_prev_value, label="MTBF")
             self.DT_problem_report_listwidget_show(problem_report)
             self.safe_connect(self.ui.DT_detail_chart_line_btn.clicked, lambda: self.DT_detail_chart_drawing(
-                group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line"))
+                area_name = area_name, group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target , target_df=self.downtime_target))
             self.safe_connect(self.ui.DT_detail_chart_machine_btn.clicked, lambda: self.DT_detail_chart_drawing(
-                group_col="Machine Code", value_col="Total Loss Time", data=self.data, title="Downtime By Machine"))
+                area_name = area_name, group_col="Machine Code", value_col="Total Loss Time", data=self.data, title="Downtime By Machine", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target, target_df=self.downtime_target))
             self.safe_connect(self.ui.DT_detail_chart_error_btn.clicked, lambda: self.DT_detail_chart_drawing(
-                group_col="Error Code", value_col="Total Loss Time", data=self.data, title="Downtime By Error Code"))
+                area_name = area_name, group_col="Error Code", value_col="Total Loss Time", data=self.data, title="Downtime By Error Code", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target, target_df=self.downtime_target))
             self.safe_connect(self.ui.DT_detail_chart_time_btn.clicked, lambda: self.DT_detail_chart_drawing(
-                group_col="Downtime Start Time", value_col="Total Loss Time", data=self.data, title="Downtime By Time"))
+                area_name = area_name, group_col="Downtime Start Time", value_col="Total Loss Time", data=self.data, title="Downtime By Time", target=target, year=year, view_by=view_by))
             self.spinner.stop()
         try:
             if hasattr(self, 'DT_dashboard_worker') and self.DT_dashboard_worker.isRunning():
@@ -4342,17 +4367,17 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to load data: {e}")
 
-    @QtCore.pyqtSlot()
-    def show_sorting_filter_Downtime(self):
-        if self.ui.DT_show_sorting_btn.isChecked():
-            self.ui.frame_106.setEnabled(True)
-            self.DT_silde_bar_animation.setStartValue(0)
-            self.DT_silde_bar_animation.setEndValue(535)
-        else:
-            self.ui.frame_106.setEnabled(False)
-            self.DT_silde_bar_animation.setStartValue(535)
-            self.DT_silde_bar_animation.setEndValue(0)
-        self.DT_silde_bar_animation.start()
+    # @QtCore.pyqtSlot()
+    # def show_sorting_filter_Downtime(self):
+    #     if self.ui.DT_show_sorting_btn.isChecked():
+    #         self.ui.frame_106.setEnabled(True)
+    #         self.DT_silde_bar_animation.setStartValue(0)
+    #         self.DT_silde_bar_animation.setEndValue(535)
+    #     else:
+    #         self.ui.frame_106.setEnabled(False)
+    #         self.DT_silde_bar_animation.setStartValue(535)
+    #         self.DT_silde_bar_animation.setEndValue(0)
+    #     self.DT_silde_bar_animation.start()
 
     # def Sparkline_chart(self, widget, data, color, title=""):
     #     old_layout = widget.layout()
@@ -4415,8 +4440,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-
-    def DT_table_show(self, data, working_time, label="Line Name"):
+    def DT_table_show(self, data, working_time, group_col="Line Name", target_df = None ,area_name=None, target=None, year=None, view_by="day"):
         if data is None or data.empty or working_time is None or working_time.empty:
             QtWidgets.QMessageBox.information(
                 self, "No data", "No downtime records found for the selected area and date.")
@@ -4424,38 +4448,67 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         try:
             if hasattr(self, 'DT_dashboard_summary_model'):
                 self.DT_dashboard_summary_model.removeRows(0, self.DT_dashboard_summary_model.rowCount())
-            gb = data.groupby(label)
-            if label == "Machine Code":
+            gb = data.groupby(group_col)
+            if group_col == "Machine Code":
                 line_of_machine = gb["Line Name"].first().to_dict()
-            if label != "Error Code":
+            if group_col != "Error Code":
                 summary_df = pd.DataFrame({
-                    label: gb["Total Loss Time"].sum().index,
+                    group_col: gb["Total Loss Time"].sum().index,
                     "Total Downtime": gb["Total Loss Time"].sum().values,
                     "Failure Event": gb.size().values,
                     "MTTR": gb["Total Loss Time"].mean().values,
                     "MTBF": gb["Total Loss Time"].apply(
                         lambda x: (
-                            float(working_time.loc[ (working_time["Line Name"] == line_of_machine[x.name] if label == "Machine Code" else working_time["Line Name"] == x.name), "Working Time"].sum(
+                            float(working_time.loc[ (working_time["Line Name"] == line_of_machine[x.name] if group_col == "Machine Code" else working_time["Line Name"] == x.name), "Working Time"].sum(
                             )) * 60 - x.sum()
                         ) / len(x)
                         if len(x) > 0
-                        else float(working_time.loc[(working_time["Line Name"] == line_of_machine[x.name] if label == "Machine Code" else working_time["Line Name"] == x.name), "Working Time"].sum()) * 60
+                        else float(working_time.loc[(working_time["Line Name"] == line_of_machine[x.name] if group_col == "Machine Code" else working_time["Line Name"] == x.name), "Working Time"].sum()) * 60
                     ).values
                 })
+                summary_df = summary_df.merge(
+                    target_df[[group_col, "MTTR Target"]],
+                    on=group_col,
+                    how="left"
+                )
+                summary_df["MTTR Evaluate"] = (
+                    summary_df["MTTR"] <= summary_df["MTTR Target"]
+                ).astype(int)
+
+                summary_df = summary_df.merge(
+                    target_df[[group_col, "MTBF Target"]],
+                    on=group_col,
+                    how="left"
+                )
+                summary_df["MTBF Evaluate"] = (
+                    summary_df["MTBF"] >= summary_df["MTBF Target"]
+                ).astype(int)
+                summary_df.loc[
+                    summary_df["MTTR Target"].isna(),
+                    "MTTR Evaluate"
+                ] = 1
+
+                summary_df.loc[
+                    summary_df["MTBF Target"].isna(),
+                    "MTBF Evaluate"
+                ] = 1
                 summary_df["MTTR"] = summary_df["MTTR"].apply(
                     lambda x: str(self.change_time_format(x, "m", output_unit=True)) if x > 0 else "N/A")
                 summary_df["MTBF"] = summary_df["MTBF"].apply(
                     lambda x: str(self.change_time_format(x, "m", output_unit=True)) if x > 0 else "N/A")
                 summary_df = summary_df.sort_values(
-                    by=label, ascending=False).reset_index(drop=True)
-                header = ["\n".join(f"{label}".split()), "Total\nDowntime",
+                    by=group_col, ascending=False).reset_index(drop=True)
+                evaluate_df = summary_df[["MTTR Evaluate", "MTBF Evaluate"]] if group_col != "Error Code" else pd.DataFrame()
+                summary_df = summary_df.drop(columns=evaluate_df.columns)
+                summary_df = summary_df.drop(columns=["MTTR Target", "MTBF Target"])
+                header = ["\n".join(f"{group_col}".split()), "Total\nDowntime",
                       "Down\nEvents", "MTTR", "MTBF"]
             else:
                 summary_df = pd.DataFrame({
-                    label: gb["Total Loss Time"].sum().index,
+                    group_col: gb["Total Loss Time"].sum().index,
                     "Total Downtime": gb["Total Loss Time"].sum().values,
                     "Failure Event": gb.size().values})
-                header = ["\n".join(f"{label}".split()), "Total\nDowntime", "Down\nEvents"]
+                header = ["\n".join(f"{group_col}".split()), "Total\nDowntime", "Down\nEvents"]
             summary_df["Total Downtime"] = summary_df["Total Downtime"].apply(
                     lambda x: str(self.change_time_format(x, "m", output_unit=True)))
             self.ui.DT_table.setUpdatesEnabled(False)
@@ -4471,6 +4524,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     if c == 0:
                         item = QtGui.QStandardItem(str(summary_df.iat[r, c]))
                         item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    elif group_col != "Error Code" and c in [3, 4]:
+                        if evaluate_df.iat[r, c - 3] == 1:
+                            item = QtGui.QStandardItem(str(summary_df.iat[r, c]))
+                            item.setTextAlignment(QtCore.Qt.AlignCenter)
+                        else:
+                            item = QtGui.QStandardItem(str(summary_df.iat[r, c]))
+                            item.setTextAlignment(QtCore.Qt.AlignCenter)
+                            item.setBackground(QtGui.QColor(255, 0, 0, 127))
                     else:
                         value = round(summary_df.iat[r, c], 0) if isinstance(
                             summary_df.iat[r, c], float) and summary_df.iat[r, c] == 0 else summary_df.iat[r, c]
@@ -4490,9 +4551,26 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.ui.DT_table.horizontalHeader().setSectionResizeMode(c, QtWidgets.QHeaderView.Stretch)
             self.ui.DT_table.setSortingEnabled(True)
             self.ui.DT_table.setUpdatesEnabled(True)
+            @QtCore.pyqtSlot(QtCore.QModelIndex)
+            def on_double_click(index):
+                selected_category = self.DT_dashboard_summary_model.item(index.row(), 0).text()
+                total = summary_df.loc[summary_df[group_col] == selected_category, "Total Downtime"].values[0]
+                self.Detail_dashboard(selected_category=   selected_category, 
+                                        group_col=group_col, area_name=area_name,
+                                        target=target, year=year, view_by=view_by, 
+                                        total = total,
+                                        cum = total,
+                                          data =  data[data[group_col] == selected_category],
+                                          summary_df = summary_df,
+                                          name = self.machine_name_dict.get(selected_category, '') if group_col == 'Machine Code' else self.error_code_dict.get(selected_category, '') if group_col == 'Error Code' else None
+                                        )
+                
+            self.safe_connect(self.ui.DT_table.doubleClicked, lambda index: on_double_click(index))
+            return summary_df
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to load summary data: {e}")
+            return None
 
     def DT_problem_report_listwidget_show(self, data):
         self.ui.DT_problem_listwidget.clear()
@@ -4590,7 +4668,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self, "Error", f"Failed to open report: {e}")
 
     @QtCore.pyqtSlot()
-    def DT_detail_chart_drawing(self, group_col, value_col, data, title=""):
+    def DT_detail_chart_drawing(self, area_name, group_col, value_col, data, title="", target=None, year=None, view_by="day" , mttr_value=None, mtbf_value=None, mttr_target=None, mtbf_target=None, target_df=None):
         if self.DT_chart_current_group == group_col:
             return
         if group_col == "Line Name":
@@ -4613,7 +4691,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.DT_time_density_chart(data, value_col)
             return
         try:
-            self.DT_table_show(data, self.working_time, label = group_col)
+            summary_df = self.DT_table_show(data, working_time = self.working_time, group_col = group_col, target_df=target_df, target=target, year=year, view_by=view_by, area_name=area_name)
             self.ui.DT_chart_legend.show()
             old_layout = self.ui.DT_chart.layout()
             if old_layout is not None:
@@ -4635,7 +4713,19 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             pivot["total"] = pivot.sum(axis=1)
             pivot = pivot.sort_values(
                 "total", ascending=False).drop(columns="total")
-            pivot = pivot[:25] if len(pivot) > 25 else pivot
+            if len(pivot) > 25:
+                pivot = pivot.iloc[:25]
+                # others = pivot.iloc[25:].sum()
+
+                # others_df = pd.DataFrame(
+                #     [others],
+                #     index=["Others"]
+                # )
+                # pivot = pd.concat([
+                #     pivot.iloc[:25]
+                #     # others_df
+                # ])
+            # pivot = pivot.sort_values("total", ascending=False)
             categories = pivot.index.tolist()
             s1 = pivot["Shift 1"].values.astype(float)
             s2 = pivot["Shift 2"].values.astype(float)
@@ -4685,7 +4775,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             x_axis.setTickFont(chart_font)
             y0_axis.setTickFont(chart_font)
             y1_axis.setTickFont(chart_font)
-            plot.setMouseEnabled(False, False)
             colors = {
                 "Shift 1": (187, 78, 139, 150),
                 "Shift 2": (142, 71, 130, 150),
@@ -4707,10 +4796,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             vb2 = pg.ViewBox()
             plot.scene().addItem(vb2)
             vb2.setZValue(plot.getViewBox().zValue() + 10)
-            plot.getAxis('bottom').setTicks([list(zip(x, categories))])
-            plot.getAxis('bottom').setStyle(tickTextOffset=20)
-            plot.getAxis('right').unlinkFromView = lambda: None  # bypass compiled_method disconnect bug in Nuitka
-            plot.getAxis('right').linkToView(vb2)
+            transparent = pg.mkPen((0, 0, 0, 0))
+            x_axis.setPen(transparent)
+            x_axis.setTickPen(transparent)
+            x_axis.setTicks([list(zip(x, categories))])
+            x_axis.setStyle(tickTextOffset=20,  tickLength=0)
+            y1_axis.unlinkFromView = lambda: None  # bypass compiled_method disconnect bug in Nuitka
+            y1_axis.linkToView(vb2)
             vb2.setXLink(plot)
 
             def update_views():
@@ -4732,7 +4824,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     QtWidgets.QToolTip.hideText()
                     if self._hover_index != -1:
                         region.hide()
-                        region.setRegion((0, 0))
                         self._hover_index = -1
                     return
                 
@@ -4742,7 +4833,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     QtWidgets.QToolTip.hideText()
                     if self._hover_index != -1:
                         region.hide()
-                        region.setRegion((0, 0))
                         self._hover_index = -1
                     return
                 if index != self._hover_index:
@@ -4768,13 +4858,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     + f"\nTotal: {total[index]:.2f} min"
                     + f"\nCumulative: {cum[index] - cum[index-1] if index > 0 else cum[index]:.2f} %"
                 )
-
-            self.proxy = pg.SignalProxy(
-                plot.scene().sigMouseMoved,
-                rateLimit=60,
-                slot=lambda evt: on_hover(evt[0])
-            )
-            @QtCore.pyqtSlot(QtCore.QPointF)
+            @QtCore.pyqtSlot()
             def on_dbclicked(evt, categories):
                 if evt.button() == QtCore.Qt.LeftButton:
                     mouse_point = plot.getViewBox().mapSceneToView(evt.scenePos())
@@ -4782,9 +4866,63 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     if not 0 <= index < len(categories):
                         return
                     selected_category = categories[index]
-                    self.DT_detail_report = Downtime_Detail_dashboard()
-                    self.DT_detail_report.exec()
+                    # data_dict = { 
+                    #     "selected_category": selected_category,
+                    #     "area_name": area_name,
+                    #     "target": target,
+                    #     "year": year,
+                    #     "view_by": view_by,
+                    #     "group_col": group_col,
+                    #     "total_downtime": self.change_time_format(time_value=total[index],input_unit="m", output_unit=True),
+                    #     "percentage": cum[index] - cum[index-1] if index > 0 else cum[index],
+                    #     "data_of_category": data[data[group_col] == selected_category],
+                    #     "average_percent": 100/len(summary_df)
+                    # }
+                    # if group_col in ("Machine Code","Line Name"):
+                    #     data_dict["mttr"] = str(summary_df.loc[summary_df[group_col] == selected_category, "MTTR"].values[0])
+                    #     data_dict["mtbf"] = str(summary_df.loc[summary_df[group_col] == selected_category, "MTBF"].values[0])
+                    #     data_dict["total_mttr"] = mttr_value
+                    #     data_dict["total_mtbf"] = mtbf_value
+                    #     if group_col == "Line Name":
+                    #         data_dict["mttr_target"] = self.downtime_target.loc[self.downtime_target["Line Name"] == selected_category, "MTTR Target"].iloc[0]
+                    #         data_dict["mtbf_target"] = self.downtime_target.loc[self.downtime_target["Line Name"] == selected_category, "MTBF Target"].iloc[0]
+                    #     else:
+                    #         data_dict["mttr_target"] = self.downtime_target.loc[self.downtime_target["Machine Code"] == selected_category, "MTTR Target"].iloc[0]
+                    #         data_dict["mtbf_target"] = self.downtime_target.loc[self.downtime_target["Machine Code"] == selected_category, "MTBF Target"].iloc[0]
+                    # else:
+                    #     data_dict["events_count"] = str(summary_df.loc[summary_df[group_col] == selected_category, "Failure Event"].values[0])
+                    # dialog = Downtime_Detail_dashboard(
+                    #     database=self.database_process,
+                    #     catagory=selected_category,
+                    #     data_dict = data_dict,
+                    #     button_style_call_back = self.style_button_with_shadow,
+                    #     change_time_format_call_back = self.change_time_format,
+                    #     KPI_chart_call_back = self.DT_KPI_chart
+                    # )
+                    # dialog.closed.connect(
+                    #     lambda dlg: self.DT_detail_report_list.remove(dlg) if dlg in self.DT_detail_report_list else None
+                    # )
+                    # self.DT_detail_report_list.append(dialog)
+                    # dialog.show()
+                    # self.Detail_dashboard(data_dict=data_dict, selected_category=selected_category)
+                    self.Detail_dashboard(selected_category=selected_category, 
+                                            group_col=group_col, area_name=area_name,
+                                            target=target, year=year, view_by=view_by,
+                                            total = total[index],
+                                            cum = cum[index] - cum[index-1] if index > 0 else cum[index],
+                                            data =  data[data[group_col] == selected_category],
+                                            summary_df = summary_df,
+                                            name = self.machine_name_dict.get(selected_category, '') if group_col == 'Machine Code' else self.error_code_dict.get(selected_category, '') if group_col == 'Error Code' else None
+                                            )
+            
+            @QtCore.pyqtSlot()
+            def leave_plot(event):
+                QtWidgets.QToolTip.hideText()
+                region.hide()
+                self._hover_index = -1
 
+            plot.leaveEvent = leave_plot
+            
             plot.getViewBox().sigResized.connect(update_views)
             if len(x) >= 3:
                 x_smooth = np.linspace(x.min(), x.max(), 300)
@@ -4818,8 +4956,19 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                            for v in np.arange(0, y_max + tick_step, tick_step)]
             y0_axis.setTicks([major_ticks])
             plot.setYRange(y_min, y_max, padding=0)
+            self.proxy = pg.SignalProxy(
+                plot.scene().sigMouseMoved,
+                rateLimit=10,
+                slot=lambda evt: on_hover(evt[0])
+            )
             plot.scene().sigMouseClicked.connect(lambda evt: on_dbclicked(evt, categories) if evt.double() else None)
+            
             self.ui.DT_chart.layout().addWidget(plot)
+            main_vb = plot.getViewBox()
+            main_vb.mouseDragEvent = lambda ev, axis=None: ev.ignore()
+            main_vb.wheelEvent = lambda ev: ev.ignore()
+            vb2.mouseDragEvent = lambda ev, axis=None: ev.ignore()
+            vb2.wheelEvent = lambda ev: ev.ignore()
             if self.ui.DT_chart_legend.layout() is not None:
                 return
             legend_layout = QtWidgets.QHBoxLayout()
@@ -4850,6 +4999,56 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to draw chart: {e}")
     
+    def Detail_dashboard(self, selected_category,area_name, target, year, view_by, group_col, total, cum, data, summary_df, mttr_value=None, mtbf_value=None, name = ""):
+        try:
+            if type(cum) == str:
+                h, m, s = map(int, cum.split(':'))
+                cum = h * 60 + m + s / 60
+                total_downtime = summary_df["Total Downtime"].apply(lambda x: int(x.split(':')[0]) * 60 + int(x.split(':')[1]) + int(x.split(':')[2]) / 60)
+                cum = (cum/total_downtime.sum()) * 100
+            if type(total) != str:
+                total = self.change_time_format(time_value=total, input_unit="m", output_unit=True)
+            data_dict = { 
+                        "selected_category": selected_category,
+                        "area_name": area_name,
+                        "target": target,
+                        "year": year,
+                        "view_by": view_by,
+                        "group_col": group_col,
+                        "total_downtime": total,
+                        "percentage": cum,
+                        "data_of_category": data,
+                        "average_percent": 100/len(summary_df),
+                        "name": name
+                    }
+            if group_col in ("Machine Code","Line Name"):
+                data_dict["mttr"] = str(summary_df.loc[summary_df[group_col] == selected_category, "MTTR"].values[0])
+                data_dict["mtbf"] = str(summary_df.loc[summary_df[group_col] == selected_category, "MTBF"].values[0])
+                # data_dict["total_mttr"] = mttr_value
+                # data_dict["total_mtbf"] = mtbf_value
+                if group_col == "Line Name":
+                    data_dict["mttr_target"] = self.downtime_target.loc[self.downtime_target["Line Name"] == selected_category, "MTTR Target"].iloc[0]
+                    data_dict["mtbf_target"] = self.downtime_target.loc[self.downtime_target["Line Name"] == selected_category, "MTBF Target"].iloc[0]
+                else:
+                    data_dict["mttr_target"] = self.downtime_target.loc[self.downtime_target["Machine Code"] == selected_category, "MTTR Target"].iloc[0]
+                    data_dict["mtbf_target"] = self.downtime_target.loc[self.downtime_target["Machine Code"] == selected_category, "MTBF Target"].iloc[0]
+            else:
+                data_dict["events_count"] = str(summary_df.loc[summary_df[group_col] == selected_category, "Failure Event"].values[0])
+            dialog = Downtime_Detail_dashboard(
+                database=self.database_process,
+                catagory=selected_category,
+                data_dict = data_dict,
+                button_style_call_back = self.style_button_with_shadow,
+                change_time_format_call_back = self.change_time_format,
+                KPI_chart_call_back = self.DT_KPI_chart
+            )
+            dialog.closed.connect(
+                lambda dlg: self.DT_detail_report_list.remove(dlg) if dlg in self.DT_detail_report_list else None
+            )
+            self.DT_detail_report_list.append(dialog)
+            dialog.show()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to open detail: {e}")
 
     @QtCore.pyqtSlot()
     def DT_Viewby(self, changed_object):
@@ -5835,7 +6034,6 @@ class Machine_information(QtWidgets.QDialog):
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"File not found: {history[row][2]}")
 
-
 class Update_machine_info(QtWidgets.QDialog):
     def __init__(self, parent=None, code=None):
         super().__init__()
@@ -6192,7 +6390,6 @@ class Update_machine_info(QtWidgets.QDialog):
         super().close()
         self.deleteLater()
 
-
 class PageRenderWorker(QtCore.QThread):
     rendered = QtCore.pyqtSignal(int, QtGui.QPixmap)
 
@@ -6212,7 +6409,6 @@ class PageRenderWorker(QtCore.QThread):
             self.rendered.emit(self.page_num, QtGui.QPixmap.fromImage(img))
         except Exception:
             pass
-
 
 class pdf_view(QtWidgets.QGraphicsView):
     def __init__(self, pdf_path):
@@ -6278,7 +6474,6 @@ class pdf_view(QtWidgets.QGraphicsView):
             if next_page < self.doc.page_count:
                 self.load_page(next_page)
 
-
 class StatusColorDelegate(QtWidgets.QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super().initStyleOption(option, index)
@@ -6293,7 +6488,6 @@ class StatusColorDelegate(QtWidgets.QStyledItemDelegate):
             elif status == "Near due":
                 option.palette.setColor(
                     QtGui.QPalette.Text, QtGui.QColor("#b04903"))
-
 
 class ButtonDelegate(QtWidgets.QStyledItemDelegate):
     ButtonClicked = QtCore.pyqtSignal(str, QtCore.QModelIndex)
@@ -6367,7 +6561,6 @@ class ButtonDelegate(QtWidgets.QStyledItemDelegate):
                     return True
 
         return super().editorEvent(event, model, option, index)
-
 
 class Print_selector(QtWidgets.QWidget):
     def __init__(self, parent=None, quantity=0, data=None, attached_machine=None, database=None, duplicate=None):
@@ -6495,7 +6688,6 @@ class Print_selector(QtWidgets.QWidget):
                         self, "Error",  f"Fail to load data: {e}")
                 self.worker.progress_changed.emit(int(i+1))
 
-
 class WorkerThread(QtCore.QThread):
     finished = QtCore.pyqtSignal(object)
     progress_changed = QtCore.pyqtSignal(int)
@@ -6519,13 +6711,11 @@ class WorkerThread(QtCore.QThread):
     def stop(self):
         self._is_running = False
 
-
 class WorkerSignals(QtCore.QObject):
     finished = QtCore.pyqtSignal(object)
     progress_changed = QtCore.pyqtSignal(int)
     result_ready = QtCore.pyqtSignal(int, object)
     error = QtCore.pyqtSignal(str)
-
 
 class Worker_Pool(QtCore.QRunnable):
     def __init__(self, fn, *args, **kwargs):
@@ -6545,7 +6735,6 @@ class Worker_Pool(QtCore.QRunnable):
 
     def stop(self):
         self._is_running = False
-
 
 class Printer_progress(QtWidgets.QWidget):
     def __init__(self, parent=None, max=0, text="printed", worker=None):
@@ -6567,7 +6756,6 @@ class Printer_progress(QtWidgets.QWidget):
         QtWidgets.QMessageBox.information(
             self, "Done", f"All files {self.text}!")
         self.close()
-
 
 class Form_Modification(QtWidgets.QDialog):
     def __init__(self, parent=None):
@@ -7037,7 +7225,6 @@ class Form_Modification(QtWidgets.QDialog):
         super().close()
         self.deleteLater()
 
-
 class Login_Dialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -7068,8 +7255,8 @@ class Login_Dialog(QtWidgets.QDialog):
             self.ui.user_status.clear()
             username = self.ui.user_line.text().strip()
             password = self.ui.password_line.text().strip()
-            username = "misa"
-            password = ""
+            # username = "misa"
+            # password = ""
             self.ui.login_btn.setEnabled(False)
             QtWidgets.QApplication.processEvents()
             result = self.database.query(sql=''' SELECT s.user_id,s.username,s.password_hash,r.role_level,d.department_name,s.first_name,s.last_name FROM `Users` as s 
@@ -7112,7 +7299,6 @@ class Login_Dialog(QtWidgets.QDialog):
                 self, "Error", f"Failed to login: {e}")
         finally:
             self.ui.login_btn.setEnabled(True)
-
 
 class NotificationItem(QtWidgets.QWidget):
     def __init__(self, notification_content, parent=None, isYours=False):
@@ -7434,7 +7620,6 @@ class NotificationItem(QtWidgets.QWidget):
         html.append("</table>")
         return "".join(html)
 
-
 class Sync_Missing_Data(QtWidgets.QWidget):
     synced = QtCore.pyqtSignal()
 
@@ -7497,7 +7682,6 @@ class Sync_Missing_Data(QtWidgets.QWidget):
 
     def mouseReleaseEvent(self, event):
         self._drag_pos = None
-
 
 class Group_Area_Choose(QtWidgets.QDialog):
     def __init__(self, parent=None, database=None, file_path=None):
@@ -7575,7 +7759,6 @@ class Group_Area_Choose(QtWidgets.QDialog):
         self.selected_area = area
         self.excel_sheet_name = sheet_name
         self.accept()
-
 
 class Downtime_Input(QtWidgets.QDialog):
     def __init__(self, parent=None, database=None, data_frame=None, error_frame=None, area_name=None, month_year=None):
@@ -7765,7 +7948,6 @@ class Downtime_Input(QtWidgets.QDialog):
                         str(self.data_frame["total_loss_time"].sum()))
         elif name == "Delete":
             self.ui.error_row_table.model().removeRow(row)
-
 
 class Error_code_management(QtWidgets.QDialog):
     def __init__(self, parent=None, database=None):
@@ -8029,31 +8211,34 @@ class RotatedAxisItem(pg.AxisItem):
         self.dy = dy
 
     def drawPicture(self, p, axisSpec, tickSpecs, textSpecs):
-        if self.angle == 0:
-            super().drawPicture(p, axisSpec, tickSpecs, textSpecs)
-            return
+        # if self.angle == 0:
+        #     super().drawPicture(p, axisSpec, tickSpecs, textSpecs)
+        #     return
         p.setRenderHint(p.Antialiasing, False)
         p.setRenderHint(p.TextAntialiasing, True)
 
-        pen, p1, p2 = axisSpec
-        p.setPen(pen)
-        p.drawLine(p1, p2)
+        # pen, p1, p2 = axisSpec
+        # p.setPen(pen)
+        # p.drawLine(p1, p2)
 
-        for pen, p1, p2 in tickSpecs:
-            p.setPen(pen)
-            p.drawLine(p1, p2)
+        # for pen, p1, p2 in tickSpecs:
+        #     p.setPen(pen)
+        #     p.drawLine(p1, p2)
 
         if self.style['showValues']:
             p.setFont(self.style['tickFont'] or self.font())
             p.setPen(self.textPen())
             for rect, flags, text in textSpecs:
-                offset_rect = rect.translated(self.dx, self.dy)
-                p.save()
-                p.translate(offset_rect.center())
-                p.rotate(self.angle)
-                p.translate(-offset_rect.center())
-                p.drawText(offset_rect, flags, text)
-                p.restore()
+                if self.angle == 0:
+                    p.drawText(rect, flags, text)
+                else:
+                    offset_rect = rect.translated(self.dx, self.dy)
+                    p.save()
+                    p.translate(offset_rect.center())
+                    p.rotate(self.angle)
+                    p.translate(-offset_rect.center())
+                    p.drawText(offset_rect, flags, text)
+                    p.restore()
 
 class New_Report_Input(QtWidgets.QDialog):
     def __init__(self, parent=None, database=None, callback=None):
@@ -8285,23 +8470,22 @@ class DonutChart(QtWidgets.QWidget):
             QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft,
             f"{self.parameter_name}"
         )
+        if self.parameter_name == "%OEE":
+            legend_x2 = legend_x + dot_r * 2 + int(size * 0.4)
 
-        legend_x2 = legend_x + dot_r * 2 + int(size * 0.4)
-
-        painter.setBrush(QtGui.QColor(self.target_color))
-        painter.setPen(QtCore.Qt.PenStyle.NoPen)
-        painter.drawEllipse(legend_x2, legend_y - dot_r +
-                            3, dot_r * 2, dot_r * 2)
-
-        painter.setPen(QtGui.QColor("#555555"))
-        painter.setFont(font_legend)
-        painter.drawText(
-            QtCore.QRectF(legend_x2 + dot_r * 2 + int(size * 0.03),
-                          legend_y - dot_r,
-                          size * 0.8, dot_r * 3),
-            QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft,
-            f"Target {self.target_value}%"
-        )
+            painter.setBrush(QtGui.QColor(self.target_color))
+            painter.setPen(QtCore.Qt.PenStyle.NoPen)
+            painter.drawEllipse(legend_x2, legend_y - dot_r +
+                                3, dot_r * 2, dot_r * 2)
+            painter.setPen(QtGui.QColor("#555555"))
+            painter.setFont(font_legend)
+            painter.drawText(
+                QtCore.QRectF(legend_x2 + dot_r * 2 + int(size * 0.03),
+                            legend_y - dot_r,
+                            size * 0.8, dot_r * 3),
+                QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft,
+                f"Target {self.target_value}%"
+            )
         painter.end()
 
 class Bullet_Status_Bar(QtWidgets.QWidget):
@@ -9148,12 +9332,634 @@ class OEE_Other_Data(QtWidgets.QDialog):
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to save cycle time record: {e}")
 
+class GaugeChart(QtWidgets.QWidget):
+    def __init__(self, value=0, height_scale=1.0, width_scale=1.0, parent=None):
+        super().__init__(parent)
+        self.value = max(0, min(100, value))
+        self.height_scale = height_scale
+        self.width_scale = width_scale
+
+    def paintEvent(self, event):
+
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        width_chart = self.width()*0.7*self.width_scale
+        height_chart = self.height()*0.7*self.height_scale
+        left_margin = (self.width() - width_chart) / 2
+        top_margin = (self.height() - height_chart) / 2
+
+        rect = QtCore.QRectF(
+            left_margin ,
+            top_margin,
+            width_chart,
+            height_chart*2
+        )
+
+        # Background Arc
+        pen = QtGui.QPen(QtGui.QColor("#E0E0E0"), 20)
+        pen.setCapStyle(QtCore.Qt.PenCapStyle.FlatCap)
+        painter.setPen(pen)
+
+        painter.drawArc(
+            rect,
+            180 * 16,
+            -180 * 16
+        )
+
+        # Value Arc
+        pen = QtGui.QPen(QtGui.QColor("#060AF3"), 20)
+        pen.setCapStyle(QtCore.Qt.PenCapStyle.FlatCap)
+        painter.setPen(pen)
+
+        painter.drawArc(
+            rect,
+            180 * 16,
+            -int(180 * 16 * (self.value / 100))
+        )
+
+        painter.setPen(QtGui.QColor("#464646"))
+
+
+        font3 = QtGui.QFont()
+        font3.setFamily("Agency FB")
+        font3.setPointSize(28)
+        font3.setBold(True)
+        painter.setFont(font3)
+        
+        painter.drawText(
+            self.rect(),
+            QtCore.Qt.AlignBottom|QtCore.Qt.AlignHCenter,
+            f"{self.value:.2f}%"
+        )
+
 class Downtime_Detail_dashboard(QtWidgets.QDialog):
-    def __init__(self, parent=None, database=None, downtime_record_id=None):
+    closed = QtCore.pyqtSignal(object)
+    def __init__(self, parent=None, database=None, title="Downtime Detail Report Of ", catagory=None, data_dict = {}, button_style_call_back=None, change_time_format_call_back=None, KPI_chart_call_back=None):
         super().__init__(parent)
         self.ui = UI_DT_detail_report()
         self.ui.setupUi(self)
+        self.data_dict = data_dict
+        if self.data_dict.get("group_col", "") == "Line Name":
+            title = title + "Line " + catagory
+        elif self.data_dict.get("group_col", "") == "Machine Code":
+            title = title + self.data_dict.get("name", "") + " " + catagory
+        else:
+            title = title + self.data_dict.get("name", "") + " " +catagory
+        self.day, self.month, self.year = None, None, None
+        self.have_action = False
+        if data_dict.get("view_by", "") == "day":
+            date = data_dict.get("target", "")
+            title = title + " | Date: " + str(date)
+            self.year, self.month, self.day = map(int, date.split('-'))
+            date_condition = " AND for_day = :day AND for_month = :month AND for_year = :year"
+        elif data_dict.get("view_by", "") == "week":
+            date = data_dict.get("target", "")
+            title = title + " | Week: " + str(date) + " of " + str(data_dict.get("year", ""))
+        else:
+            date = data_dict.get("target", "")
+            title = title + " | Month: " + str(date) + "/" + str(data_dict.get("year", ""))
+            self.month = date
+            self.year = data_dict.get("year", "")
+            date_condition = " AND for_month = :month AND for_year = :year"
+        self.ui.title_lbl.setText(title)
+        self.catagory = catagory
+        self.database = database
+        self.button_style_call_back = button_style_call_back
+        self.change_time_format_call_back = change_time_format_call_back
+        self.DT_KPI_chart = KPI_chart_call_back
+        self.setWindowIcon(QtGui.QIcon(resource_path("Icons/Downtime.ico")))
+        self.ui.Detail_total_downtime_value.setText(self.data_dict["total_downtime"])
+        if self.data_dict.get("group_col", "") in ("Machine Code","Line Name"):
+            self.ui.Detail_card3_label.setText("MTTR")
+            self.ui.Detail_card4_label.setText("MTBF")
+            self.ui.Detail_card3_value.setText(self.data_dict["mttr"])
+            self.ui.Detail_card4_value.setText(self.data_dict["mtbf"])
+            root_cause = self.Column_chart(widget= self.ui.Detail_left_chart,
+                          data_df = self.data_dict["data_of_category"],
+                          title = "Downtime By Error Code",
+                          show_by = "Error Code")
+            self.ui.Detail_left_label.setText("Downtime By Error")
+            if self.data_dict.get("group_col", "") == "Line Name":
+                top_trend = self.Column_chart(widget= self.ui.Detail_right_chart,
+                                data_df = self.data_dict["data_of_category"],
+                                title = "Downtime By Machine Code",
+                                show_by = "Machine Code")
+                self.ui.Detail_right_label.setText("Downtime By Machine")
+            if self.data_dict.get("group_col", "") == "Machine Code":
+                self.Column_chart(widget= self.ui.Detail_right_chart,
+                                data_df = self.data_dict["data_of_category"],
+                                title = "Downtime By Line Name",
+                                show_by = "Line Name")
+                top_trend = None
+                self.ui.Detail_right_label.setText("Downtime By Line")
+            self.DT_KPI_chart(widget=self.ui.KPI_MTTR_chart, value=self.time_to_minute(self.data_dict.get("mttr", 0)), target_value=self.time_to_minute(self.data_dict.get("mttr_target", 0)), previous_value=0, label="MTTR")
+            self.DT_KPI_chart(widget=self.ui.KPI_MTBF_chart, value=float(self.time_to_minute(self.data_dict.get("mtbf", 0))), target_value=self.time_to_minute(self.data_dict.get("mtbf_target", 0)), previous_value=0, label="MTBF")
+            condition_category = f"AND pl.line_name = :category_value" if self.data_dict.get("group_col", "") == "Line Name" else f"AND m.machine_code = :category_value"
+            action = self.database.query(sql=f'''SELECT datc.action_id, datc.action_content FROM downtime_actions as datc
+                                                JOIN downtime_areas AS da ON datc.downtime_area_id = da.downtime_area_id
+                                                LEFT JOIN production_lines AS pl ON datc.line_id = pl.line_id
+                                                LEFT JOIN machines AS m ON datc.machine_id = m.machine_id
+                                                WHERE da.downtime_area_name = :area_name {condition_category} {date_condition} ;''', params={"area_name": self.data_dict.get("area_name", ""), "category_value": self.data_dict.get("selected_category", ""), "day": self.day, "month": self.month, "year": self.year})
+            if action:
+                self.have_action = True
+                self.action_id = action[0][0]
+                self.ui.action_text.setPlainText(action[0][1])
 
+        else:
+            self.resize(900,800)
+            self.ui.Detail_card3_frame.setMinimumWidth(0)
+            self.ui.Detail_card3_value.setMinimumWidth(self.ui.Detail_card3_frame.width())
+            self.ui.Detail_keyinsights_frame.hide()
+            root_cause = None
+            top_trend = None
+            self.ui.Detail_card3_label.setText("Events Count")
+            self.ui.Detail_card3_value.setText(self.data_dict["events_count"])
+            self.ui.Detail_card4_frame.hide()
+            self.Column_chart(widget= self.ui.Detail_left_chart,
+                                data_df = self.data_dict["data_of_category"],
+                                title = "Downtime By Machine Code",
+                                show_by = "Machine Code")
+            self.ui.Detail_left_label.setText("Downtime By Machine")
+            self.Column_chart(widget= self.ui.Detail_right_chart,
+                                data_df = self.data_dict["data_of_category"],
+                                title = "Downtime By Line Name",
+                                show_by = "Line Name")
+            self.ui.Detail_right_label.setText("Downtime By Line")
+            self.ui.KPI_MTTR_chart.hide()
+            self.ui.KPI_MTBF_chart.hide()
+        self.ui.keyinsights_text.setText(self.Generate_key_insights_en(data = self.data_dict, root_cause = root_cause, top_trend = top_trend))
+        self.Gauge_chart(self.data_dict["percentage"])
+        self.Line_chart(widget= self.ui.Detail_bytime_chart, title="Downtime Over Time",view_by = "day" ,show_by=self.data_dict.get("group_col", ""))
+        self.setup_signals()
+
+    def setup_signals(self):
+        self.ui.ByDate_btn.clicked.connect(lambda: self.Line_chart(widget= self.ui.Detail_bytime_chart, title="Downtime Over Time",view_by = "day" ,show_by=self.data_dict.get("group_col", "")))
+        self.ui.ByMonth_btn.clicked.connect(lambda: self.Line_chart(widget= self.ui.Detail_bytime_chart, title="Downtime Over Time",view_by = "month" ,show_by=self.data_dict.get("group_col", "")))
+    
+    def action_before_closed(self):
+        action_content = self.ui.action_text.toPlainText()
+        if self.data_dict.get("group_col", "") == "Machine Code":
+            category = f"machine_id"
+            part_condition = "(SELECT machine_id FROM machines WHERE machine_code = :category_value)"
+            # condition_category = f"machine_id = {part_condition}"
+        elif self.data_dict.get("group_col", "") == "Line Name":
+            category = f"line_id"
+            part_condition = "(SELECT line_id FROM production_lines WHERE line_name = :category_value)"
+            # condition_category = f"line_id = {part_condition}"
+        else:
+            return    
+        if action_content.strip() != "":
+            if self.have_action:
+                self.database.query(sql=f''' UPDATE downtime_actions SET action_content = :action_content 
+                                            WHERE action_id = :action_id''', params={"action_content": action_content, "action_id": self.action_id})
+            else:
+                self.database.query(sql=f''' INSERT INTO downtime_actions (action_content, downtime_area_id, {category}, for_day, for_month, for_year)
+                                            VALUES (:action_content, (SELECT downtime_area_id FROM downtime_areas WHERE downtime_area_name = :area_name),
+                                            {part_condition}, :day, :month, :year);''', params={"action_content": action_content, "area_name": self.data_dict.get("area_name", ""), "category_value": self.data_dict.get("selected_category", ""), "day": self.day, "month": self.month, "year": self.year})
+        else:
+            if self.have_action:
+                self.database.query(sql=f''' DELETE FROM downtime_actions WHERE action_id = :action_id''', params={"action_id": self.action_id})
+        self.closed.emit(self)
+
+    def reject(self):
+        self.action_before_closed()
+        super().reject()
+
+    def closeEvent(self, event):
+        self.action_before_closed()
+        self.closed.emit(self)
+        super().closeEvent(event)
+    
+    def Gauge_chart(self, percent_value):
+        old_layout = self.ui.Detail_percent_chart.layout()
+        if old_layout is not None:
+            while old_layout.count():
+                item = old_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+        else:
+            new_layout = QtWidgets.QVBoxLayout()
+            new_layout.setContentsMargins(0, 0, 0, 0)
+            new_layout.setSpacing(0)
+            self.ui.Detail_percent_chart.setLayout(new_layout)
+        if self.data_dict.get("group_col", "") in ("Machine Code","Line Name"):
+            gauge = GaugeChart(value=percent_value)
+        else:
+            gauge = GaugeChart(value=percent_value, width_scale=0.8)
+        self.ui.Detail_percent_chart.layout().addWidget(gauge)
+
+    def Column_chart(self, widget ,data_df, title = "", show_by = None):
+        old_layout = widget.layout()
+        if old_layout is not None:
+            while old_layout.count():
+                item = old_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+        else:
+            new_layout = QtWidgets.QVBoxLayout()
+            new_layout.setContentsMargins(0, 0, 0, 0)
+            new_layout.setSpacing(0)
+            widget.setLayout(new_layout)
+        layout = widget.layout()
+        pivot_df = (
+            data_df.groupby(show_by)["Total Loss Time"]
+            .sum()
+            .reset_index()
+            .sort_values(by="Total Loss Time", ascending=False)
+        )
+        chart_font = QtGui.QFont("Comic Sans MS", 8)
+        chart_font.setStyleStrategy(QtGui.QFont.PreferAntialias)
+        chart_font.setHintingPreference(QtGui.QFont.PreferFullHinting)
+        chart_font.setBold(True)
+        categories = pivot_df[show_by]
+        values = pivot_df["Total Loss Time"]
+        x = np.arange(len(categories))
+        if show_by == "Machine Code":
+            _angle = -45
+            dx = -15
+            dy = 5
+        elif show_by == "Error Code" and len(categories) > 10:
+            _angle = -40
+            dx = 0
+            dy = 0
+        else:
+            _angle = 0
+            dx = 0
+            dy = 0
+        x_axis = RotatedAxisItem(
+                angle=_angle, dx=dx, dy=dy, orientation='bottom')
+        plot = pg.PlotWidget(axisItems={'bottom': x_axis})
+        plot.setBackground(None)
+        plot.showGrid(x=False, y=False)
+        bar_graph = pg.BarGraphItem(x=range(len(categories)), height=values, width=0.6, brush='b', pen=pg.mkPen(None))
+        plot.addItem(bar_graph)
+        plot.getAxis('bottom').setTextPen(pg.mkPen(color='#474747'))
+        plot.getAxis('bottom').setTickFont(chart_font)
+        plot.getAxis('bottom').setTicks([list(zip(range(len(categories)), categories))])
+        left_axis = plot.getAxis('left')
+        left_axis.setLabel("Time (minutes)")
+        left_axis.setStyle(tickTextOffset=10, tickLength=0)
+        left_axis.setPen(None)
+        left_axis.setTextPen(pg.mkPen(color='#474747'))
+        left_axis.setTickFont(chart_font)
+
+        # left_axis.hide()
+        y_min = 0
+        y_max = max(values) * 1.1 if len(values) > 0 else 1
+        plot.setYRange(y_min, y_max*1.2, padding=0)
+        x_axis = plot.getAxis('bottom')
+        if _angle == -45:
+            x_axis.setStyle(tickTextHeight=10,tickTextOffset=15)
+            x_axis.setHeight(50)
+        if len(categories) <= 20:
+            for i, val in enumerate(values):
+                text_item = pg.TextItem(text=str(val), color="black", anchor=(0.5, 1))
+                text_item.setFont(QtGui.QFont("Comic Sans MS", 8, QtGui.QFont.Bold))
+                offset = max(values) * 0.02 if max(values) > 0 else 1
+                text_item.setPos(i, val + offset)
+                plot.addItem(text_item)
+        else:
+            for i, val in enumerate(values):
+                text_item = pg.TextItem(text=str(val), color="black", anchor=(0.5, 1), angle=-90)
+                text_item.setFont(QtGui.QFont("Comic Sans MS", 8, QtGui.QFont.Bold))
+                offset = max(values) * 0.15 if max(values) > 0 else 1
+                text_item.setPos(i - 0.7, val + offset)
+                plot.addItem(text_item)
+        plot.setMouseEnabled(x=False, y=False)
+        plot.hideButtons()
+        plot.setAntialiasing(True)
+        layout.addWidget(plot)
+        return pivot_df
+
+    def Line_chart(self, widget, title = "", view_by = None , show_by = None):
+        old_layout = widget.layout()
+        if old_layout is not None:
+            while old_layout.count():
+                item = old_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+        else:
+            new_layout = QtWidgets.QVBoxLayout()
+            new_layout.setContentsMargins(0, 0, 0, 0)
+            new_layout.setSpacing(0)
+            widget.setLayout(new_layout)
+        
+        def on_fetch_more():
+            try:
+                if show_by == "Machine Code":
+                    filter_scripts = " Machine_Code = :object_name"
+                if show_by == "Line Name":
+                    filter_scripts = " Line_Name = :object_name"
+                if show_by == "Error Code":
+                    filter_scripts = " Error_Code = :object_name"
+                if view_by == "day":
+                    data = self.database.query(sql=f'''SELECT Date , SUM(Total_Loss)
+                                                        FROM downtime_report
+                                                        WHERE {filter_scripts}
+                                                        GROUP BY Date
+                                                        ORDER BY Date ASC;''',
+                                                    params={"object_name": self.catagory})
+                    record_df = pd.DataFrame(data, columns=["Date", "Total_Loss"])
+                    return record_df
+                else:
+                    data = self.database.query(sql=f'''SELECT Working_Month , YEAR(Date), SUM(Total_Loss)
+                                                        FROM downtime_report
+                                                        WHERE {filter_scripts}
+                                                        GROUP BY Working_Month, YEAR(Date)
+                                                        ORDER BY YEAR(Date) ASC, Working_Month ASC;''',
+                                                    params={"object_name": self.catagory})
+                    record_df = pd.DataFrame(data, columns=["Working_Month", "Year", "Total_Loss"])
+                    return record_df
+            except Exception as e:
+                QtWidgets.QMessageBox.critical(self, "Error", f"Failed to fetch more data: {e}")
+        
+        def update_line_chart(widget, record_df):
+            if view_by == "day":
+                labels = record_df["Date"].apply(lambda x: x.strftime("%Y-%m-%d") if pd.notnull(x) else "").tolist()
+                self.button_style_call_back((self.ui.ByDate_btn, self.ui.ByMonth_btn))
+                y = record_df["Total_Loss"].to_numpy().astype(float)
+            else:
+                month_df = (
+                    record_df
+                    .groupby(["Year", "Working_Month"], as_index=False)["Total_Loss"]
+                    .sum()
+                )
+
+                month_df["MonthDate"] = pd.to_datetime(
+                    month_df["Year"].astype(str)
+                    + "-"
+                    + month_df["Working_Month"].astype(str)
+                    + "-01"
+                )
+                start = month_df["MonthDate"].min()
+                last = month_df["MonthDate"].max()
+                end = pd.Timestamp(year=last.year, month=12, day=1)
+                full = pd.DataFrame({
+                    "MonthDate": pd.date_range(start, end, freq="MS")
+                })
+                month_df = full.merge(
+                    month_df[["MonthDate", "Total_Loss"]],
+                    on="MonthDate",
+                    how="left"
+                )
+                labels = month_df["MonthDate"].dt.strftime("%m/%Y").tolist()
+                y = month_df["Total_Loss"].to_numpy(dtype=float)
+                self.button_style_call_back((self.ui.ByMonth_btn, self.ui.ByDate_btn))
+                
+            x = np.arange(len(labels))
+            layout = widget.layout()
+            plot = pg.PlotWidget()
+            plot.setAntialiasing(True)
+            plot.plot(
+                x=x,
+                y=y,
+                pen=pg.mkPen(color='#09D4F8', width=2),
+                symbol='o',
+                symbolBrush='#09D4F8',
+                symbolSize=4
+            )
+            VISIBLE = 30 if view_by == "day" else 12
+            STEP_LABEL = 7 if len(labels) > 30 else 1
+            ticks = [(i, labels[i]) for i in range(0, len(labels), STEP_LABEL)]
+            if len(labels) > 0 and (len(labels) - 1) % STEP_LABEL != 0:
+                ticks.append((len(labels) - 1, labels[-1]))
+            chart_font = QtGui.QFont("Comic Sans MS", 8)
+            chart_font.setStyleStrategy(QtGui.QFont.PreferAntialias)
+            chart_font.setHintingPreference(QtGui.QFont.PreferFullHinting)
+            chart_font.setBold(True)
+            plot.getAxis("bottom").setTextPen(pg.mkPen(color='#474747'))
+            plot.getAxis("bottom").setTickFont(chart_font)
+            plot.getAxis("bottom").setTicks([ticks])
+            plot.setXRange(0, min(VISIBLE-1, len(x)-1), padding=0)
+            plot.setMouseEnabled(x=True, y=False)
+            plot.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+            plot.hideButtons()
+            plot.setBackground(None)
+            y_axis = plot.getAxis("left")
+            y_axis.setLabel("Time (minutes)")
+            y_axis.setStyle(tickTextOffset=10, tickLength=0)
+            y_axis.setPen(None)
+            y_axis.setTextPen(pg.mkPen(color='#474747'))
+            y_axis.setTickFont(chart_font)
+            plot.showGrid(x=False, y=False)
+            mask = ~np.isnan(y)
+            x_fill = x[mask]
+            y_fill = y[mask]
+            curve = pg.PlotCurveItem(x_fill, y_fill, pen=pg.mkPen(color = '#52B7FB', width=1.5))
+            fill = pg.FillBetweenItem(
+                curve,
+                pg.PlotCurveItem(x_fill, np.zeros_like(y_fill)),
+                brush=pg.mkBrush(116, 185, 232, 80)
+            )
+            main_vb = plot.getViewBox()
+            main_vb.wheelEvent = lambda event , axis = 0: None
+            scroll = QtWidgets.QScrollBar(QtCore.Qt.Horizontal)
+            scroll.setRange(
+                0,
+                max(0, len(x)-VISIBLE + 2)
+            )
+            def wheel(ev, axis=None):
+                nonlocal VISIBLE
+                modifiers = ev.modifiers()
+                if modifiers == QtCore.Qt.ControlModifier:
+                    if ev.delta() > 0:
+                        VISIBLE = max(5, VISIBLE - 2)
+                    else:
+                        VISIBLE = min(len(x), VISIBLE + 2)
+                    on_scroll(scroll.value())
+                else:
+                    step = -1 if ev.delta() > 0 else 1
+                    value = scroll.value() + step
+                    value = max(scroll.minimum(), min(scroll.maximum(), value))
+                    scroll.setValue(value)
+                ev.accept()
+
+            main_vb.wheelEvent = wheel
+
+            def on_scroll(value):
+                plot.setXRange(value, value+VISIBLE-1, padding=0)
+
+            plot.addItem(fill)
+            scroll.valueChanged.connect(on_scroll)
+            layout.addWidget(plot)
+            layout.addWidget(scroll)
+            scroll.setValue(scroll.maximum() if view_by == "day" else last.month)
+
+        self.DT_Detail_worker = WorkerThread(on_fetch_more)
+        self.DT_Detail_worker.finished.connect(lambda res: update_line_chart(widget, res))
+        self.DT_Detail_worker.start()
+
+    def time_to_minute(self,time_str):
+            if not time_str or not isinstance(time_str, str):
+                return time_str
+            try:
+                parts = list(map(int, time_str.split(':')))
+                if len(parts) == 3:
+                    return parts[0] * 60 + parts[1] + parts[2]/60
+                elif len(parts) == 2:
+                    return parts[0] * 60 + parts[1]
+            except ValueError:
+                return time_str
+            
+    def Generate_key_insights_en(self,data , root_cause = None, top_trend = None ):
+        insights = []
+        # downtime_rate = round(data.get("percentage", 0),2)
+        # average_percent = round(data.get("average_percent", 0),2)
+        # if downtime_rate > average_percent *1.5:
+        #     rate_status = f"<span style='color: #ef4444; font-weight: bold;'>CRITICAL ({downtime_rate}%)</span>"
+        #     insights.append(
+        #     f"• <b>Operational Overview:</b> The Downtime Rate is currently {rate_status}, "
+        #     f"exceeding the factory average of <b>{average_percent}%</b>. Total downtime recorded is <b>{data.get('total_downtime')}</b>."
+        # )
+        # elif downtime_rate > average_percent:
+        #     rate_status = f"<span style='color: #f59e0b; font-weight: bold;'>WARNING ({downtime_rate}%)</span>"
+        #     insights.append(
+        #     f"• <b>Operational Overview:</b> The Downtime Rate is currently {rate_status}, "
+        #     f"which is above the factory average of <b>{average_percent}%</b>. Total downtime recorded is <b>{data.get('total_downtime')}</b>."
+        # )
+        # else:
+        #     rate_status = f"<span style='color: #10b981; font-weight: bold;'>STABLE ({downtime_rate}%)</span>"
+        #     insights.append(
+        #     f"• <b>Operational Overview:</b> The Downtime Rate is currently {rate_status}, "
+        #     f"which is below the factory average of <b>{average_percent}%</b>. Total downtime recorded is <b>{data.get('total_downtime')}</b>."
+        # )            
+        final_conclusion = ""     
+        if data.get("group_col") in ("Machine Code", "Line Name"):
+            # mttr_total = self.time_to_minute(data.get("total_mttr", 0))
+            mttr_target = self.time_to_minute(data.get("mttr_target", 0))
+            mttr = self.time_to_minute(data.get("mttr", 0))
+            mttr_time = self.change_time_format_call_back(time_value = mttr,input_unit = "m", output_unit = True)
+            # mtbf_total = self.time_to_minute(data.get("total_mtbf", 0)) 
+            mtbf_target = self.time_to_minute(data.get("mtbf_target", 0))
+            mtbf = self.time_to_minute(data.get("mtbf", 0))
+            mtbf_time = self.change_time_format_call_back(time_value = mtbf,input_unit = "m", output_unit = True)
+            # if mttr <= mttr_target and mttr <= mttr_total:
+            #     mttr_text = f"• <b>MTTR Analysis:</b> <span style='color: #10b981; font-weight: bold;'>Excellent repair performance.</span> Response time meets the target and outpaces the factory average."
+            # elif mttr <= mttr_target and mttr > mttr_total:
+            #     mttr_text = f"• <b>MTTR Analysis:</b>  <span style='color: #09a2c9; font-weight: bold;'>Satisfactory.</span> Repair speed meets the target, though it remains slightly slower than the factory's current average."
+            # elif mttr > mttr_target and mttr <= mttr_total:
+            #     mttr_text = f"• <b>MTTR Analysis:</b> <span style='color: #f59e0b; font-weight: bold;'>Warning!</span> Repair time misses the target, but it is still better than the overall factory average."
+            # else: # mttr > mttr_target and mttr > mttr_total
+            #     mttr_text = f"• <b>MTTR Analysis:</b> <span style='color:red;'><b>CRITICAL!</b></span> Repair time fails both the target and the factory average. Urgent process review needed."
+            # insights.append(mttr_text)
+            # colorr = "#09a2c9"  
+            # if mtbf >= mtbf_target and mtbf >= mtbf_total:
+            #     mtbf_text = f"• <b>MTBF Analysis:</b> <span style='color: #10b981; font-weight: bold;'>High reliability.</span> The asset runs longer without failures compared to both target and factory benchmarks."
+            # elif mtbf >= mtbf_target and mtbf < mtbf_total:
+            #     mtbf_text = f"• <b>MTBF Analysis:</b> <span style='color: #09a2c9; font-weight: bold;'>Acceptable stability.</span> It satisfies the target threshold, but falls behind the factory's average performance."
+            # elif mtbf < mtbf_target and mtbf >= mtbf_total:
+            #     mtbf_text = f"• <b>MTBF Analysis:</b> <span style='color: #f59e0b; font-weight: bold;'>Underperforming!</span> Reliability is below target, reflecting a general pattern observed plant-wide."
+            # else: # mtbf < mtbf_target and mtbf < mtbf_total
+            #     mtbf_text = f"• <b>MTBF Analysis:</b> <span style='color:red;'><b>CRITICAL FAILURE FREQUENCY!</b></span> Micro-stoppages/breakdowns occur too frequently, failing both target and plant averages."
+            # insights.append(mtbf_text)
+            insights.append(f"<p style='margin: 0px; margin-top: 8px;'>• <b>Overview:</b></p>")
+            
+            style_sub_overview = "style='margin: 0px; margin-left: 25px;'"
+            
+            if mttr <= mttr_target:
+                mttr_text = f"<p {style_sub_overview}>• <b>MTTR:</b> <span style='color: #10b981; font-weight: bold;'> Reached target ({mttr_time})</span></p>"
+            else:
+                mttr_text = f"<p {style_sub_overview}>• <b>MTTR:</b> <span style='color:red; font-weight: bold;'> Missed target ({mttr_time})</span></p>"
+            insights.append(mttr_text)
+            
+            if mtbf >= mtbf_target:
+                mtbf_text = f"<p {style_sub_overview}>• <b>MTBF:</b> <span style='color: #10b981; font-weight: bold;'> Reached target ({mtbf_time})</span></p>"
+            else:
+                mtbf_text = f"<p {style_sub_overview}>• <b>MTBF:</b> <span style='color:red; font-weight: bold;'> Missed target ({mtbf_time})</span></p>"
+            insights.append(mtbf_text)
+            
+            insights.append(f"<p style='margin: 0px; margin-top: 14px;'>• <b>Reference:</b></p>")
+            style_sub_ref = "style='margin: 0px; margin-left: 25px; text-align: justify;'"
+            
+            is_mttr_good = mttr <= mttr_target 
+            is_mtbf_good = mtbf >= mtbf_target 
+            
+            if is_mttr_good and not is_mtbf_good:
+                conclusion = (
+                    f"<p {style_sub_ref}>• <b>Maintenance Efficiency:</b> High disruption frequency detected. A short MTBF (<b>{mtbf_time}</b>) "
+                    f"indicates frequent equipment instability; however, the technical team demonstrated rapid responsiveness "
+                    f"with a swift MTTR of <b>{mttr_time}</b>.</p>"
+                )
+                final_conclusion = (
+                    f" Need review."
+                )
+            elif not is_mttr_good and is_mtbf_good:
+                conclusion = (
+                    f"<p {style_sub_ref}>• <b>Maintenance Efficiency:</b> Robust asset reliability but weak maintenance recovery. While the asset "
+                    f"runs stably with an excellent MTBF of <b>{mtbf_time}</b>, the technical team's response is lagging, "
+                    f"leading to a prolonged MTTR of <b>{mttr_time}</b>.</p>"
+                )
+                final_conclusion = (
+                    f" Need review."
+                )
+            elif is_mttr_good and is_mtbf_good:
+                conclusion = (
+                    f"<p {style_sub_ref}>• <b>Maintenance Efficiency:</b> Outstanding operational and maintenance performance. The asset demonstrates "
+                    f"high reliability with a strong MTBF of <b>{mtbf_time}</b>, while the maintenance crew maintains peak efficiency "
+                    f"with a minimal MTTR of <b>{mttr_time}</b>.</p>"
+                )
+                final_conclusion = (
+                    f" No need for immediate action."
+                )
+            else:
+                conclusion = (
+                    f"<p {style_sub_ref}>• <b>Maintenance Efficiency:</b> <span style='color:#ef4444;'><b>CRITICAL O&M RISK!</b></span> "
+                    f"The line suffers from poor reliability with a failing MTBF of <b>{mtbf_time}</b>, compounded by "
+                    f"excessive repair delays showing a critical MTTR of <b>{mttr_time}</b>.</p>"
+                )
+                final_conclusion = (
+                    f"<span style='font-weight: bold; color: #ef4444;'>Need for immediate action.</span>"
+                )
+            insights.append(conclusion)
+        def analyze_top_drivers(data, threshold=0.1, type_analyze="root_cause"):
+            if data is None or data.empty:
+                return "No data available."
+                
+            total_value = data["Total Loss Time"].sum()
+            data = list(zip(data.iloc[:, 0], data.iloc[:, 1]))
+            max_value = data[0][1]
+            top_cluster = []
+            for name, value in data:
+                if (max_value - value) / max_value <= threshold:
+                    top_cluster.append((name, value))
+                else:
+                    break
+                    
+            cluster_len = len(top_cluster)
+            cluster_names = [item[0] for item in top_cluster]
+            cluster_total_val = sum(item[1] for item in top_cluster)
+            cluster_share = round((cluster_total_val / total_value) * 100, 1)
+            
+            if type_analyze == "root_cause":
+                if cluster_len == 1:
+                    return f"Error code <b>{cluster_names[0]}</b> is the dominant root cause, accounting for <b>{cluster_share}%</b> of all occurrences. Targeted engineering focus is required here."
+                elif cluster_len >= 3:
+                    formatted_names = ", ".join(cluster_names[:-1]) + f", and {cluster_names[-1]}"
+                    return (f"Downtime is <b>evenly distributed</b> across multiple assets ({formatted_names}), "
+                            f"collectively driving <b>{cluster_share}%</b> of the total losses. "
+                            f"This indicates a <b>systemic issue</b> rather than isolated machine failures.")                     
+                else:
+                    return f"Primary losses are co-driven by <b>{cluster_names[0]}</b> and <b>{cluster_names[1]}</b>, contributing <b>{cluster_share}%</b> of total impact."
+            elif type_analyze == "top_trend":
+                if cluster_len == 1:
+                    return f"Machine <b>{cluster_names[0]}</b> is the main contributor to this trend, accounting for <b>{cluster_share}%</b> of the total issues."
+                elif cluster_len >= 3:
+                    formatted_names = ", ".join(cluster_names[:-1]) + f", and {cluster_names[-1]}"
+                    return f"The main issues are driven by machines <b>{formatted_names}</b>, collectively accounting for <b>{cluster_share}%</b> of the total."
+                else:
+                    return f"Machines <b>{cluster_names[0]}</b> and <b>{cluster_names[1]}</b> are the primary sources of the problem, accounting for <b>{cluster_share}%</b> of the total."
+        if root_cause is not None:       
+            analysis_result = analyze_top_drivers(data=root_cause, threshold=0.1, type_analyze="root_cause")
+            insights.append(f"<p style='margin: 0px; margin-left: 25px; margin-top: 4px; text-align: justify;'>• <b>Root Cause Analysis:</b> {analysis_result}</p>")
+            
+        if top_trend is not None:
+            analysis_result = analyze_top_drivers(data=top_trend, threshold=0.1, type_analyze="top_trend")
+            insights.append(f"<p style='margin: 0px; margin-left: 25px; margin-top: 4px; text-align: justify;'>• <b>Top Trend Analysis:</b> {analysis_result}</p>")
+        if final_conclusion:
+            insights.append(f"<p style='margin: 0px; margin-top: 14px;'>• <b>Final Recommendation:</b> {final_conclusion}</p>")
+        return "".join(insights)
+    
 def main():
     try:
         import ctypes
