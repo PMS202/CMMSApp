@@ -17,10 +17,10 @@ class Downtime_Excel_Processor:
         self.database = database
         self.area_name = area_name
         self.error_log = pd.DataFrame(columns=["row_index", "error_type", "error_message"])
-        self.error_frame = pd.DataFrame(columns=["excel_row", "date", "line", "start_time","technical_start_time","finish_time","technical_name", "error_code", "machine_code", "column_error", "error_message"])
+        self.error_frame = pd.DataFrame(columns=[ "date", "line", "start_time","technical_start_time","finish_time","technical_name", "error_code", "machine_code", "column_error", "error_message"])
     
     def read_filter_excel(self):
-        change_model_code_list = [row[0] for row in self.database.query('''SELECT error_code FROM error_codes_list as ecl
+        change_model_code_list = [row[0] for row in self.database.query(sql='''SELECT error_code FROM error_codes_list as ecl
                                                         JOIN downtime_areas as da ON ecl.downtime_area_id = da.downtime_area_id
                                                         WHERE `error_description` like "%đổi%model%" AND da.downtime_area_name = :area_name;''', params={"area_name": self.area_name})]
         def add_error_info(data, column_error, error_message):
@@ -59,6 +59,7 @@ class Downtime_Excel_Processor:
             self.working_time["Date"] = self.working_time["Date"].dt.strftime("%Y-%m-%d")
             self.data = pd.read_excel(excel_file, sheet_name=self.sheet_name, skiprows=4, 
                                     header=None, usecols=[0,1,2,3,4,9,10,17], dtype={10: str, 17: str})
+            excel_file.close()
             self.data = self.data.rename(columns={0: "date", 1: "line", 2: "start_time", 3: "technical_start_time", 4: "finish_time", 9: "technical_name", 10: "error_code", 17: "machine_code"})
             self.data = self.data.replace({"nan": pd.NA})
             time_columns = ["start_time", "technical_start_time", "finish_time"]
@@ -110,7 +111,6 @@ class Downtime_Excel_Processor:
                                                             "machine_code", "Invalid machine code")])
             self.error_frame = self.error_frame.drop_duplicates()
             self.data = self.data[~self.data.index.isin(self.error_frame.index)]
-            
             total_loss = (pd.to_datetime(self.data["finish_time"], format="%H:%M", errors='coerce') - 
                         pd.to_datetime(self.data["start_time"], format="%H:%M", errors='coerce')).dt.total_seconds() / 60
             total_loss = total_loss.where(total_loss >= 0, total_loss + 1440)

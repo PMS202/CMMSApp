@@ -1,105 +1,62 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import os
 import sys
-import pyqtgraph as pg
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-from PyQt5.QtGui import QColor, QFont
-from PyQt5.QtCore import Qt
+from pathlib import Path
+from io import StringIO
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+# url = "http://172.30.73.149:1810/ScaInspectionData/DataList?"
 
-class CompactHorizontalBarChart(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Compact Downtime By Machine")
-        
-        # Thiết lập kích thước cửa sổ giả lập cực nhỏ (phù hợp với kích thước card thực tế của bạn)
-        self.resize(320, 200) 
+# params = {
+#     "FromDate": "1-2-2026",
+#     "ToDate": "15-2-2026",
+#     "LineName": "ALL",
+#     "ModelName": ""
+# }
 
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
-        # Triệt tiêu margin của layout ngoài cùng để tận dụng tối đa diện tích card
-        layout.setContentsMargins(2, 2, 2, 2)
+# r = requests.get(url, params=params)
+# tables = pd.read_html(StringIO(r.text))
 
-        self.plot_widget = pg.PlotWidget()
-        self.plot_widget.setBackground('#f4f4f6')
-        layout.addWidget(self.plot_widget)
+# df = tables[0]
+# df.drop(columns=["Download All"], inplace=True)
+# regex_pattern = r"^\d(?:[1-9]|[XYZ])(?:0[1-9]|[12]\d|30)G[ABCNDE]$"
 
-        # Tối ưu hóa margin nội bộ của PlotWidget
-        self.plot_widget.getPlotItem().layout.setContentsMargins(0, 0, 5, 0)
-
-        # DỮ LIỆU TINH GỌN: Chỉ lấy Top 5 máy có downtime cao nhất để không bị chật chội
-        machines = ["1714217", "1714218", "1714216", "MCG210027", "1688266"]
-        downtimes = [800, 796, 780, 779, 325]
-
-        # Đảo ngược thứ tự để vẽ từ trên xuống dưới
-        machines.reverse()
-        downtimes.reverse()
-
-        y_positions = list(range(len(machines)))
-
-        # --- 1. THIẾT LẬP TRỤC Y (TÊN MÁY) SIÊU NHỎ ---
-        y_axis = self.plot_widget.getAxis('left')
-        ticks = [(y, mac) for y, mac in zip(y_positions, machines)]
-        y_axis.setTicks([ticks])
-        y_axis.setPen(pg.mkPen('#aaaaaa', width=1))
-        y_axis.setTextPen(pg.mkPen('#444444'))
-        
-        # Thiết lập font chữ cực nhỏ cho mã máy
-        font_axis = QFont("Arial", 7)
-        y_axis.setTickFont(font_axis)
-        y_axis.setWidth(55) # Co hẹp chiều rộng cột nhãn bên trái
-
-        # --- 2. THIẾT LẬP TRỤC X ---
-        x_axis = self.plot_widget.getAxis('bottom')
-        x_axis.setPen(pg.mkPen('#aaaaaa', width=1))
-        x_axis.setTextPen(pg.mkPen('#444444'))
-        x_axis.setTickFont(font_axis)
-        
-        # Chỉ hiện lưới mờ theo trục đứng để dễ ước lượng khoảng cách
-        self.plot_widget.showGrid(x=True, y=False, alpha=0.1)
-
-        # --- 3. VẼ LỚP BÓNG ĐỔ SIÊU MỎNG (Tương thích kích thước nhỏ) ---
-        shadow_color = QColor(0, 0, 0, 25) # Giảm độ đậm của bóng
-        shadow_bars = pg.BarGraphItem(
-            x0=0,
-            y=[y - 0.04 for y in y_positions], # Độ lệch bóng cực nhỏ để tránh bị nhòe
-            width=downtimes,
-            height=0.45,                       # Thanh mảnh hơn một chút
-            brush=pg.mkBrush(shadow_color),
-            pen=pg.mkPen(None)
+# df = df.loc[df["Lot no"].str.match(regex_pattern, na=False)]
+# print(df)
+# if df.empty:
+#     print("No data found for the specified criteria.")
+# else:
+#     output_path = os.path.join(PROJECT_ROOT, 'exported_files', 'Kha_ML26_Feb_1.xlsx')
+#     df.to_excel(output_path, index=False)
+final_df = pd.DataFrame(columns=["Line Name", "Model Name", "Lot no", "Date", "Shift", "Total"])
+for month in ["Mar", "Apr", "May"]:
+  for part in ["1", "2"]:
+    file_name = f"Kha_ML26_{month}_{part}.xlsx"
+    file_path = os.path.join(PROJECT_ROOT, 'exported_files', file_name)
+    if os.path.exists(file_path):
+        df_existing = pd.read_excel(file_path)
+        df_existing.drop(columns=["Production Date"], inplace=True)
+        df_existing = (
+            df_existing.groupby(["Line Name", "Model Name", "Lot no"], as_index=False)
+                       .agg({"Total": "sum"})
         )
-        self.plot_widget.addItem(shadow_bars)
-
-        # --- 4. VẼ THANH CHÍNH ---
-        bar_color = QColor("#0026e6")
-        main_bars = pg.BarGraphItem(
-            x0=0,
-            y=y_positions,
-            width=downtimes,
-            height=0.45,
-            brush=pg.mkBrush(bar_color),
-            pen=pg.mkPen(color="#001cb3", width=0.8)
-        )
-        self.plot_widget.addItem(main_bars)
-
-        # --- 5. HIỂN THỊ TRỊ SỐ Ở ĐẦU THANH (Cỡ chữ siêu nhỏ) ---
-        max_val = max(downtimes) if downtimes else 1
-        offset = max_val * 0.03 # Khoảng cách nhỏ vừa phải
-
-        for y, val in zip(y_positions, downtimes):
-            text_item = pg.TextItem(text=str(val), color="black", anchor=(0, 0.5))
-            text_item.setFont(QFont("Arial", 7, QFont.Bold)) # Chữ cỡ 7 để không bị tràn
-            text_item.setPos(val + offset, y)
-            self.plot_widget.addItem(text_item)
-
-        # Chừa lề phải khoảng 15% để hiển thị con số mà không bị mất nét
-        self.plot_widget.setXRange(0, max_val * 1.15)
-        self.plot_widget.setYRange(-0.5, len(machines) - 0.5)
-
-        # Khóa tương tác kéo/zoom để biểu đồ tĩnh, sạch sẽ
-        self.plot_widget.setMenuEnabled(False)
-        self.plot_widget.setMouseEnabled(x=False, y=False)
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    demo = CompactHorizontalBarChart()
-    demo.show()
-    sys.exit(app.exec_())
+        df_temp = df_existing.copy()
+        df_temp["year"] = df_existing["Lot no"].str[0].astype(int) + 2020
+        df_temp["month"] = df_existing["Lot no"].str[1].astype(str)
+        df_temp["day"] = df_existing["Lot no"].str[2:4].astype(int)
+        df_temp["shift"] = df_existing["Lot no"].str[5].astype(str)
+        df_temp["month"] = df_temp["month"].replace({"X": "10", "Y": "11", "Z": "12"})
+        df_temp["Date"] = pd.to_datetime(df_temp[["year", "month", "day"]])
+        df_temp["Date"] = df_temp["Date"].dt.strftime("%Y-%m-%d")
+        df_temp.drop(columns=["year", "month", "day"], inplace=True)
+        df_temp["Shift"] = df_temp["Lot no"].str[4:6]
+        df_temp["Lot no"] = df_temp["Lot no"].str[0:4]
+        df_final = df_temp[["Line Name", "Model Name", "Lot no", "Date", "Shift", "Total"]]
+        df_final =df_final.groupby(["Line Name", "Model Name", "Lot no", "Date"], as_index=False).agg({"Total": "sum", "Shift": lambda x: ",".join(x.unique()) })
+        final_df = pd.concat([final_df, df_final], ignore_index=True)
+output_file_name = "Kha_ML26_grouped.xlsx"
+output_file_path = os.path.join(PROJECT_ROOT, 'exported_files', output_file_name)
+final_df.to_excel(output_file_path, index=False)

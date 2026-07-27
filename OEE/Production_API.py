@@ -41,11 +41,10 @@ class Production_API:
         return result
 
 if __name__ == "__main__":
-    params_dict = {"productionDate": ("2026-01-01", "2026-05-29")}
+    params_dict = {"productionDate": ("2026-05-01", "2026-05-31")}
     API_URL = "http://172.30.73.149:1810/ScaMonitor/GetInspectionOkNg_All?"
     production_api = Production_API(params_dict, API_URL)
     data = production_api.get_inspection_output()
-
     try:
         database = Database_process()
     except Exception as e:
@@ -73,21 +72,6 @@ if __name__ == "__main__":
         print(f"Error inserting data into database: {e}")
         sys.exit(1)
     params_list  = []
-    # current_model_flag = {  "A02": "SCFN3323XV-450-1R5A052H-T",
-    #                         "A03": "SCF29-300-1R8A018JV",
-    #                         "A04": "SC14-250-1R4A55UH",
-    #                         "A05": "SCF29-300-1R8A018JV",
-    #                         "A06": "Unknown",
-    #                         "A07": "SCF25XV-280-2R1A005JH",
-    #                         "A08": "SCF29XV-210-1R9A012JH-CG(SA)",
-    #                         "A09": "SCFN3021-300-1R2A051H",
-    #                         "A10": "SCF25-000-2R1B002JV-VT",
-    #                         "A11": "SCF14XV-1250-1R6A94UJH",
-    #                         "A12": "SCN46-320-2R2AJH-BW",
-    #                         "A13": "SCF29-300-1R8A018JV",
-    #                         "A14": "SCN3222-300-1R3A008H",
-    #                         "A15": "SCN3222-300-1R3A008H"
-    #                       } # cần lấy model của tháng trước
     
     SELECT_CURRENT_MODEL_SQL = ''' SELECT pl.line_name, po.model_name
                                             FROM `production_lines` as pl

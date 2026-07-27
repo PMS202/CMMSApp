@@ -529,12 +529,26 @@ QTabBar::tab:!selected {
 	margin-top: 1px;
 	margin-right: 1px;
 }
-QTextEdit {
+/* QTextEdit {
 	border-width: 1px;
 	border-style: solid;
 	border-color:rgb(102, 99, 99);
 	color:rgb(17,17,17);
 	selection-background-color:rgb(236,116,64);
+} */
+QTextEdit {
+    border: 1.5px solid #E2E8F0; /* Viền xám nhạt tinh tế */
+    border-radius: 8px;
+    background-color: #F8FAFC;  /* Nền xám xanh dịu mắt */
+    padding: 10px;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: #334155;
+}
+
+QTextEdit:focus {
+    border: 1.5px solid #3B82F6; /* Viền đổi sang xanh dương khi active */
+    background-color: #FFFFFF;  /* Nền chuyển sang trắng */
 }
 QTimeEdit {
 	color:rgb(81,72,65);
@@ -619,25 +633,22 @@ QToolBox::tab:selected {
 					border-radius: 5px;
 					background-color: rgb(151, 149, 149);
 }  
-#upcoming_frame {
-        border: 1px solid rgb(179, 179, 179);
-        border-radius: 20px;
-    }
-#near_due_frame, #frame_61,#frame_76, #frame_77,#frame_78,#frame_79,#frame_82, #frame_83, #frame_94,
+
+#upcoming_frame, #near_due_frame, #frame_61,#frame_76, #frame_77,#frame_78,#frame_79,#frame_82, #frame_83, #frame_94,
  #Detail_bytime_frame, #Detail_total_downtime_frame, #Detail_percent_frame, #Detail_card3_frame, #Detail_card4_frame, #Detail_left_frame, #Detail_right_frame, #Detail_bytime_frame, #Detail_keyinsights_frame,
- #Detail_action_frame
+ #Detail_action_frame, #frame_157
 {
         border: 1px solid rgb(179, 179, 179);
         border-radius: 20px;
     }
 #frame_125 ,#frame_126 ,#frame_127,#frame_128 ,#frame_129,#frame_131 ,#frame_132 ,#frame_133 ,#frame_134,
- #frame_137 ,#frame_138,#frame_139, #frame_140 {
+ #frame_137 ,#frame_138, #frame_140,#frame_149, #frame_150, #frame_182, #frame_183, #frame_184, #frame_185 {
         border: 1px solid rgb(179, 179, 179);
         border-radius: 10px;
     }
 
 #frame_125:hover ,#frame_126:hover ,#frame_127:hover,#frame_128:hover ,#frame_129:hover,#frame_131:hover ,#frame_132:hover 
-,#frame_133:hover ,#frame_134:hover, #frame_137:hover ,#frame_138:hover,#frame_139:hover, #frame_140:hover{
+,#frame_133:hover ,#frame_134:hover, #frame_137:hover ,#frame_138:hover, #frame_140:hover, #frame_149:hover, #frame_150:hover {
 	border: 3px solid rgba(84, 255, 172,0.5);
 	border-radius: 10px;
 }
@@ -646,7 +657,7 @@ QToolBox::tab:selected {
     background: #f8f9fa;
     border-right: 1px solid #888b8b;
 }
-#groupBox_2, #groupBox_3, #groupBox_4, #groupBox_5, #groupBox_6, #groupBox_7, #groupBox_8, #groupBox_9, #groupBox_10, #groupBox_11,
+#groupBox_2, #groupBox_3, #groupBox_4, #groupBox_5, #groupBox_6, #groupBox_7, #groupBox_8, #groupBox_9, #groupBox_10, #groupBox_11, #groupBox_12,
  #groupBox_86, #groupBox_90, #groupBox, #OEEsub_groupBox ,#OEEsub_groupBox_2, #OEEsub_groupBox_3, #OEEsub_groupBox_4, #OEEsub_groupBox_5, #OEEsub_groupBox_6,
  #OEE_OD_groupBox, #OEE_OD_groupBox_2, #OEE_OD_groupBox_3, #OEE_OD_groupBox_4 {
     border: 1px solid gray;
@@ -656,7 +667,7 @@ QToolBox::tab:selected {
 }
 
 #groupBox_2::title, #groupBox_3::title, #groupBox_4::title, #groupBox_5::title, #groupBox_6::title, #groupBox_7::title, 
-#groupBox_8::title, #groupBox_9::title, #groupBox_10::title, #groupBox_11::title, #groupBox_86::title, #groupBox_90::title , #groupBox::title,
+#groupBox_8::title, #groupBox_9::title, #groupBox_10::title, #groupBox_11::title, #groupBox_12::title, #groupBox_86::title, #groupBox_90::title , #groupBox::title,
 #OEEsub_groupBox::title, #OEEsub_groupBox_2::title, #OEEsub_groupBox_3::title, #OEEsub_groupBox_4::title, #OEEsub_groupBox_5::title, #OEEsub_groupBox_6::title,
 #OEE_OD_groupBox::title, #OEE_OD_groupBox_2::title, #OEE_OD_groupBox_3::title ,#OEE_OD_groupBox_4::title {
     subcontrol-origin: margin;
@@ -944,7 +955,8 @@ QToolBox::tab:selected {
         color: #2c3e50;
     }
 
-#label_64, #label_78, #label_80, #label_82, #label_84, #label_91, #label_94, #label_4, #label_5, #label_6, #label_63 , #label_90, #label_65 {
+#label_64, #label_78, #label_80, #label_82, #label_84, #label_91, #label_94, #label_4, #label_5, #label_6, #label_63 , #label_90, #label_65 , #label_88,
+#label_89, #label_90{
 		font-family: 'Segoe UI';
 		font-size: 16px;
 		font-weight: bold;
@@ -957,3 +969,4 @@ QToolBox::tab:selected {
 		font-weight: 600;
 		color: #445469;
 	}
+

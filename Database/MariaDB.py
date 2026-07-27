@@ -50,7 +50,7 @@ class Database_process():
                         return result.fetchall()
                     else:
                         session.commit()
-                        return result.rowcount
+                        return result
             except Exception as e:
                 session.rollback()
                 raise e
