@@ -1,18 +1,16 @@
 App bị crash do lỗi:
-'Ui_MainWindow' object has no attribute 'Order_btn'
+cannot access local variable 'sizePolicy16' where it is not associated with a value
 
 Chi tiết Traceback:
 Traceback (most recent call last):
-  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 11011, in <module>
+  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 12363, in <module>
     main()
-  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 10988, in main
+  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 12340, in main
     window = OEEAppWindow(login.login_info)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 74, in __init__
+  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 77, in __init__
     self.ui.setupUi(self)
-  File "c:\Users\2173452100291\Documents\CMMSApp\UI\MainWindown.py", line 5075, in setupUi
-    self.retranslateUi(MainWindow)
-  File "c:\Users\2173452100291\Documents\CMMSApp\UI\MainWindown.py", line 5176, in retranslateUi
-    self.Order_btn.setText(_translate("MainWindow", "Part order"))
-    ^^^^^^^^^^^^^^
-AttributeError: 'Ui_MainWindow' object has no attribute 'Order_btn'
+  File "c:\Users\2173452100291\Documents\CMMSApp\UI\MainWindown.py", line 5294, in setupUi
+    sizePolicy16.setHeightForWidth(self.SP_part_alert_frame.sizePolicy().hasHeightForWidth())
+    ^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'sizePolicy16' where it is not associated with a value

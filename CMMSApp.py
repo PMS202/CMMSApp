@@ -20,15 +20,16 @@ from UI.OEE_Edit_data import UI_OEE_Edit_Data
 from UI.OEE_other_data import UI_OEE_Other_Data
 from UI.Downtime_detail_report import UI_DT_detail_report
 from UI.OEE_mini_card import Ui_OEE_mini_card
-from KPI.KPI_widget import ArcGauge, PetalCard
+from KPI.KPI_widget import ArcGauge, PetalCard, Arc_Health_Gauge
 from Database.MariaDB import Database_process
-from Stock_control.stock_delegate import StockItemDelegate, ImageCache
+from Stock_control.stock_delegate import StockItemDelegate, ImageCache, StockAlertDelegate
 from Stock_control.image_loader import ImageLoaderRunnable
 from Maintenance.printer import Printer_process
 from Maintenance.scan_qrcode import Scan_record_process
 from Maintenance.attached_equipment import DynamicSuggestion
 from Downtimes.Excel_processing import Downtime_Excel_Processor
 from UI.Report_input import Ui_ReportInput
+from UI.Filter_frame import Ui_Filter_frame
 import pyqtgraph as pg
 import numpy as np
 import sys
@@ -53,6 +54,7 @@ from scipy.ndimage import gaussian_filter1d
 import calendar
 import subprocess
 import traceback
+import math
 
 STRICT_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -118,8 +120,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.ui.inyear_btn.clicked.connect(self.monitor_inyear_page)
         self.ui.monitor_next_btn.clicked.connect(self.next_monitor_page)
         self.ui.monitor_back_btn.clicked.connect(self.back_monitor_page)
-        self.ui.filter_stock_btn.clicked.connect(self.show_filter_stock)
-        self.ui.reset_filter_stock_btn.clicked.connect(self.reset_filter_stock)
         self.ui.Group_cbb_PF.currentIndexChanged.connect(self.add_item_line_PF)
         self.ui.profile_btn.clicked.connect(lambda _: self.ui.frame_60.show(
         ) if self.ui.frame_60.isHidden() else self.ui.frame_60.hide())
@@ -173,7 +173,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         pos_animation.setEasingCurve(QtCore.QEasingCurve.OutCubic)
         if is_expand:
             size_animation.setStartValue(QtCore.QSize(932, 545))
-            size_animation.setEndValue(QtCore.QSize(1500, 870))
+            size_animation.setEndValue(QtCore.QSize(1510, 870))
             size_animation2.setStartValue(QtCore.QSize(121, 551))
             size_animation2.setEndValue(QtCore.QSize(121, 850))
             size_animation3.setStartValue(QtCore.QSize(811, 551))
@@ -197,7 +197,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.animation_group.addAnimation(pos_animation)
             self.animation_group.start()
         else:
-            size_animation.setStartValue(QtCore.QSize(1500, 870))
+            size_animation.setStartValue(QtCore.QSize(1510, 870))
             size_animation.setEndValue(QtCore.QSize(932, 545))
             size_animation2.setStartValue(QtCore.QSize(121, 850))
             size_animation2.setEndValue(QtCore.QSize(121, 551))
@@ -420,6 +420,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.is_expanded = True
             self.expand_windown_animation(self.is_expanded)
         self.spinner.start()
+        QtCore.QTimer.singleShot(15000,self.spinner.stop)
         BG_COLOR = "#eef1f5"
         CARD_BG = "#ffffff"
         TEXT_DARK = "#1e2733"
@@ -477,7 +478,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 badge.setStyleSheet(
                     "background-color:#fdecea; color:#e2483d; font-size:12px; font-weight:600;"
                     "border-radius:11px; padding:4px 12px;")
-                info.addWidget(h_line(f"KPI: 100% / Actual: {percentage:.0f}%", RED, 14, True))
+                info.addWidget(h_line(f"KPI: 100% / Actual: {percentage:.2f}%", RED, 14, True))
                 card.set_shadow_color(RED)
             else:
                 badge = QtWidgets.QLabel("✔  Reached target")
@@ -526,7 +527,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             val_layout = QtWidgets.QHBoxLayout()
             val_layout.setSpacing(10)
 
-            lbl_value = QtWidgets.QLabel(f"{percentage:.0f}%")
+            lbl_value = QtWidgets.QLabel(f"{percentage:.2f}%" if percentage < 100 else "100%")
             lbl_value.setStyleSheet(f"""
                 color: {color_hex};
                 font-weight: 800;
@@ -586,13 +587,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             content_layout.setContentsMargins(0, 0, 10, 0)
             content_layout.setSpacing(20)
             gauge = ArcGauge(
-                value=oee_value*100, max_value=100, color=GREEN,
+                value=oee_value*100, max_value=100,target = 70 , color=GREEN,
                 ticks=[0, 25, 50, 75, 100],
                 start_angle=180, span_angle=-180, minor_ticks=40,
                 center_lines=[
                     {"text": "OEE:", "size": 12, "color": TEXT_GRAY},
                     {"text": f"{(oee_value*100):.2f}%", "size": 18, "color": TEXT_DARK, "bold": True},
-                     {"text": "KPI = 70%", "size": 12, "color": "#CC7D05", "bold": True},
+                     {"text": "KPI > 70%", "size": 12, "color": "#CC7D05", "bold": True},
                 ], ratio = 1.2
             )
             content_layout.addWidget(gauge, stretch=1)
@@ -619,12 +620,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             diff = ((mttr_value - 15) / 15) * 100
             if diff > 0:
                 color_code = RED
-                comment = f"▲ {diff:.1f}% vs target\n(KPI = 15m)"
+                comment = f"▲ {diff:.1f}% vs target\n(KPI < 15m)"
             else:
                 color_code = GREEN
-                comment = f"▼ {abs(diff):.1f}% vs target\n(KPI = 15m)"
+                comment = f"▼ {abs(diff):.1f}% vs target\n(KPI < 15m)"
             gauge = ArcGauge(
-                value=mttr_value, max_value=45, color=color_code,
+                value=mttr_value, max_value=45, target=15, color=color_code,
                 ticks=[0, 5, 10, 15, 20, 25, 30, 35, 40, 45],
                 start_angle=225, span_angle=-270, minor_ticks=54,
                 center_lines=[
@@ -647,13 +648,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             target_mtbf_time = self.change_time_format(time_value = 70, input_unit = "m", output_unit = True)
             if diff > 0:
                 color_code = GREEN
-                comment = f"▲ {diff:.1f}% vs target\n(KPI = {target_mtbf_time})"
+                comment = f"▲ {diff:.1f}% vs target\n(KPI > {target_mtbf_time})"
             else:
                 color_code = RED
-                comment = f"▼ {abs(diff):.1f}% vs target\n(KPI = {target_mtbf_time})"
+                comment = f"▼ {abs(diff):.1f}% vs target\n(KPI > {target_mtbf_time})"
             gauge = ArcGauge(
-                value=mtbf_value/60, max_value=24, color=color_code,
-                ticks=[0, 4, 8, 12, 16, 20, 24],
+                value=mtbf_value/60, max_value=6, target=70/60, color=color_code,
+                ticks=[0, 1, 2, 3, 4, 5, 6],
                 start_angle=225, span_angle=-270, minor_ticks=54,
                 center_lines=[
                     {"text": "MTBF", "size": 14, "color": TEXT_DARK, "bold": True},
@@ -710,11 +711,11 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             total_repair_time = float(kpi_dt_data[0][1]) if kpi_dt_data else 0
             count_records = int(kpi_dt_data[0][2]) if kpi_dt_data else 0
             planned_time = float(working_time[0][0]) if working_time else 0
-            # mttr_value = total_repair_time / count_records if kpi_dt_data and count_records > 0 else total_repair_time
-            mttr_value = 10.7667
+            mttr_value = total_repair_time / count_records if kpi_dt_data and count_records > 0 else total_repair_time
+            # mttr_value = 10.7667
             mttr_time = self.change_time_format(time_value = mttr_value, input_unit = "m", output_unit = True)
-            # mtbf_value = (planned_time - total_loss) / count_records if kpi_dt_data and count_records > 0 else planned_time - total_loss
-            mtbf_value = 149.1333
+            mtbf_value = (planned_time - total_loss) / count_records if kpi_dt_data and count_records > 0 else planned_time - total_loss
+            # mtbf_value = 149.1333
             mtbf_time = self.change_time_format(time_value = mtbf_value, input_unit = "m", output_unit = True)
             self.ui.KPI_monitoring_gridLayout.addWidget(build_maintenance_card(maintenance_percentage), 0, 0)
             self.ui.KPI_monitoring_gridLayout.addWidget(build_oee_card(oee_value=oee_avg, a_value=a_avg, p_value=p_avg, q_value=q_avg), 0, 1)
@@ -736,6 +737,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.center_badge.show()
             self.center_badge.raise_()
             QtCore.QTimer.singleShot(0, self._reposition_center_badge)
+            self.spinner.stop()
         try:
             if hasattr(self, 'KPI_dashboard_worker') and self.KPI_dashboard_worker.isRunning():
                 self.spinner.stop()
@@ -743,7 +745,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.KPI_dashboard_worker = WorkerThread(fetch_kpi_data)
             self.KPI_dashboard_worker.finished.connect(lambda res: on_kpi_data_fetched(res))
             self.KPI_dashboard_worker.start()
-            self.spinner.stop()
         except Exception as e:
             self.spinner.stop()
             QtWidgets.QMessageBox.critical(
@@ -800,7 +801,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
     def OEE_dashboard_page(self,Dashboard_init = False):
         self.ui.OEE_stacked_widget.setCurrentWidget(self.ui.OEE_Dashboard_page)
         self.style_button_with_shadow((self.ui.OEE_dashboard_btn, self.ui.OEE_data_btn))
-        self.ui.OEE_period_edit.setDate(QtCore.QDate(self.ui.today.year, self.ui.today.month-1, 1))
         if not hasattr(self, "OEE_chart_toogle_btn"):
             self.OEE_chart_toogle_btn = ToggleSwitch()
             self.ui.OEE_chart_toogle_widget.setLayout(QtWidgets.QHBoxLayout())
@@ -816,6 +816,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             year_exist = self.database_process.query(sql='''SELECT DISTINCT YEAR(production_date) as year
                                                             FROM `production_output`
                                                             ORDER BY year DESC;''')
+            month_exist = self.database_process.query(sql='''SELECT DISTINCT production_date
+                                                            FROM `production_output`
+                                                            ORDER BY production_date DESC LIMIT 1;''')
+            self.ui.OEE_period_edit.setDate(QtCore.QDate(self.ui.today.year, month_exist[0][0].month, 1))
             self.ui.OEE_year_edit.clear()
             self.ui.OEE_year_edit.addItems([str(year[0]) for year in year_exist])
             self.ui.OEE_year_edit.setCurrentText(str(self.ui.today.year))
@@ -923,15 +927,15 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             downtime_data = self.database_process.query(sql=f'''SELECT Line_Name, SUM(Total_Loss) AS total_loss, SUM(Repair_Time) AS total_repair_time, COUNT(*) AS total_records
                                                                     FROM `downtime_report` AS dr
                                                                     WHERE Downtime_Area = :area_name {filter_scripts_dt}
-                                                                    GROUP BY Line_Name;''', params={"area_name": area_name, "month": month, "year": year})
-            working_time = self.database_process.query(sql=f'''SELECT pl.line_name as Line_Name , 
+                                                                    GROUP BY Line_Name ;''', params={"area_name": area_name, "month": month, "year": year})
+            working_time = self.database_process.query(sql=f'''SELECT pl.line_name as Line_Name,
                                                                 SUM(lot.operation_hours)*60 - COALESCE(SUM(setup_time),0) - COALESCE(SUM(break_time),0) AS total_planed_time 
                                                                 FROM `line_operation_times` as lot
                                                                 JOIN downtime_areas_production_lines as dapl ON lot.line_id = dapl.line_id
                                                                 JOIN downtime_areas as da ON dapl.downtime_area_id = da.downtime_area_id
                                                                 JOIN production_lines as pl ON lot.line_id = pl.line_id
                                                                 WHERE da.downtime_area_name = :area_name {filter_scripts_wt}
-                                                                GROUP BY pl.line_name ;''', params={"area_name": area_name, "month": month, "year": year})
+                                                                GROUP BY pl.line_name;''', params={"area_name": area_name, "month": month, "year": year})
             return {"oee_data": oee_data, "oee_target": oee_target, "dt_line_target": mttr_mtbf_line_target, "dt_area_target": mttr_mtbf_area_target, "model_count": total_model_iatf_count[0][0] if total_model_iatf_count else 0, "downtime_data": downtime_data, "working_time": working_time}
         
         def on_data_fetched(data):
@@ -960,8 +964,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             for col in total_oee.columns:
                 if col not in ["area_name", "line_name", "model_name", "process"]:
                     total_oee[col] = total_oee[col].astype(float)
-            downtime_df = pd.DataFrame(downtime_data, columns=["line_name", "total_loss", "total_repair_time", "total_records"])
-            working_time_df = pd.DataFrame(working_time, columns=["line_name", "total_planed_time"])
+            downtime_df = pd.DataFrame(downtime_data, columns=["line_name" ,"total_loss", "total_repair_time", "total_records"])
+            working_time_df = pd.DataFrame(working_time, columns=["line_name","total_planed_time"])
             for col in downtime_df.columns:
                 if col not in ["line_name"]:
                     downtime_df[col] = downtime_df[col].astype(float)
@@ -983,12 +987,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             oee_target_df.fillna({"line_name": area_name}, inplace=True)
             for i in range(len(total_oee)):
                 line_name = total_oee.loc[i, "line_name"]
-                mttr_value = downtime_df.loc[(downtime_df["line_name"] == line_name), "total_repair_time"].values[0] / (downtime_df.loc[(downtime_df["line_name"] == line_name) , "total_records"].values[0] \
-                                if not downtime_df.empty and not downtime_df.loc[(downtime_df["line_name"] == line_name)].empty else 1)
+                _total_repair_time = downtime_df.loc[(downtime_df["line_name"] == line_name), "total_repair_time"].values[0] if line_name in downtime_df["line_name"].values else 0
+                _record_count = downtime_df.loc[(downtime_df["line_name"] == line_name) , "total_records"].values[0] if line_name in downtime_df["line_name"].values else 1
+                _total_planed_time = working_time_df.loc[(working_time_df["line_name"] == line_name) , "total_planed_time"].values[0] if line_name in working_time_df["line_name"].values else 0
+                _total_loss = downtime_df.loc[(downtime_df["line_name"] == line_name) , "total_loss"].values[0] if line_name in downtime_df["line_name"].values else 0
+                mttr_value = _total_repair_time / _record_count if _record_count > 0 else _total_repair_time
+                mtbf_value = (_total_planed_time - _total_loss) / _record_count if _record_count > 0 else _total_planed_time - _total_loss
                 mttr_target_value = dt_line_target_df.loc[dt_line_target_df["line_name"] == line_name, "mttr_target_value"].values[0] \
-                                if not dt_line_target_df.empty and not dt_line_target_df.loc[dt_line_target_df["line_name"] == line_name].empty else dt_area_target_df["mttr_target_value"]
-                mtbf_value =  ( working_time_df.loc[(working_time_df["line_name"] == line_name), "total_planed_time"].values[0] - downtime_df.loc[(downtime_df["line_name"] == line_name), "total_loss"].values[0]) /  \
-                                (downtime_df.loc[(downtime_df["line_name"] == line_name), "total_records"].values[0] if not downtime_df.empty and not downtime_df.loc[(downtime_df["line_name"] == line_name)].empty else 1)
+                                if not dt_line_target_df.empty and not dt_line_target_df.loc[dt_line_target_df["line_name"] == line_name].empty else dt_area_target_df["mttr_target_value"].values[0]
                 mtbf_target_value = dt_line_target_df.loc[dt_line_target_df["line_name"] == line_name, "mtbf_target_value"].values[0] \
                                 if not dt_line_target_df.empty and not dt_line_target_df.loc[dt_line_target_df["line_name"] == line_name].empty else dt_area_target_df["mtbf_target_value"]
                 total_oee.loc[i, "mttr_value"] = mttr_value
@@ -1279,7 +1285,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     layout = QtWidgets.QVBoxLayout(chart_widget)
                     layout.setContentsMargins(0, 0, 0, 0)
                     chart_widget.setLayout(layout)
-                chart = DonutChart(target_value=target,
+                chart = Progress_DonutChart(target_value=target,
                                    value=value*100, parameter_name=label)
                 layout.addWidget(chart)     
             draw_circle_chart(total_OEE, float(oee_targets[0][3]), "%OEE", self.ui.OEE_value_chart)     
@@ -2481,12 +2487,15 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                             JOIN `Months_Years` as my ON my.month_year_id = mp.month_year_id
                                                             WHERE my.year = :year;''', params={"year": dt.datetime.now().year})
             return (result, kpi_status[0][0] if kpi_status else 1)
-
-        self.worker = WorkerThread(job)
-        self.worker.finished.connect(
-            lambda result: self.on_home_page_data_ready(result[0], result[1]))
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.worker.start()
+        try:
+            if hasattr(self, 'worker') and self.worker.isRunning():
+                return
+            self.worker = WorkerThread(job)
+            self.worker.finished.connect(
+                lambda result: self.on_home_page_data_ready(result[0], result[1]))
+            self.worker.start()
+        except Exception as e:
+            print(f"Error starting worker thread: {e}")
 
     @QtCore.pyqtSlot()
     def on_home_page_data_ready(self, result, kpi):
@@ -2497,14 +2506,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.data_model.setHorizontalHeaderLabels(headers)
             self.add_data_to_model(
                 result, self.ui.Maintenance_table, self.data_model, callback=self.count_equipment)
-            self.ui.Maintenance_actual_num.setText(f"{kpi*100:.0f}%")
+            self.ui.Maintenance_actual_num.setText(f"{kpi*100:.2f}%" if kpi < 1.0 else "100%")
             if kpi < 1.0:
                 self.ui.Maintenance_actual_num.setStyleSheet("color: red; font-weight: bold;")
                 self.ui.Maintenance_status.setText(f'<span style="color: red; font-weight: bold; font-size: 14px;"> ● Missed target</span>')
             else:
                 self.ui.Maintenance_actual_num.setStyleSheet("color: green; font-weight: bold;")
                 self.ui.Maintenance_status.setText(f'<span style="color: green; font-weight: bold; font-size: 14px;"> ● Reached target</span>')
-            # self.ui.
             delegate = StatusColorDelegate(self.ui.Maintenance_table)
             self.ui.Maintenance_table.setItemDelegate(delegate)
             delegate_btn = ButtonDelegate(buttons=("Detail", "Update"))
@@ -2740,7 +2748,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     JOIN `Production_Lines` p ON p.line_id = mp.line_id
                     JOIN `Departments` d ON p.department_id = d.department_id
                     JOIN `Months_Years` as my ON mp.month_year_id = my.month_year_id
-                    WHERE week = :week AND d.department_id < 7 AND my.year = :year AND (mp.status IN ('Ontime','Overdue') OR mp.status IS NULL);''',
+                    WHERE week = :week AND d.department_id < 7 AND my.year = :year AND (mp.status IN ('Ontime','Overdue','Near due') OR mp.status IS NULL);''',
                 params={'week': self.week_num, 'year': self.year_num}
             )
             sql = '''SELECT p.line_name, COUNT(p.line_name) AS plan_count
@@ -2748,7 +2756,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     JOIN Production_Lines p ON p.line_id = mp.line_id
                     JOIN Departments d ON p.department_id = d.department_id
                     JOIN `Months_Years` as my ON mp.month_year_id = my.month_year_id
-                    WHERE d.department_name = :dept AND mp.week = :week AND my.year = :year AND (mp.status IN ('Ontime','Overdue') OR mp.status IS NULL)
+                    WHERE d.department_name = :dept AND mp.week = :week AND my.year = :year AND (mp.status IN ('Ontime','Overdue','Near due') OR mp.status IS NULL)
                     GROUP BY p.line_name;'''
             PE1 = self.database_process.query(
                 sql=sql, params={'week': self.week_num, 'dept': "PE1", 'year': self.year_num})
@@ -2762,12 +2770,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 sql=sql, params={'week': self.week_num, 'dept': "PE5", 'year': self.year_num})
             sql2 = '''SELECT 
                             COALESCE(
-                                COUNT(DISTINCT CASE WHEN mp.status IN ('Ontime','Overdue') OR mp.status IS NULL THEN mp.line_id END) 
-                                - COUNT(DISTINCT CASE WHEN mp.status IS NULL OR mp.status = 'Overdue' THEN mp.line_id END), 0
+                                COUNT(DISTINCT CASE WHEN mp.status IN ('Ontime','Overdue','Near due') OR mp.status IS NULL THEN mp.line_id END) 
+                                - COUNT(DISTINCT CASE WHEN mp.status IS NULL OR mp.status IN ('Overdue','Near due') THEN mp.line_id END), 0
                             ) AS complete,
                             COALESCE(
-                                COUNT(CASE WHEN mp.status IN ('Ontime','Overdue') OR mp.status IS NULL THEN mp.machine_id END) 
-                                - COUNT(CASE WHEN mp.status IS NULL OR mp.status = 'Overdue' THEN mp.machine_id END), 0
+                                COUNT(CASE WHEN mp.status IN ('Ontime','Overdue','Near due') OR mp.status IS NULL THEN mp.machine_id END) 
+                                - COUNT(CASE WHEN mp.status IS NULL OR mp.status IN ('Overdue','Near due') THEN mp.machine_id END), 0
                             ) AS complete_mc
                         FROM (
                             SELECT 'PE1' AS department_name
@@ -2787,11 +2795,19 @@ class OEEAppWindow(QtWidgets.QMainWindow):
 
             return {"Total": Total, "PE1": PE1, "PE2": PE2, "PE3": PE3,
                     "PE4": PE4, "PE5": PE5, "Result": result}
-        self.worker = WorkerThread(job)
-        self.worker.finished.connect(
-            lambda data: self.on_monitor_data_ready(data=data))
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.worker.start()
+        try:
+            if hasattr(self, 'worker') and self.worker.isRunning():
+                return
+            self.worker = WorkerThread(job)
+            self.worker.finished.connect(
+                lambda data: self.on_monitor_data_ready(data=data))
+            self.worker.start()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Error",
+                f"Failed to start worker thread: {e}"
+            )
 
     @QtCore.pyqtSlot()
     def on_monitor_data_ready(self, data):
@@ -2935,7 +2951,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                         ON p.department_id = d.department_id
                                                         JOIN `Months_Years` as my
                                                         ON mp.month_year_id = my.month_year_id
-                                                        WHERE my.month = :month AND my.year = :year AND d.department_id < 7 AND ( mp.status IN ('Ontime','Overdue') OR mp.status IS NULL);''',
+                                                        WHERE my.month = :month AND my.year = :year AND d.department_id < 7 AND ( mp.status IN ('Ontime','Overdue','Near due') OR mp.status IS NULL);''',
                                                 params={'month': self.month_num, 'year': self.year_num})
             sql = '''SELECT p.line_name, COUNT( p.line_name) AS plan_count
                                                     FROM Maintenance_plan mp 
@@ -2946,7 +2962,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                     JOIN `Months_Years` as my
                                                     ON mp.month_year_id = my.month_year_id
                                                     WHERE d.department_name = :dept
-                                                    AND my.month = :month AND my.year = :year AND (mp.status IN ('Ontime','Overdue') OR mp.status IS NULL)
+                                                    AND my.month = :month AND my.year = :year AND (mp.status IN ('Ontime','Overdue','Near due') OR mp.status IS NULL)
                                                     GROUP BY p.line_name; '''
             PE1 = self.database_process.query(
                 sql=sql, params={'dept': "PE1", 'month': self.month_num, 'year': self.year_num})
@@ -2960,12 +2976,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 sql=sql, params={'dept': "PE5", 'month': self.month_num, 'year': self.year_num})
             sql = '''SELECT 
                         COALESCE(
-                            COUNT(DISTINCT CASE WHEN mp.status IN ('Ontime','Overdue') OR mp.status IS NULL THEN mp.line_id END) 
-                            - COUNT(DISTINCT CASE WHEN mp.status IS NULL OR mp.status IN ('Overdue') THEN mp.line_id END), 0
+                            COUNT(DISTINCT CASE WHEN mp.status IN ('Ontime','Overdue','Near due') OR mp.status IS NULL THEN mp.line_id END) 
+                            - COUNT(DISTINCT CASE WHEN mp.status IS NULL OR mp.status IN ('Overdue','Near due') THEN mp.line_id END), 0
                         ) AS complete,
                         COALESCE(
-                            COUNT(CASE WHEN mp.status IN ('Ontime','Overdue') OR mp.status IS NULL THEN mp.machine_id END) 
-                            - COUNT(CASE WHEN mp.status IS NULL OR mp.status IN ('Overdue') THEN mp.machine_id END), 0
+                            COUNT(CASE WHEN mp.status IN ('Ontime','Overdue','Near due') OR mp.status IS NULL THEN mp.machine_id END) 
+                            - COUNT(CASE WHEN mp.status IS NULL OR mp.status IN ('Overdue','Near due') THEN mp.machine_id END), 0
                         ) AS complete_mc
                     FROM (
                         SELECT 'PE1' AS department_name
@@ -3052,15 +3068,15 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QHeaderView.Stretch)
         total_sql = '''SELECT
                         (SELECT "Total" ) as department_name,
-                        COUNT(CASE WHEN mp.status IN ('Ontime','Overdue') THEN 1 END) AS total,
-                        COUNT(CASE WHEN mp.status = "Overdue" THEN 1 END) AS overdue
+                        COUNT(CASE WHEN mp.status IN ('Ontime','Overdue','Near due') THEN 1 END) AS total,
+                        COUNT(CASE WHEN mp.status = 'Overdue' THEN 1 END) AS overdue
                         FROM Maintenance_plan mp
                         JOIN `Months_Years` as my ON my.month_year_id = mp.month_year_id
                         WHERE my.year = :year;'''
         dep_sql = '''SELECT
                 d.department_name,
-                COUNT(CASE WHEN mp.status IN ('Ontime','Overdue') THEN 1 END) AS total,
-                COUNT(CASE WHEN mp.status ='Overdue' THEN 1 END) AS overdue
+                COUNT(CASE WHEN mp.status IN ('Ontime','Overdue','Near due') THEN 1 END) AS total,
+                COUNT(CASE WHEN mp.status = 'Overdue' THEN 1 END) AS overdue
             FROM (
                 SELECT 'PE1' AS department_name
                 UNION ALL SELECT 'PE2'
@@ -3915,11 +3931,19 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             except Exception as e:
                 return {"result_pending": False, "error": e}
             return {"result_pending": result_pending, "pending_record_dep": pending_record_dep, "maintenance_frequency_dict": maintenance_frequency_dict}
-        self.worker = WorkerThread(job)
-        self.worker.finished.connect(
-            lambda data: self.on_update_data_ready(data=data))
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.worker.start()
+        try:
+            if hasattr(self, 'worker') and self.worker.isRunning():
+                return
+            self.worker = WorkerThread(job)
+            self.worker.finished.connect(
+                lambda data: self.on_update_data_ready(data=data))
+            self.worker.start()
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Error",
+                f"Failed to start worker thread: {e}"
+            )
 
     @QtCore.pyqtSlot()
     def on_update_data_ready(self, data):
@@ -4198,7 +4222,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             # success = 1
             if success > 0:
                 QtWidgets.QMessageBox.information(
-                    self, "Success", f"Đã cập nhật {success.rowcount} bản ghi.")
+                    self, "Success", f"Đã cập nhật {success} bản ghi.")
                 self.database_process.executemany(sql='''UPDATE `machines` AS m
                                                             JOIN `production_lines` AS p ON p.line_name = :line
                                                             SET m.machine_status = :status, m.line_id = p.line_id
@@ -4221,11 +4245,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             item = QtWidgets.QTableWidgetItem(
                 str(scan_result[self.list_of_keys[col]]))
             if (col == 0) and ((scan_result[self.list_of_keys[0]], scan_result[self.list_of_keys[3]], scan_result[self.list_of_keys[5]]) not in self.pending_record_dep.get(f"{scan_result[self.list_of_keys[2]]}", self.pending_record_dep["ELSE"])):
+                # pass
                 item.setBackground(QtGui.QColor(255, 80, 80))
                 self.wrong_scan.append(
                     str(scan_result[self.list_of_keys[col]]))
                 if scan_result[self.list_of_keys[-2]] != "" and scan_result[self.list_of_keys[-2]] != []:
-                    self.wrong_scan + scan_result[self.list_of_keys[-2]]
+                    self.wrong_scan += scan_result[self.list_of_keys[-2]]
             item.setFlags(item.flags() & ~QtCore.Qt.ItemIsEditable)
             item.setTextAlignment(QtCore.Qt.AlignCenter)
             self.ui.Main_scan_result_table.setItem(row, col, item)
@@ -4418,6 +4443,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.Year_plan_cbb_DP.addItems(
                 [str(y) for y in range(2025, 2035)])
             self.ui.Year_plan_cbb_DP.setCurrentText(str(self.year_num))
+            self.ui.Month_cbb_DP.clear()
+            self.ui.Month_cbb_DP.addItems( ["","January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])
+            self.ui.Status_cbb_DP.clear()
+            self.ui.Status_cbb_DP.addItems(["", "Ontime", "Near due", "Overdue"])
             headers = ["Machine\ncode", "Machine Name", "Group"]
             self.ui.Detail_plan_frze_table.setColumnCount(len(headers))
             self.ui.Detail_plan_frze_table.setHorizontalHeaderLabels(headers)
@@ -4426,9 +4455,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.Detail_plan_frze_table.setColumnWidth(2, 50)
             self.ui.Detail_plan_frze_table.setVerticalScrollBarPolicy(
                 QtCore.Qt.ScrollBarAlwaysOff)
-            hearders = ["Week\n(M1)", "Status\n(M1)", "Line\n(M1)", "Record\n(M1)", "Week\n(M2)", "Status\n(M2)", "Line\n(M2)", "Record\n(M2)", "Week\n(M3)", "Status\n(M3)", "Line\n(M3)", "Record\n(M3)", "Week\n(M4)", "Status\n(M4)", "Line\n(M4)", "Record\n(M4)",
-                        "Week\n(M5)", "Status\n(M5)", "Line\n(M5)", "Record\n(M5)", "Week\n(M6)", "Status\n(M6)", "Line\n(M6)", "Record\n(M6)", "Week\n(M7)", "Status\n(M7)", "Line\n(M7)", "Record\n(M7)", "Week\n(M8)", "Status\n(M8)", "Line\n(M8)", "Record\n(M8)",
-                        "Week\n(M9)", "Status\n(M9)", "Line\n(M9)", "Record\n(M9)", "Week\n(M10)", "Status\n(M10)", "Line\n(M10)", "Record\n(M10)", "Week\n(M11)", "Status\n(M11)", "Line\n(M11)", "Record\n(M11)", "Week\n(M12)", "Status\n(M12)", "Line\n(M12)", "Record\n(M12)"]
+            hearders = ["Week\n(Jan)", "Status\n(Jan)", "Line\n(Jan)", "Record\n(Jan)", "Week\n(Feb)", "Status\n(Feb)", "Line\n(Feb)", "Record\n(Feb)", "Week\n(Mar)", "Status\n(Mar)", "Line\n(Mar)", "Record\n(Mar)", "Week\n(Apr)", "Status\n(Apr)", "Line\n(Apr)", "Record\n(Apr)",
+                        "Week\n(May)", "Status\n(May)", "Line\n(May)", "Record\n(May)", "Week\n(Jun)", "Status\n(Jun)", "Line\n(Jun)", "Record\n(Jun)", "Week\n(Jul)", "Status\n(Jul)", "Line\n(Jul)", "Record\n(Jul)", "Week\n(Aug)", "Status\n(Aug)", "Line\n(Aug)", "Record\n(Aug)",
+                        "Week\n(Sep)", "Status\n(Sep)", "Line\n(Sep)", "Record\n(Sep)", "Week\n(Oct)", "Status\n(Oct)", "Line\n(Oct)", "Record\n(Oct)", "Week\n(Nov)", "Status\n(Nov)", "Line\n(Nov)", "Record\n(Nov)", "Week\n(Dec)", "Status\n(Dec)", "Line\n(Dec)", "Record\n(Dec)"]
             self.ui.Detail_plan_table.setColumnCount(len(hearders))
             self.ui.Detail_plan_table.setHorizontalHeaderLabels(hearders)
             self.ui.Detail_plan_table.verticalHeader().setVisible(False)
@@ -4507,7 +4536,34 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             range(43, 47): (54, 69, 79, 50),
             range(47, 51): (128, 0, 32, 50),
         }
-
+        order_by_dict = {
+            "January": ["line_q1","1"],
+            "February": ["line_q2","2"],
+            "March": ["line_q3","3"],
+            "April": ["line_q4","4"],
+            "May": ["line_q5","5"],
+            "June": ["line_q6","6"],
+            "July": ["line_q7","7"],
+            "August": ["line_q8","8"],
+            "September": ["line_q9","9"],
+            "October": ["line_q10","10"],
+            "November": ["line_q11","11"],
+            "December": ["line_q12","12"]
+        }
+        week_column_map = {
+                            1: 0,
+                            2: 4,
+                            3: 8,
+                            4: 12,
+                            5: 16,
+                            6: 20,
+                            7: 24,
+                            8: 28,
+                            9: 32,
+                            10: 36,
+                            11: 40,
+                            12: 44
+                        }
         def get_color_for_column(col):
             for r, color in column_colors.items():
                 if col in r:
@@ -4517,6 +4573,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.Detail_plan_table.itemChanged.disconnect()
         except:
             pass
+        sort_by = ""
         script = "my.year = :year AND d.department_name = :dep "
         params = {'dep': self.ui.Group_cbb_DP.currentText(
         ), 'year': self.ui.Year_plan_cbb_DP.currentText()}
@@ -4525,12 +4582,21 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             params['line'] = self.ui.Line_cbb_DP.currentText()
         if self.ui.Code_lnedit_DP.text() != "":
             script += f" AND m.machine_code LIKE '%{self.ui.Code_lnedit_DP.text()}%'"
+        if self.ui.Status_cbb_DP.currentText() != " " and self.ui.Status_cbb_DP.currentText() != "":
+            sort_by = f" WHERE status_q{order_by_dict[self.ui.Month_cbb_DP.currentText()][1]} = :status"
+            params['month'] = order_by_dict[self.ui.Month_cbb_DP.currentText()][1]
+            params['status'] = self.ui.Status_cbb_DP.currentText()
+        if self.ui.Month_cbb_DP.currentText() != " " and self.ui.Month_cbb_DP.currentText() != "":
+            order_by = order_by_dict[self.ui.Month_cbb_DP.currentText()][0]
+        else:
+            order_by = "line_q1"
         try:
             result = self.database_process.query(sql=f''' 
+                                        WITH src AS (
                                         SELECT
-                                        m.machine_code,
-                                        m.machine_name,
-                                        d.department_name,
+                                        m.machine_code AS machine_code,
+                                        m.machine_name AS machine_name,
+                                        d.department_name AS department_name,
                                         MAX(CASE WHEN my.month = 1 AND mp.quarter = 1 THEN mp.week END) AS week_q1,
                                         MAX(CASE WHEN my.month = 1 AND mp.quarter = 1 THEN status END) AS status_q1,
                                         MAX(CASE WHEN my.month = 1 AND mp.quarter = 1 THEN p.line_name END) AS line_q1,
@@ -4594,7 +4660,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                         GROUP BY    m.machine_code,
                                                     m.machine_name,
                                                     d.department_name
-                                        ORDER BY week_q1 ASC;''', params=params)
+                                        ORDER BY {order_by} ASC) 
+                                        SELECT * FROM src
+                                        {sort_by}
+                                        ;''', params=params).fetchall()
             self.ui.Detail_plan_table.setRowCount(len(result))
             self.ui.Detail_plan_frze_table.setRowCount(len(result))
             for row in range(len(result)):
@@ -4618,6 +4687,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                         elif result[row][col] == "Ontime":
                             item.setForeground(
                                 QtGui.QBrush(QtGui.QColor(0, 128, 0)))
+                        elif result[row][col] == "Near due":
+                            item.setForeground(
+                                QtGui.QBrush(QtGui.QColor(220, 142, 0)))
                         elif str(result[row][col]).lower().endswith(".pdf"):
                             btn = QtWidgets.QPushButton("")
                             icon = QtGui.QIcon()
@@ -4649,6 +4721,19 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                               QtCore.Qt.ItemIsEditable)
                             continue
                         self.ui.Detail_plan_table.setItem(row, col - 3, item)
+            if sort_by or order_by != "line_q1":
+                month = int(order_by_dict[self.ui.Month_cbb_DP.currentText()][1]) + 1
+                target_col = week_column_map[month]
+
+                self.ui.Detail_plan_table.scrollToItem(
+                    self.ui.Detail_plan_table.item(0, target_col),
+                    QtWidgets.QAbstractItemView.PositionAtCenter
+                )
+            else:
+                self.ui.Detail_plan_table.scrollToItem(
+                    self.ui.Detail_plan_table.item(0, 0),
+                    QtWidgets.QAbstractItemView.PositionAtCenter
+                )
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to load data: {e}")
@@ -4683,8 +4768,11 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 try:
                     code = self.ui.Detail_plan_frze_table.item(r, 0).text()
                 except:
-                    code = self.ui.Detail_plan_frze_table.cellWidget(
-                        r, 0).text()
+                    if self.ui.Detail_plan_frze_table.cellWidget(r, 0):
+                        code = self.ui.Detail_plan_frze_table.cellWidget(
+                            r, 0).text()
+                    else:
+                        continue
                 for col_offset in range(0, 12):
                     if not self.ui.Detail_plan_table.item(r, 0+4*col_offset):
                         continue
@@ -4725,7 +4813,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                 ON mp.machine_id = m.machine_id
                                                                 JOIN `Months_Years` AS my
                                                                 ON mp.month_year_id = my.month_year_id
-                                                                WHERE m.machine_code = :code AND my.month = :del_month AND my.year = :year; ''', params_list=delete_month).rowcount
+                                                                WHERE m.machine_code = :code AND my.month = :del_month AND my.year = :year; ''', params_list=delete_month)
                 check_sql = '''
                             SELECT 1
                             FROM `Maintenance_plan` AS mp
@@ -4771,7 +4859,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                     ON p.line_name = :line
                                                                     JOIN `Months_Years` as my
                                                                     ON my.month = :new_month AND my.year = :year
-                                                                    WHERE m.machine_code = :code; ''', params_list=insert_list).rowcount
+                                                                    WHERE m.machine_code = :code; ''', params_list=insert_list)
                 for data in insert_list:
                     self.database_process.query(sql='''UPDATE machines
                                                         SET machine_status = 'GOOD'
@@ -4966,61 +5054,128 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         if not self.is_expanded:
             self.is_expanded = True
             self.expand_windown_animation(self.is_expanded)
-        self.safe_connect(self.ui.update_inventory_btn.clicked,
-                          lambda _: self.run_inventory_update())
         self.ui.main_stacked.setCurrentWidget(self.ui.Stock_control_page)
         self.set_stylesheet_change_page((self.ui.Stock_btn, self.ui.OEE_btn, self.ui.Home_btn,
                                         self.ui.Maintenance_btn, 
                                         self.ui.KPI_btn,
                                         self.ui.Downtime_btn))
-        try:
-            if hasattr(self, 'stock_model'):
-                return
-            if self.ui.group_stock_cbb.count() == 0:
-                self.ui.group_stock_cbb.addItem("")
-                for group in self.group:
-                    self.ui.group_stock_cbb.addItem(group[0])
-            else:
-                return
+        self.ui.Stock_control_stacked_widget.setCurrentWidget(self.ui.Stock_detail_page)
+        self.Stock_detail_page()
+        self.stock_filter = Filter_Frame(filter_using=["code", "name", "group","status","button"], apply_filter_callback = self.apply_filter_stock, suggestion_callback = self.filter_suggestion_stock)
+        self.stock_filter.ui.label_2.setText("Area")
+        self.stock_filter.setHidden(True)
+        self.safe_connect(self.ui.Stock_detail_btn.clicked, lambda: self.Stock_detail_page(view_type="detail"))
+        self.safe_connect(self.ui.Stock_dashboard_btn.clicked, self.Stock_dashboard_page)
+        self.safe_connect(self.ui.Stock_master_list_btn.clicked, lambda: self.Stock_detail_page(view_type="master"))
+        self.safe_connect(self.ui.Stock_method_btn.clicked, lambda: self.Stock_method_page())
+        return
+
+    @QtCore.pyqtSlot()
+    def Stock_detail_page(self, view_type="detail"):
+        self.ui.Stock_control_stacked_widget.setCurrentWidget(self.ui.Stock_detail_page)
+        if view_type == "detail":
+            self.style_button_with_shadow((self.ui.Stock_detail_btn, self.ui.Stock_dashboard_btn, self.ui.Stock_master_list_btn, self.ui.Stock_method_btn))
+        elif view_type == "master":
+            self.style_button_with_shadow((self.ui.Stock_master_list_btn, self.ui.Stock_detail_btn, self.ui.Stock_dashboard_btn, self.ui.Stock_method_btn))
+        self.spinner.start()
+        def fetch_data():
             url = "https://open.er-api.com/v6/latest/USD"
             response = requests.get(url)
             self.exchange_rates = response.json()["rates"]
-            header = ["Spare part", "Safety\nstock", "Current\nstock", "Stock up\nreminder",
-                      "Unit\nprice", "Total\ncost", "Lead\ntime", "Life\ntime", "Last\nrequest", "Group", "Add PO"]
-            self.stock_model = QtGui.QStandardItemModel(0, len(header))
-            self.stock_model.setHorizontalHeaderLabels(header)
-            self.ui.stock_table.setModel(self.stock_model)
-            result = self.database_process.query('''SELECT * FROM `Spare_part_View`
-                                                    ORDER BY stockup DESC;''')
-            self.inventory_update_date = self.database_process.query(
+            if view_type == "detail":
+                columns = ["part_code", "part_name", "area", "unit_price", "currency", "po_unit", "lead_time", "priority_level", "safety_stock", "current_stock",
+                                                                "min_stock", "max_stock", "stock_status", "outstanding_orders", "image_link"]
+                script_select_column = '''spv.part_code, spv.part_name, spv.area, spv.unit_price, spv.currency, spv.po_unit, spv.lead_time, spv.priority_level, spv.safety_stock, spv.current_stock,
+                                                             spv.min_stock, spv.max_stock, spv.stock_status, spv.outstanding_orders, spv.image_link'''
+                header = ["Spare part", "Area", "Unit\nprice", "Unit", "Lead\ntime", "Part\ntype","Safety\nstock", "Current\nstock", 
+                        "Min\nstock", "Max\nstock", "Stock\nstatus", "Outstanding\norders" ]
+            elif view_type == "master":
+                columns = ["part_code", "part_name", "area", "unit_price", "currency", "po_unit", "vendor_name", "lead_time", "downtime_impact", "alternative", "total_score", "priority_level",
+                           "daily_usage", "order_cycle", "safety_stock", "current_stock", "min_stock", "max_stock", "stock_status", "outstanding_orders", "image_link"]
+                script_select_column = '''spv.part_code, spv.part_name, spv.area, spv.unit_price, spv.currency, spv.po_unit, spv.vendor_name, spv.lead_time, spv.downtime_impact, spv.alternative, spv.total_score, spv.priority_level, 
+                                        spv.daily_usage, spv.order_cycle, spv.safety_stock, spv.current_stock, spv.min_stock, spv.max_stock, spv.stock_status, spv.outstanding_orders, spv.image_link'''
+                header = ["Spare part", "Area", "Unit\nprice", "Unit", "Vendor", "Lead\ntime", "Downtime\nimpact", "Alternative", "Score", "Part\ntype", "Daily\nusage", "Order\ncycle", "Safety\nstock", "Current\nstock", 
+                       "Min\nstock", "Max\nstock", "Stock\nstatus" , "Outstanding\norders"]
+            result = self.database_process.query(f'''SELECT {script_select_column}
+                                                    FROM `spare_part_report_view` as spv
+                                                    ORDER BY spv.stock_status DESC;''')
+            spare_part_detail_df = pd.DataFrame(result, columns=columns)
+
+            spare_part_detail_df["unit_price"] = spare_part_detail_df.apply(
+                lambda row: round(row["unit_price"] / self.exchange_rates.get(row["currency"], 1), 2), axis=1)
+            spare_part_detail_df.drop(columns=["currency"], inplace=True)
+            inventory_update_date = self.database_process.query(
                 '''SELECT MAX(update_at) FROM `inventory`;''')[0][0]
-            self.ui.inventory_update_date.setText(
-                str(self.inventory_update_date))
-            self.image_files = {
-                item[0]: item[-1]
-                for item in result
-                if item[-1] is not None
-            }
+            return {"spare_part_detail_df": spare_part_detail_df, "inventory_update_date": inventory_update_date , "header": header, "script_select_column": script_select_column, "columns": columns}
+        
+        def on_data_fetched(data):
+            self.inventory_update_date = data["inventory_update_date"]
+            spare_part_detail_df = data["spare_part_detail_df"]
+            header_list = data["header"]
+            columns = data["columns"]
+            script_select_column = data["script_select_column"]
+            self.stock_model = QtGui.QStandardItemModel(0, len(header_list))
+            self.stock_model.setHorizontalHeaderLabels(header_list)
+            self.ui.stock_table.setModel(self.stock_model)
+            self.ui.inventory_update_date.setText(str(self.inventory_update_date))
+            self.image_files = spare_part_detail_df.set_index("part_code")["image_link"].to_dict()
             ImageCache.init(self.ui.stock_table)
             delegate = StockItemDelegate(buttons=("+",))
             self.safe_connect(delegate.clicked, self.on_button_clicked_stock)
             self.ui.stock_table.setItemDelegate(delegate)
-            self.add_data_to_stock_model(result)
+            self.add_data_to_stock_model(spare_part_detail_df, view_type=view_type)
             self.ui.stock_table.setUpdatesEnabled(True)
             self.ui.stock_table.setMouseTracking(True)
-            self.ui.stock_table.viewport().update()
-            self.ui.stock_table.viewport().setMouseTracking(True)
-            header = self.ui.stock_table.horizontalHeader()
             self.ui.stock_table.setColumnWidth(0, 600)
-            for col in range(1, 11):
-                header.setSectionResizeMode(col, QtWidgets.QHeaderView.Stretch)
+            header = self.ui.stock_table.horizontalHeader()
+            header.setStretchLastSection(False)
+            if view_type == "detail":
+                self.ui.stock_table.sortByColumn(11, QtCore.Qt.DescendingOrder)
+                for col in range(1,len(header_list)):
+                    if col == 10 or col == 11:
+                        self.ui.stock_table.setColumnWidth(col, 80)
+                    else:
+                        header.setSectionResizeMode(col, QtWidgets.QHeaderView.Stretch)
+            else:
+                self.ui.stock_table.sortByColumn(18, QtCore.Qt.DescendingOrder)
+                header.setStretchLastSection(False)
+                for col in range(1,len(header_list)):
+                    header.setSectionResizeMode(col,QtWidgets.QHeaderView.Interactive)
+                    if col == 4:
+                        self.ui.stock_table.setColumnWidth(col, 160)
+                    else:
+                        self.ui.stock_table.setColumnWidth(col,80)
             self.ui.stock_table.horizontalHeader().setStyleSheet(
                 "QHeaderView::section { qproperty-alignment: AlignCenter; }")
             self.ui.stock_table.setSortingEnabled(True)
             self.ui.stock_table.setAlternatingRowColors(True)
+            self.ui.stock_table.viewport().update()
+            self.ui.stock_table.viewport().setMouseTracking(True)
+            if self.stock_filter.ui.group_cbb.count() == 0:
+                area = spare_part_detail_df["area"].dropna().unique().tolist()
+                area.sort()
+                status = spare_part_detail_df["stock_status"].dropna().unique().tolist()
+                status.sort()
+                self.stock_filter.ui.group_cbb.clear()
+                self.stock_filter.ui.group_cbb.addItems(["All"] + area)
+                self.stock_filter.ui.status_cbb.clear()
+                self.stock_filter.ui.status_cbb.addItems(["All"] + status)
+            self.spinner.stop()
+            self.safe_connect(self.ui.filter_stock_btn.clicked, lambda: self.show_filter_stock(view_type = view_type, columns = columns, script_select_column = script_select_column))
+            self.safe_connect(self.ui.reset_filter_stock_btn.clicked, self.reset_filter_stock)
+            self.safe_connect(self.ui.update_inventory_btn.clicked, self.run_inventory_update)
+        try:
+            if hasattr(self,"worker") and self.worker.isRunning():
+                self.spinner.stop()
+                return
+            self.worker = WorkerThread(fetch_data)
+            self.worker.finished.connect(
+                lambda result: on_data_fetched(result))
+            self.worker.start()
         except Exception as e:
+            self.spinner.stop()
             QtWidgets.QMessageBox.critical(
-                self, "Error", f"Failed to load data: {e}")
+                self, "Error", f"Failed to load stock data: {e}")
 
     @QtCore.pyqtSlot()
     def on_button_clicked_stock(self):
@@ -5030,39 +5185,40 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self, "Info", "Function to add PO is still under development.")
 
     @QtCore.pyqtSlot()
-    def show_filter_stock(self):
-        self.ui.filter_stock_frame.show()
-        self.safe_connect(self.ui.apply_stock_btn.clicked,
-                          self.filter_process_stock)
-        self.safe_connect(self.ui.cancel_stock_btn.clicked,
-                          self.hide_filter_stock)
-        self.safe_connect(self.ui.code_stock_lnedit.textChanged,
-                          lambda text: self.filter_suggestion_stock(text, "code"))
-        self.safe_connect(self.ui.name_stock_lnedit.textChanged,
-                          lambda text: self.filter_suggestion_stock(text, "name"))
+    def show_filter_stock(self, view_type = None, columns = None, script_select_column = None ):
+        if self.stock_filter.isHidden():
+            pos = self.ui.filter_stock_btn.mapToGlobal(
+                QtCore.QPoint(0, self.ui.filter_stock_btn.height())
+            )
+            self.stock_filter.move(pos)
+            self.stock_filter.set_filter_parameters(view_type=view_type, columns=columns, script_select_column=script_select_column)
+            self.stock_filter.show()
+            self.stock_filter.raise_()
+        else:
+            self.stock_filter.hide()
 
     @QtCore.pyqtSlot()
     def hide_filter_stock(self):
-        self.ui.filter_stock_frame.hide()
+        self.stock_filter.hide()
 
     @QtCore.pyqtSlot()
     def filter_suggestion_stock(self, text, fill=""):
         if fill == "code":
             if len(text) < 3:
                 return
-            SCRIPT = '''SELECT part_code FROM spare_part_view WHERE part_code LIKE :text LIMIT 5;'''
-            target = self.ui.code_stock_lnedit
+            SCRIPT = f'''SELECT part_code FROM spare_part_report_view WHERE part_code LIKE :text LIMIT 10;'''
+            target = self.stock_filter.ui.code_lnedit
         else:
             if len(text) < 3:
                 return
-            SCRIPT = '''SELECT part_name FROM spare_part_view WHERE part_name LIKE :text LIMIT 5;'''
-            target = self.ui.name_stock_lnedit
+            SCRIPT = f'''SELECT part_name FROM spare_part_report_view WHERE part_name LIKE :text LIMIT 10;'''
+            target = self.stock_filter.ui.name_lnedit
         suggestions = []
-        part_code = []
+        result = []
         try:
-            part_code = self.database_process.query(
+            result = self.database_process.query(
                 SCRIPT, params={"text": f"%{text}%"})
-            suggestions = [str(name[0]) for name in part_code]
+            suggestions = [str(name[0]) for name in result]
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to fetch machine names: {e}")
@@ -5072,90 +5228,125 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         target.setCompleter(completer)
         completer.complete()
 
-    @QtCore.pyqtSlot()
-    def filter_process_stock(self):
+    def apply_filter_stock(self, filter_values, view_type="detail", columns=None, script_select_column=None):
         try:
             query = []
-            if self.ui.code_stock_lnedit.text() != "":
+            if filter_values.get("code", "") != "":
                 query.append(
-                    f'part_code = "{self.ui.code_stock_lnedit.text()}"')
-            if self.ui.name_stock_lnedit.text() != "":
+                    f'part_code LIKE "%{filter_values.get("code")}%"')
+            if filter_values.get("name", "") != "":
                 query.append(
-                    f'part_name = "{self.ui.name_stock_lnedit.text()}"')
-            if self.ui.group_stock_cbb.currentText() != "":
+                    f'part_name LIKE "%{filter_values.get("name")}%"')
+            if filter_values.get("group", "") not in ["", "All"]:
                 query.append(
-                    f'department_name = "{self.ui.group_stock_cbb.currentText()}"')
+                    f'area = "{filter_values.get("group")}"')
+            if filter_values.get("status", "") not in ["", "All"]:
+                query.append(
+                    f'stock_status = "{filter_values.get("status")} "')
             query = " AND ".join(query)
             if query == "":
-                result = self.database_process.query(sql='''SELECT * FROM `spare_part_view`
-                                                            ORDER BY stockup DESC;''')
+                result = self.database_process.query(sql=f'''SELECT {script_select_column}
+                                                              FROM `spare_part_report_view` as spv
+                                                            ORDER BY stock_status DESC;''')
+            else:
+                final_query = f'''  SELECT {script_select_column}
+                                FROM `spare_part_report_view` as spv
+                                WHERE {query}  ORDER BY stock_status DESC;'''
+                result = self.database_process.query(sql=final_query)
+            spare_part_detail_df = pd.DataFrame(result, columns=columns)
 
-                self.add_data_to_stock_model(result)
-                self.hide_filter_stock()
-                return
-            final_query = f'''  SELECT *
-                                FROM `spare_part_view`
-                                WHERE {query}  ORDER BY stockup DESC;'''
-            result = self.database_process.query(sql=final_query)
+            spare_part_detail_df["unit_price"] = spare_part_detail_df.apply(
+                    lambda row: round(row["unit_price"] / self.exchange_rates.get(row["currency"], 1), 2), axis=1)
+            spare_part_detail_df.drop(columns=["currency"], inplace=True)
+            self.add_data_to_stock_model(spare_part_detail_df, view_type=view_type)
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to filter data: {e}")
             return
-        self.add_data_to_stock_model(result)
-        self.hide_filter_stock()
 
     @QtCore.pyqtSlot()
     def reset_filter_stock(self):
-        self.ui.code_stock_lnedit.clear()
-        self.ui.name_stock_lnedit.clear()
-        self.ui.group_stock_cbb.setCurrentIndex(0)
-        self.filter_process_stock()
+        self.stock_filter.ui.code_lnedit.clear()
+        self.stock_filter.ui.name_lnedit.clear()
+        self.stock_filter.ui.group_cbb.setCurrentIndex(0)
+        self.stock_filter.ui.status_cbb.setCurrentIndex(0)
+        self.stock_filter.apply_filter()
+        # self.filter_process_stock()
 
-    def make_item(self, text, align=QtCore.Qt.AlignCenter):
-        value = round(text, 0) if isinstance(
-            text, float) and text == 0 else text
-        item = QtGui.QStandardItem(str(value))
-        item.setTextAlignment(align)
-        return item
 
-    def add_data_to_stock_model(self, result):
+    def add_data_to_stock_model(self, df, view_type="detail"):
         self.stock_model.removeRows(0, self.stock_model.rowCount())
         cost = 0
         value = 0
         code = 0
-        for row in range(len(result)):
-            image_path = self.image_files.get(result[row][0], None)
+        def make_item( text, align=QtCore.Qt.AlignCenter, round_up_mode = True, digit=2):
+            if text is None or text is pd.NA or text == "":
+                value = "N/A"
+            elif isinstance(text, (int, float)) and pd.isna(text):
+                value = "N/A"
+            elif isinstance(text, (int, float)):
+                if round_up_mode:
+                    value = math.ceil(text)
+                else:
+                    value = round(text, digit) if text != 0 else round(text, 0)
+            else:
+                value = text
+            item = QtGui.QStandardItem(str(value))
+            item.setTextAlignment(align)
+            return item
+        for _, row in df.iterrows():
+            image_path = self.image_files.get(row["part_code"], None)
             data = {"image": image_path,
-                    "name": f"{result[row][1]}", "code": f"{result[row][0]}"}
+                    "name": f"{row['part_name']}", "code": f"{row['part_code']}"}
             spare_part = QtGui.QStandardItem()
             spare_part.setData(data, QtCore.Qt.UserRole)
-            if (float(result[row][4]) > 0):
-                code += 1
-            value += float(result[row][4])
-            cost += float(result[row][6]) / \
-                float(self.exchange_rates[result[row][11]])
-            row_items = [
-                spare_part,
-                self.make_item(float(result[row][2])),  # safety stock
-                self.make_item(float(result[row][3])),  # current stock
-                self.make_item(float(result[row][4])),  # stock up
-                self.make_item(round(float(
-                    # unit cost
-                    result[row][5]) / float(self.exchange_rates[result[row][11]]), 2)),
-                self.make_item(round(float(
-                    # total cost
-                    result[row][6]) / float(self.exchange_rates[result[row][11]]), 2)),
-                self.make_item(result[row][7]),  # lead time
-                self.make_item(result[row][8]),  # life time
-                self.make_item(result[row][9]),  # last request
-                self.make_item(result[row][10])  # department name
-            ]
+            spare_part.setText(f"{row['part_name']}")
+            if view_type == "detail":
+                row_items = [
+                    spare_part,
+                    make_item(text = row["area"]),
+                    make_item(text = row["unit_price"], round_up_mode = False, digit=2),
+                    make_item(text = row["po_unit"]),
+                    make_item(text = row["lead_time"], round_up_mode = False, digit=0),
+                    make_item(text = row["priority_level"]),
+                    make_item(text = row["safety_stock"], round_up_mode = False, digit=4),
+                    make_item(text = row["current_stock"], round_up_mode = False, digit=1),
+                    make_item(text = row["min_stock"], round_up_mode = True, digit=1),
+                    make_item(text = row["max_stock"], round_up_mode = True, digit=1),
+                    make_item(text = row["stock_status"]),
+                    make_item(text = row["outstanding_orders"], round_up_mode = False, digit=1)
+                ]
+            else:
+                row_items = [
+                    spare_part,
+                    make_item(text = row["area"]),
+                    make_item(text = row["unit_price"], round_up_mode = False, digit=2),
+                    make_item(text = row["po_unit"]),
+                    make_item(text = row["vendor_name"]),
+                    make_item(text = row["lead_time"], round_up_mode = False, digit=0),
+                    make_item(text = row["downtime_impact"]),
+                    make_item(text = row["alternative"]),
+                    make_item(text = row["total_score"], round_up_mode = False, digit=0),
+                    make_item(text = row["priority_level"]),
+                    make_item(text = row["daily_usage"], round_up_mode = False, digit=4),
+                    make_item(text = row["order_cycle"], round_up_mode = False, digit=0),
+                    make_item(text = row["safety_stock"], round_up_mode = False, digit=4),
+                    make_item(text = row["current_stock"], round_up_mode = False, digit=1),
+                    make_item(text = row["min_stock"], round_up_mode = True, digit=1),
+                    make_item(text = row["max_stock"], round_up_mode = True, digit=1),
+                    make_item(text = row["stock_status"]),
+                    make_item(text = row["outstanding_orders"], round_up_mode = False, digit=1)
+                ]
+                              
             self.stock_model.appendRow(row_items)
-        self.ui.total_part_num.setText(f"{len(result)}")
-        self.ui.code_need_order_num.setText(f"{int(code)}")
-        self.ui.quantity_order_num.setText(f"{int(value)}")
-        self.ui.total_cost_num.setText(f"${round(cost, 2)}")
+            tooltip_image = image_path
+            if tooltip_image:
+                spare_part.setToolTip(f'<img src="{image_path}" width="500" height="500">')
         self.ui.stock_table.resizeRowsToContents()
+        self.ui.total_part_num.setText(f"{df.shape[0]}")
+        self.ui.urgent_status_part_num.setText(f"{int(df[df['stock_status'] == 'Urgent'].shape[0])}")
+        self.ui.below_min_status_part_num.setText(f"{int(df[df['stock_status'] == 'Below Min Stock'].shape[0])}")
+        self.ui.overstock_status_part_num.setText(f"{int(df[df['stock_status'] == 'Overstock'].shape[0])}")
 
     def call_inventory_update(self):
         url = os.getenv("API_UPDATE_INVENTORY")
@@ -5167,9 +5358,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def run_inventory_update(self):
-        QtWidgets.QMessageBox.information(
-            self, "Info", "Inventory update on the client side is under development, and can be auto-updated from the server side for now.")
-        return
+        # QtWidgets.QMessageBox.information(
+        #     self, "Info", "Inventory update on the client side is under development, and can be auto-updated from the server side for now.")
+        # return
         try:
             isLocked = self.database_process.query(
                 '''SELECT GET_LOCK('inventory_update', 3);''')[0][0]
@@ -5238,6 +5429,609 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self, "Error", f"Inventory update failed: {str(err)}")
         self.database_process.query(
             '''SELECT RELEASE_LOCK('inventory_update');''')
+
+    @QtCore.pyqtSlot()
+    def Stock_dashboard_page(self):
+        self.ui.Stock_control_stacked_widget.setCurrentWidget(self.ui.Stock_dashboard_page)
+        self.style_button_with_shadow((self.ui.Stock_dashboard_btn, self.ui.Stock_detail_btn, self.ui.Stock_master_list_btn, self.ui.Stock_method_btn))
+        self.spinner.start()
+        QtCore.QTimer.singleShot(15000,self.spinner.stop)
+        def fetch_data():
+            result = self.database_process.query(sql='''SELECT part_code, part_name, area, unit_price, currency, lead_time, 
+                                                        current_stock, outstanding_orders, total_score ,priority_level, safety_stock, min_stock, max_stock, stock_status 
+                                                        FROM `spare_part_report_view`;''')
+            df = pd.DataFrame(result, columns=["part_code", "part_name", "area",  "unit_price", "currency", "lead_time", 
+                                                "current_stock", "outstanding_orders", "total_score", "priority_level", "safety_stock", "min_stock", "max_stock", "stock_status"])
+            return df
+
+        def on_data_fetched(df):
+            total_parts_num = df.shape[0]
+            if not hasattr(self, "exchange_rates"):
+                url = "https://open.er-api.com/v6/latest/USD"
+                response = requests.get(url)
+                self.exchange_rates = response.json()["rates"]
+            df["unit_price"] = df.apply(
+                lambda row: round(row["unit_price"] / self.exchange_rates.get(row["currency"], 1), 2), axis=1)
+            df.drop(columns=["currency"], inplace=True)
+            total_cost_num = (df["unit_price"] * df["current_stock"]).sum()
+            critical_parts_num = df[df["priority_level"] == "A"].shape[0]
+            urgent_parts_num = df[df["stock_status"] == "Urgent"].shape[0]
+            below_min_parts_num = df[df["stock_status"] == "Below Min Stock"].shape[0]
+            overstock_parts_num = df[df["stock_status"] == "Overstock"].shape[0]
+            self.ui.SP_total_part_value.setText(f'{total_parts_num:,} <span style="font-size:10px;">items</span>')
+            self.ui.SP_total_cost_value.setText( f'${(total_cost_num/1000):,.2f} <span style="font-size:10px;">KUSD</span>')
+            self.ui.SP_critical_part_value.setText(f'{critical_parts_num:,} <span style="font-size:10px;">items</span>')
+            self.ui.SP_urgent_part_value.setText(f'{urgent_parts_num:,} <span style="font-size:10px;">items</span>')
+            self.ui.SP_below_min_part_value.setText(f'{below_min_parts_num:,} <span style="font-size:10px;">items</span>')
+            self.ui.SP_overstock_part_value.setText(f'{overstock_parts_num:,} <span style="font-size:10px;">items</span>')
+            categories = df["stock_status"].unique().tolist()
+            categories_value_dict = {category: df[df["stock_status"] == category].shape[0] for category in categories}
+            categories_value_dict = dict(sorted(categories_value_dict.items(), key=lambda x: x[1], reverse=True))
+            categories_color_dict = {
+                "Urgent": "#DF3E2C",
+                "Below Min Stock": "#F1B310",
+                "Overstock": "#0004D3",
+                "Normal": "#48A247"
+            }
+            def draw_donut_chart():
+                if self.ui.SP_part_summary_chart.layout() is not None:
+                    while self.ui.SP_part_summary_chart.layout().count():
+                        child = self.ui.SP_part_summary_chart.layout().takeAt(0)
+                        if child.widget():
+                            child.widget().deleteLater()
+                else:   
+                    new_layout = QtWidgets.QVBoxLayout()
+                    new_layout.setContentsMargins(0, 0, 0, 0)
+                    new_layout.setSpacing(0)
+                    self.ui.SP_part_summary_chart.setLayout(new_layout)
+                categories_donut_chart = CategoricalDonutChart(
+                                                                categories=categories,
+                                                                categories_value_dict=categories_value_dict,
+                                                                categories_color_dict=categories_color_dict,
+                                                                scale = 1)
+                self.ui.SP_part_summary_chart.layout().addWidget(categories_donut_chart)
+
+            def draw_column_chart(widget, data_df, category_column, priorities, title, x_label, y_label):
+                layout = widget.layout()
+                if layout is not None:
+                    while layout.count():
+                        child = layout.takeAt(0)
+                        if child.widget():
+                            child.widget().deleteLater()
+                else:
+                    layout = QtWidgets.QVBoxLayout()
+                    layout.setContentsMargins(0, 0, 0, 0)
+                    layout.setSpacing(6)
+                    widget.setLayout(layout)
+
+                status_defs = [
+                    ("Urgent", "#DF3E2C"),
+                    ("Below Min Stock", "#F1B310"),
+                    ("Overstock", "#0004D3"),
+                    ("Normal", "#48A247"),
+                ]
+
+                priority_series = {
+                    priority: data_df.loc[data_df[category_column] == priority, "stock_status"]
+                    for priority in priorities
+                }
+                plot_widget = pg.PlotWidget()
+                plot_widget.setBackground("w")
+                plot_widget.setAntialiasing(True)
+                plot_widget.hideButtons()
+                plot_widget.setMouseEnabled(x=False, y=False)
+                plot_widget.showGrid(x=False, y=False)
+
+                axis_pen = pg.mkPen("#8A8F98", width=1)
+                text_pen = pg.mkPen("#4B5563", width=1)
+
+                left_axis = plot_widget.getAxis("left")
+                bottom_axis = plot_widget.getAxis("bottom")
+                left_axis.setPen(None)
+                left_axis.setTextPen(text_pen)
+                bottom_axis.setPen(axis_pen)
+                bottom_axis.setTextPen(text_pen)
+
+                plot_widget.setLabel("left", y_label, color="#475569", size="10pt")
+
+                group_centers = list(range(len(priorities)))
+                offsets = [-0.30, -0.10, 0.10, 0.30]
+                bar_width = 0.16
+
+                max_count = 0
+
+                for group_index, priority in enumerate(priorities):
+                    series = priority_series[priority]
+                    counts = []
+
+                    for status_name, color in status_defs:
+                        count = int((series == status_name).sum())
+                        counts.append(count)
+                        max_count = max(max_count, count)
+
+                        bar = pg.BarGraphItem(
+                            x=[group_centers[group_index] + offsets[len(counts) - 1]],
+                            height=[count],
+                            width=bar_width,
+                            brush=pg.mkBrush(color),
+                            pen=pg.mkPen(color)
+                        )
+                        plot_widget.addItem(bar)
+
+                        if count > 0:
+                            text_item = pg.TextItem(
+                                html=f'<div style="color:#1f2937; font-size:7pt;">{count}</div>',
+                                anchor=(0.5, 1.0)
+                            )
+                            text_item.setPos(group_centers[group_index] + offsets[len(counts) - 1], count)
+                            plot_widget.addItem(text_item)
+
+                bottom_axis.setTicks([list(zip(group_centers, priorities))])
+                plot_widget.setXRange(-0.6, len(priorities) - 0.4, padding=0)
+
+                y_top = max_count * 1.3 if max_count > 0 else 1
+                plot_widget.setYRange(0, y_top, padding=0)
+
+                tick_step = max(1, int(y_top // 5))
+                left_axis.setStyle(showValues=False)
+                left_axis.setTicks([])
+                bottom_axis.setStyle(tickTextOffset=10, tickLength=0, showValues=True)
+                layout.addWidget(plot_widget)
+
+                legend_widget = QtWidgets.QWidget()
+                legend_layout = QtWidgets.QHBoxLayout(legend_widget)
+                legend_layout.setContentsMargins(8, 0, 8, 0)
+                legend_layout.setSpacing(14)
+
+                legend_layout.addStretch()
+
+                for status_name, color in status_defs:
+                    swatch = QtWidgets.QLabel()
+                    swatch.setFixedSize(14, 14)
+                    swatch.setStyleSheet(
+                        f"background-color: {color}; border: 1px solid {color}; border-radius: 2px;"
+                    )
+                    label = QtWidgets.QLabel(status_name)
+                    label.setStyleSheet("color:#4B5563; font-size:10pt;")
+                    legend_layout.addWidget(swatch)
+                    legend_layout.addWidget(label)
+
+                legend_layout.addStretch()
+                layout.addWidget(legend_widget)
+
+            def draw_health_gauge(data_df):
+                if self.ui.SP_inventory_health_chart.layout() is not None:
+                    while self.ui.SP_inventory_health_chart.layout().count():
+                        child = self.ui.SP_inventory_health_chart.layout().takeAt(0)
+                        if child.widget():
+                            child.widget().deleteLater()
+                else:
+                    new_layout = QtWidgets.QVBoxLayout()
+                    new_layout.setContentsMargins(0, 0, 0, 0)
+                    new_layout.setSpacing(0)
+                    self.ui.SP_inventory_health_chart.setLayout(new_layout)
+
+                total_score = data_df["total_score"].sum()
+                urgent_score = data_df[data_df["stock_status"] == "Urgent"]["total_score"].sum()
+                below_min_score = data_df[data_df["stock_status"] == "Below Min Stock"]["total_score"].sum()
+                health_score = total_score - urgent_score - below_min_score
+                health_percentage = (health_score / total_score) * 100 if total_score > 0 else 100
+                gauge = Arc_Health_Gauge(
+                    value=health_percentage, max_value=100, target=0, color_desc=False,
+                    ticks=[0, 20, 40, 60, 80, 100], start_angle = 180, span_angle = -180, minor_ticks = None,
+                    center_lines=[
+                         {"text": "Health %:", "size": 12, "color": "#6b7684"},
+                         {"text": f"{health_percentage:.2f}%", "size": 18, "color": "#6b7684", "bold": True},
+                     ], ratio = 1.3 )
+                self.ui.SP_inventory_health_chart.layout().addWidget(gauge)
+                html_note = '''<div style="
+                                            margin-top:8px;
+                                            font-size:11px;
+                                            color:#6c757d;
+                                            text-align:left;
+                                        ">
+                                            <i>
+                                                * Health % is a reference indicator only and is not currently used for operational decision-making.
+                                                <br>
+                                                <br>
+                                                Health % = (Urgent Part Score + Below Min Stock Part Score) ÷ Total Inventory Part Score × 100%
+                                            </i>
+                                        </div>'''
+                self.ui.label_46.setTextFormat(QtCore.Qt.RichText)
+                self.ui.label_46.setText(html_note)
+                self.ui.label_46.setWordWrap(True)
+                return health_percentage
+
+            def table_alerts(df_alerts):
+                if not hasattr(self, "model_alerts"):
+                    header_labels = ["Spare part", "Area", "Current", "Safety", "Min", "Status"]
+                    self.model_alerts = QtGui.QStandardItemModel(0, len(header_labels))
+                    self.model_alerts.setHorizontalHeaderLabels(header_labels)
+                    self.ui.SP_part_alert_table.setModel(self.model_alerts)
+                else:
+                    self.model_alerts.removeRows(0, self.model_alerts.rowCount())
+                self.ui.SP_part_alert_table.setUpdatesEnabled(True)
+                self.ui.SP_part_alert_table.setMouseTracking(True)
+                delegate = StockAlertDelegate()
+                self.ui.SP_part_alert_table.setItemDelegate(delegate)
+                df_alerts = df_alerts.sort_values(
+                                    by=["stock_status", "area"],
+                                    ascending=[False, True]
+                                )
+                def make_item( text, align=QtCore.Qt.AlignCenter, round_up_mode = True, digit=2):
+                    if text is None or text is pd.NA or text == "":
+                        value = "N/A"
+                    elif isinstance(text, (int, float)) and pd.isna(text):
+                        value = "N/A"
+                    elif isinstance(text, (int, float)):
+                        if round_up_mode:
+                            value = math.ceil(text)
+                        else:
+                            value = round(text, digit) if text != 0 else round(text, 0)
+                    else:
+                        value = text
+                    item = QtGui.QStandardItem(str(value))
+                    item.setTextAlignment(align)
+                    return item
+                for _, row in df_alerts.iterrows():
+                    row_items = [
+                        make_item(row["part_name"], align=( QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)),
+                        make_item(row["area"]),
+                        make_item(row["current_stock"], round_up_mode = False, digit=1),
+                        make_item(row["safety_stock"], round_up_mode = False, digit=4),
+                        make_item(row["min_stock"]),
+                        make_item(row["stock_status"])
+                    ]
+                    self.model_alerts.appendRow(row_items)
+                self.ui.SP_part_alert_table.horizontalHeader().setStyleSheet(
+                    "QHeaderView::section { qproperty-alignment: AlignCenter; }")
+                # self.ui.SP_part_alert_table.setSortingEnabled(True)
+                self.ui.SP_part_alert_table.setShowGrid(False)
+                self.ui.SP_part_alert_table.sortByColumn(self.model_alerts.columnCount()-1, QtCore.Qt.DescendingOrder)
+                self.ui.SP_part_alert_table.setAlternatingRowColors(True)
+                self.ui.SP_part_alert_table.setStyleSheet("""
+                QTableView#SP_part_alert_table {
+                    border: none;
+                    background: white;
+                    alternate-background-color: #f8fafc;
+                    gridline-color: transparent;
+                }
+                """)
+                self.ui.SP_part_alert_table.setColumnWidth(0, 400)
+                header = self.ui.SP_part_alert_table.horizontalHeader()
+                header.setStyleSheet("""
+                                        QHeaderView::section {
+                                            background-color: transparent;
+                                            color: #1E293B;
+                                            border: none;
+                                            border-bottom: 1px solid #CBD5E1;
+                                            padding: 6px;
+                                            font-weight: bold;
+                                        }
+                                        """)
+                header.setStretchLastSection(False)
+                header = self.ui.SP_part_alert_table.horizontalHeader()
+                header.setSectionResizeMode(
+                    0,
+                    QtWidgets.QHeaderView.Stretch
+                )
+                header.setSectionResizeMode(
+                    1,
+                    QtWidgets.QHeaderView.ResizeToContents
+                )
+                header.setSectionResizeMode(
+                    2,
+                    QtWidgets.QHeaderView.ResizeToContents
+                )
+                header.setSectionResizeMode(
+                    3,
+                    QtWidgets.QHeaderView.ResizeToContents
+                )
+                header.setSectionResizeMode(
+                    4,
+                    QtWidgets.QHeaderView.ResizeToContents
+                )
+                header.setSectionResizeMode(
+                    5,
+                    QtWidgets.QHeaderView.Fixed
+                )
+                self.ui.SP_part_alert_table.setColumnWidth(5, 120)
+                vertical_header = self.ui.SP_part_alert_table.verticalHeader()
+                vertical_header.setVisible(False)
+                vertical_header.setDefaultSectionSize(34)
+                self.ui.SP_part_alert_table.viewport().update()
+                self.ui.SP_part_alert_table.viewport().setMouseTracking(True)
+
+            def keyinsight_generate(df, health_percentage):
+                immediate_df = df[(df["stock_status"] == "Urgent") & (df["priority_level"] == "A")]
+                immediate_count = int(immediate_df.shape[0])
+                no_order_count = int((immediate_df["outstanding_orders"].fillna(0) <= 0).sum())
+
+                shortage_df = df[df["stock_status"] == "Below Min Stock"]
+                shortage_count = int(shortage_df.shape[0])
+                estimated_shortage = float((shortage_df["safety_stock"] - shortage_df["current_stock"]).clip(lower=0).sum())
+
+                overstock_df = df[df["stock_status"] == "Overstock"].copy()
+                overstock_count = int(overstock_df.shape[0])
+                overstock_df["excess_value"] = (overstock_df["current_stock"] - overstock_df["max_stock"]).clip(lower=0) * overstock_df["unit_price"]
+                total_excess_value = float(overstock_df["excess_value"].sum())
+                top10_count = min(10, overstock_count)
+                top10_excess_value = float(overstock_df.nlargest(10, "excess_value")["excess_value"].sum()) if overstock_count > 0 else 0.0
+                top10_pct = (top10_excess_value / total_excess_value * 100) if total_excess_value > 0 else 0.0
+
+                if immediate_count > 0:
+                    immediate_main = f'<strong>{immediate_count} parts</strong> are currently out of stock and have <strong>Critical (Priority A) impact</strong>.'
+                    immediate_sub = (
+                                        f'⇒ <strong>{no_order_count} / {immediate_count} parts</strong> have no outstanding order. '
+                                        f'<span style="color:#c62828; font-weight:700; font-size:12px;">Issue purchase orders immediately.</span>'
+                                    )
+                else:
+                    immediate_main = 'No critical (Priority A) parts are currently out of stock.'
+                    immediate_sub = '⇒ No immediate action required.'
+
+                if shortage_count > 0:
+                    shortage_main = f'<strong>{shortage_count} parts</strong> are projected to fall below Min stock.'
+                    shortage_sub = f' <strong>⇒ Kindly review the PO for the next monthly purchase cycle.</strong>'
+                else:
+                    shortage_main = 'No parts are currently projected to fall below Min stock.'
+                    shortage_sub = '⇒ No shortage risk detected.'
+
+                if overstock_count > 0:
+                    exposure_main = f'<strong>{overstock_count} parts</strong> are currently Overstock.'
+                    exposure_sub1 = f'⇒ Estimated excess inventory value: <strong>${total_excess_value:,.0f} ⇒ Freeze the issue PO for these parts.</strong>'
+                else:
+                    exposure_main = 'No parts are currently Overstock.'
+                    exposure_sub1 = '⇒ No excess inventory detected.'
+                html_content = ""
+                imtermediate_risk = '''<div class="insight-card immediate-risk">
+                                        <div class="insight-header">
+                                            <span class="insight-icon">🔴</span>
+                                            <span class="insight-title"> IMMEDIATE RISK</span>
+                                        </div>
+
+                                        <div class="insight-main">
+                                            ''' + immediate_main + '''
+                                        </div>
+
+                                        <div class="insight-sub">
+                                            ''' + immediate_sub + '''
+                                        </div>
+                                    </div>
+
+                                    <style>
+                                    .immediate-risk {
+                                        background: #fff5f5;
+                                        border-left: 5px solid #e53935;
+                                        border-radius: 8px;
+                                        padding: 16px 18px;
+                                        margin: 10px 0;
+                                        font-family: Arial, sans-serif;
+                                    }
+
+                                    .immediate-risk .insight-header {
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                        margin-bottom: 12px;
+                                    }
+
+                                    .immediate-risk .insight-icon {
+                                        font-size: 20px;
+                                    }
+
+                                    .immediate-risk .insight-title {
+                                        font-size: 15px;
+                                        font-weight: 700;
+                                        color: #c62828;
+                                        letter-spacing: 0.5px;
+                                    }
+
+                                    .immediate-risk .insight-main {
+                                        font-size: 14px;
+                                        line-height: 1.5;
+                                        color: #333;
+                                    }
+
+                                    .immediate-risk .insight-sub {
+                                        margin-top: 8px;
+                                        font-size: 13px;
+                                        color: #666;
+                                    }
+
+                                    .immediate-risk strong {
+                                        color: #c62828;
+                                    }
+                                    </style><br>'''
+                shortage_risk = '''<div class="insight-card shortage-risk">
+                                    <div class="insight-header">
+                                        <span class="insight-icon">🟠</span>
+                                        <span class="insight-title"> SHORTAGE RISK</span>
+                                    </div>
+
+                                    <div class="insight-main">
+                                        ''' + shortage_main + '''
+                                    </div>
+
+                                    <div class="insight-sub">
+                                        ''' + shortage_sub + '''
+                                    </div>
+                                </div>
+
+                                <style>
+                                .shortage-risk {
+                                    background: #fff9ed;
+                                    border-left: 5px solid #f59e0b;
+                                    border-radius: 8px;
+                                    padding: 16px 18px;
+                                    margin: 10px 0;
+                                    font-family: Arial, sans-serif;
+                                }
+
+                                .shortage-risk .insight-header {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                    margin-bottom: 12px;
+                                }
+
+                                .shortage-risk .insight-icon {
+                                    font-size: 20px;
+                                }
+
+                                .shortage-risk .insight-title {
+                                    font-size: 15px;
+                                    font-weight: 700;
+                                    color: #d97706;
+                                    letter-spacing: 0.5px;
+                                }
+
+                                .shortage-risk .insight-main {
+                                    font-size: 14px;
+                                    line-height: 1.5;
+                                    color: #333;
+                                }
+
+                                .shortage-risk .insight-sub {
+                                    margin-top: 8px;
+                                    font-size: 13px;
+                                    color: #666;
+                                }
+
+                                .shortage-risk strong {
+                                    color: #d97706;
+                                }
+                                </style><br>'''
+                inventory_exposure = '''<div class="insight-card inventory-exposure">
+                                        <div class="insight-header">
+                                            <span class="insight-icon">💰</span>
+                                            <span class="insight-title">INVENTORY EXPOSURE</span>
+                                        </div>
+
+                                        <div class="insight-main">
+                                            ''' + exposure_main + '''
+                                        </div>
+
+                                        <div class="insight-sub">
+                                            ''' + exposure_sub1 + '''
+                                        </div>
+                                    </div>
+
+                                    <style>
+                                    .inventory-exposure {
+                                        background: #f6f8ff;
+                                        border-left: 5px solid #3f51b5;
+                                        border-radius: 8px;
+                                        padding: 16px 18px;
+                                        margin: 10px 0;
+                                        font-family: Arial, sans-serif;
+                                    }
+
+                                    .inventory-exposure .insight-header {
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 8px;
+                                        margin-bottom: 12px;
+                                    }
+
+                                    .inventory-exposure .insight-icon {
+                                        font-size: 20px;
+                                    }
+
+                                    .inventory-exposure .insight-title {
+                                        font-size: 15px;
+                                        font-weight: 700;
+                                        color: #303f9f;
+                                        letter-spacing: 0.5px;
+                                    }
+
+                                    .inventory-exposure .insight-main {
+                                        font-size: 14px;
+                                        line-height: 1.5;
+                                        color: #333;
+                                    }
+
+                                    .inventory-exposure .insight-sub {
+                                        margin-top: 8px;
+                                        font-size: 13px;
+                                        color: #666;
+                                    }
+
+                                    .inventory-exposure strong {
+                                        color: #303f9f;
+                                    }
+                                    </style>'''
+                html_content += imtermediate_risk
+                html_content += shortage_risk
+                html_content += inventory_exposure
+                return html_content
+
+            draw_donut_chart()
+            draw_column_chart(
+                                self.ui.SP_part_bytype_chart,
+                                df,
+                                category_column="priority_level",
+                                priorities=["A", "B", "C"],
+                                title="Stock status by priority level",
+                                x_label="Priority Level",
+                                y_label="Number of parts"
+                            )
+            area_priorities = df["area"].dropna().unique().tolist()
+            area_priorities.sort()
+            draw_column_chart(
+                                self.ui.SP_part_byarea_chart,
+                                df,
+                                category_column="area",
+                                priorities=area_priorities,
+                                title="Stock status by area",
+                                x_label="Area",
+                                y_label="Number of parts"
+                            )
+            table_alerts(df[df["stock_status"].isin(["Urgent", "Below Min Stock"])])
+            health = draw_health_gauge(df)
+            self.ui.SP_key_insight_lbl.setTextFormat(QtCore.Qt.RichText)
+            self.ui.SP_key_insight_lbl.setText(keyinsight_generate(df, health))
+            self.spinner.stop()
+        try:
+            if hasattr(self,"worker") and self.worker.isRunning():
+                self.spinner.stop()
+                return
+            self.worker = WorkerThread(fetch_data)
+            self.worker.finished.connect(
+                lambda result: on_data_fetched(result))
+            self.worker.start()
+        except Exception as e:
+            self.spinner.stop()
+            QtWidgets.QMessageBox.critical(
+                self, "Error", f"Failed to load stock dashboard data: {e}")
+
+    def Stock_method_page(self):
+        self.ui.Stock_control_stacked_widget.setCurrentWidget(self.ui.Stock_method_page)
+        self.style_button_with_shadow(( self.ui.Stock_method_btn, self.ui.Stock_detail_btn, self.ui.Stock_master_list_btn,self.ui.Stock_dashboard_btn))
+        self.method_pixmap = QtGui.QPixmap(
+            resource_path("Icons/Stock_method.png")
+        )
+        self._scale_stock_method_image()
+
+    def _scale_stock_method_image(self):
+        if not hasattr(self, "method_pixmap") or self.method_pixmap.isNull():
+            return
+
+        image_size = self.ui.Stock_method_image.size()
+        if image_size.width() <= 0 or image_size.height() <= 0:
+            return
+
+        self.ui.Stock_method_image.setPixmap(
+            self.method_pixmap.scaled(
+                image_size,
+                QtCore.Qt.KeepAspectRatio,
+                QtCore.Qt.SmoothTransformation
+            )
+        )
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._scale_stock_method_image()
+
 # ==========================Function of Stock control page ==================================================================================END
 # ==========================Function of Stock control page ==================================================================================END
 # ==========================Function of Stock control page ==================================================================================END
@@ -5339,6 +6133,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                           self.Import_data_Downtime_page)
         self.safe_connect(self.ui.DT_problem_report_btn.clicked,
                           self.Problem_report_Downtime_page)
+        self.ui.DT_problem_report_btn.setHidden(True)
         self.DT_detail_report_list = []
 
     @QtCore.pyqtSlot()
@@ -5348,9 +6143,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.ui.DT_stacked_widget.setCurrentWidget(self.ui.DT_Dashboard_widget)
         if self.ui.DT_area_cbb.count() > 0:
             return
-        else:
-            self.safe_connect(self.ui.DT_date_edit_2.dateChanged,
-                          lambda: self.DT_filtering(changed_object="date_range"))
         self.DT_calendar_widget = self.ui.DT_date_edit_2.calendarWidget()
         self.table_view_of_DTcalendar = self.DT_calendar_widget.findChild(
             QtWidgets.QTableView)
@@ -5371,13 +6163,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.ui.DT_date_edit_2.setDate(
                 QtCore.QDate.fromString(str(nearest_date), "yyyy-MM-dd"))
             year = pd.to_datetime(nearest_date).year
-            self.Dashboard_Downtime_page_refresh(
-                area_name=area_name, target=nearest_date, year=year, view_by="day")
-            self.DT_filtered_dict = {
-                "area": area_name,
-                "view_by": "day",
-                "time_range": nearest_date
-            }
+            month = pd.to_datetime(nearest_date).month
+            self.DT_Viewby(changed_object="month")
             self.safe_connect(self.ui.DT_area_cbb.currentTextChanged,
                               lambda: self.DT_Viewby(changed_object="area"))
             self.safe_connect(self.ui.DT_day_radiobtn.clicked,
@@ -5570,19 +6357,19 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             mtbf_target = self.downtime_target.loc[self.downtime_target["Line Name"] == area_name, "MTBF Target"].iloc[0]
             self.DT_chart_current_group = None
             self.DT_detail_chart_drawing(
-                area_name = area_name, group_col="Line Name", value_col="Repair Time", data=self.data, title="Downtime By Line", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target , target_df=self.downtime_target)
+                area_name = area_name, group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target , target_df=self.downtime_target)
             self.DT_KPI_chart(widget=self.ui.MTTR_chart, value=mttr_value, target_value=mttr_target, previous_value=mttr_prev_value, label="MTTR")
             self.DT_KPI_chart(widget=self.ui.MTBF_chart, value=float(mtbf_value), target_value=mtbf_target, previous_value=mtbf_prev_value, label="MTBF")
             self.ui.DT_current_actions.setPlainText(action_report_df["Action Content"].iloc[0] if not action_report_df.empty else "")
             self.DT_action_report_show(prev_action_report, widget = self.ui.DT_previous_result)
             self.safe_connect(self.ui.DT_detail_chart_line_btn.clicked, lambda: self.DT_detail_chart_drawing(
-                area_name = area_name, group_col="Line Name", value_col="Repair Time", data=self.data, title="Downtime By Line", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target , target_df=self.downtime_target))
+                area_name = area_name, group_col="Line Name", value_col="Total Loss Time", data=self.data, title="Downtime By Line", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target , target_df=self.downtime_target))
             self.safe_connect(self.ui.DT_detail_chart_machine_btn.clicked, lambda: self.DT_detail_chart_drawing(
-                area_name = area_name, group_col="Machine Code", value_col="Repair Time", data=self.data, title="Downtime By Machine", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target, target_df=self.downtime_target))
+                area_name = area_name, group_col="Machine Code", value_col="Total Loss Time", data=self.data, title="Downtime By Machine", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target, target_df=self.downtime_target))
             self.safe_connect(self.ui.DT_detail_chart_error_btn.clicked, lambda: self.DT_detail_chart_drawing(
-                area_name = area_name, group_col="Error Code", value_col="Repair Time", data=self.data, title="Downtime By Error Code", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target, target_df=self.downtime_target))
+                area_name = area_name, group_col="Error Code", value_col="Total Loss Time", data=self.data, title="Downtime By Error Code", target=target, year=year, view_by=view_by, mttr_value=mttr_value, mtbf_value=mtbf_value, mttr_target=mttr_target, mtbf_target=mtbf_target, target_df=self.downtime_target))
             self.safe_connect(self.ui.DT_detail_chart_time_btn.clicked, lambda: self.DT_detail_chart_drawing(
-                area_name = area_name, group_col="Downtime Start Time", value_col="Repair Time", data=self.data, title="Downtime By Time", target=target, year=year, view_by=view_by))
+                area_name = area_name, group_col="Downtime Start Time", value_col="Total Loss Time", data=self.data, title="Downtime By Time", target=target, year=year, view_by=view_by))
             self.spinner.stop()
             self.safe_connect(self.ui.DT_current_actions.textChanged, lambda: self.action_editing_finished(widget=self.ui.DT_current_actions,btn = self.ui.DT_action_save_btn, data = {"has_OEE_comment": self.has_DT_comment if hasattr(self, 'has_DT_comment') else False, 
                                                                                                                                                                                         "OEE_comment_id": self.DT_comment_id,
@@ -5702,7 +6489,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                         else float(working_time.loc[(working_time["Line Name"] == line_of_machine[x.name] if group_col == "Machine Code" else working_time["Line Name"] == x.name), "Working Time"].sum() -  x.sum(0))
                     ).values
                 })
-                print("summary_df", working_time.loc[(working_time["Line Name"] == "A13"), "Working Time"].sum())
                 summary_df = summary_df.merge(
                     target_df[[group_col, "MTTR Target"]],
                     on=group_col,
@@ -6099,7 +6885,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                             summary_df = summary_df,
                                             name = self.machine_name_dict.get(selected_category, '') if group_col == 'Machine Code' else self.error_code_dict.get(selected_category, '') if group_col == 'Error Code' else None
                                             )
-            
             @QtCore.pyqtSlot()
             def leave_plot(event):
                 QtWidgets.QToolTip.hideText()
@@ -6239,9 +7024,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot()
     def DT_Viewby(self, changed_object):
-
-        if changed_object == self.DT_filtered_dict.get(changed_object):
-            return
         try:
             area_name = self.ui.DT_area_cbb.currentText()
             year = self.ui.DT_date_edit_2.date().year()
@@ -6266,9 +7048,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.ui.frame_87.setMaximumWidth(0)
                 self.ui.frame_91.setEnabled(True)
                 self.ui.frame_91.setMaximumWidth(200)
-                # if self.ui.DT_year_cbb.count() == 0:
-                #     self.ui.DT_year_cbb.addItems(
-                #         [str(year) for year in range(2026, 2026+1)])
                 self.ui.DT_year_cbb.setCurrentText(
                     str(self.ui.today.year))
                 self.safe_connect(self.ui.DT_year_cbb.currentTextChanged,
@@ -6885,14 +7664,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                         :downtime_start_repair_time,
                         :downtime_end_time,
                         :staff_name,
-                        :error_code
+                        :error_code                   
                 '''
             sql_working_time = '''INSERT INTO `line_operation_times`
-                        (`line_id`, `operation_date`, `operation_hours`)
-                        VALUES
-                        ((SELECT line_id FROM `production_lines` WHERE line_name = :line_name),
-                         :operation_date,
-                         :operation_hours)
+                                (`line_id`, `operation_date`, `operation_hours`)
+                                VALUES
+                                ((SELECT line_id FROM `production_lines` WHERE line_name = :line_name),
+                                :operation_date,
+                                :operation_hours)
                         '''
             with self.database_process.Session() as session:
                 try:
@@ -6915,9 +7694,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     self.ui.DT_data_table.setSortingEnabled(True)
                     self.ui.DT_summary_table.setUpdatesEnabled(True)
                     self.ui.DT_summary_table.setSortingEnabled(True)
-                except Exception:
+                except Exception as e:
                     session.rollback()
-                    raise
+                    raise e
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to import data to database: {e}")
@@ -9115,13 +9894,10 @@ class Downtime_Input(QtWidgets.QDialog):
                             new_row.append(line_edit.text())
                     try:
                         start_time = pd.to_datetime(new_row[2], format='%H:%M')
-                        print(f"Start Time: {start_time}")
                         technical_start = pd.to_datetime(
                             new_row[3], format='%H:%M')
-                        print(f"Technical Start Time: {technical_start}")
                         finish_time = pd.to_datetime(
                             new_row[4], format='%H:%M')
-                        print(f"Finish Time: {finish_time}")
 
                         total_loss_time = int(
                             (finish_time - start_time).total_seconds() / 60)
@@ -9600,7 +10376,7 @@ class New_Report_Input(QtWidgets.QDialog):
             QtWidgets.QMessageBox.warning(self, "Warning", str(e))
             return
 
-class DonutChart(QtWidgets.QWidget):
+class Progress_DonutChart(QtWidgets.QWidget):
     def __init__(self, value: float, max_value: float = 100, target_value: float = 0, background_color: str = "#E8E8E8", foreground_color: str = "#2ECC71", target_color: str = "#affaff", parameter_name: str = "OEE", scale: float = 0.7, has_Lengend: bool = True, parent=None):
         super().__init__(parent)
         self.value = value
@@ -9610,7 +10386,6 @@ class DonutChart(QtWidgets.QWidget):
         self.foreground_color = foreground_color
         self.target_color = target_color
         self.parameter_name = parameter_name
-        # self.setMinimumSize(200, 400)
         if self.value == self.target_value:
             self.foreground_color = "#facc15"
         elif self.value < self.target_value:
@@ -9721,6 +10496,99 @@ class DonutChart(QtWidgets.QWidget):
                     f"{self.parameter_name}"
                 )
         painter.end()
+
+class CategoricalDonutChart(QtWidgets.QWidget):
+    def __init__(self, parent=None, categories: list = None, categories_value_dict: dict = None, background_color: str = "#E8E8E8", categories_color_dict: dict = None, scale: float = 0.7):
+        super().__init__(parent)
+        self.categories = categories if categories is not None else []
+        self.categories_value_dict = categories_value_dict if categories_value_dict is not None else {}
+        self.total = sum(self.categories_value_dict.values())
+        self.background_color = background_color
+        self.categories_color_dict = categories_color_dict if categories_color_dict is not None else {}
+        self.scale = scale
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        width = self.width()
+        height = self.height()
+        size = min(width, height)*self.scale
+        size = min(size, 190)
+        x = (width - size) / 6
+        y = (height - size) / 4
+        stroke_width = size * 0.3
+        margin = stroke_width / 2
+        rect = QtCore.QRectF(x + margin, y + margin,
+                             size - stroke_width, size - stroke_width)
+        def draw_circle(pen_color, start_angle_value, pen_width, cap_style, span_angle_value):
+            gap_angle =  16
+            effective_span = max(0, span_angle_value - gap_angle)
+            if effective_span <= 0:
+                return
+
+            arc_start = start_angle_value - gap_angle // 2
+            outline_pen = QtGui.QPen(QtGui.QColor("white"))
+            outline_pen.setWidth(int(pen_width))
+            outline_pen.setCapStyle(QtCore.Qt.FlatCap)
+            painter.setPen(outline_pen)
+            painter.drawArc(rect, arc_start, -effective_span)
+
+            pen = QtGui.QPen(QtGui.QColor(pen_color))
+            pen.setWidth(int(pen_width))
+            pen.setCapStyle(QtCore.Qt.FlatCap)
+            painter.setPen(pen)
+            painter.drawArc(rect, arc_start, -effective_span)
+
+        start_angle = 90 * 16
+        for category, value in self.categories_value_dict.items():
+            percentage = value / self.total if self.total > 0 else 0
+            span_angle = int(percentage * 360 * 16)
+            color = self.categories_color_dict.get(category, "#000000")
+            draw_circle(color, start_angle, stroke_width,
+                        QtCore.Qt.FlatCap, span_angle)
+            if percentage > 0.08:
+                mid_angle = start_angle - span_angle / 2
+                angle_deg = mid_angle / 16
+                angle_rad = math.radians(angle_deg)
+                r = rect.width() / 2
+                center = rect.center()
+                tx = center.x() + r * math.cos(angle_rad)
+                ty = center.y() - r * math.sin(angle_rad)
+                text_rect = QtCore.QRectF(tx - 40, ty - 10, 80, 20)
+                font = QtGui.QFont("Sans Serif", 8, QtGui.QFont.Weight.Bold)
+                painter.setFont(font)
+                painter.setPen(QtCore.Qt.white)
+                painter.drawText(
+                    text_rect,
+                    QtCore.Qt.AlignCenter,
+                    f"{percentage*100:.1f}%")
+            start_angle += -span_angle
+        #legend
+        legend_x = int(x + size * 1.3)
+        legend_y = int(y + size * 0.03)
+        dot_r = int(size * 0.045)
+        for category in self.categories_value_dict.keys():
+            painter.setBrush(QtGui.QColor(self.categories_color_dict.get(category, "#000000")))
+            painter.setPen(QtCore.Qt.NoPen)
+            painter.drawRect(legend_x, legend_y - dot_r + 3, dot_r * 2, dot_r * 2)
+            painter.setPen(QtGui.QColor("#555555"))
+            font_legend = QtGui.QFont("Sans Serif", int(size * 0.05), QtGui.QFont.Weight.Bold)
+            painter.setFont(font_legend)
+            painter.drawText(
+                legend_x + dot_r * 2 + 5,
+                legend_y + dot_r ,
+                category
+            )
+            painter.drawText(
+                legend_x + dot_r * 2 + 5,
+                legend_y + dot_r*3,
+                f"{self.categories_value_dict.get(category, 0)} items | {(self.categories_value_dict.get(category, 0)/self.total)*100:.1f}%"
+            )
+            legend_y += dot_r * 4 + 15
+
+        painter.end()
+
 
 class Bullet_Status_Bar(QtWidgets.QWidget):
     def __init__(self, parent=None, value: float = 0, max_value: float = 0, target_value: float = 0, previous_value: float = 0, background_color: str = "#E8E8E8",
@@ -10104,11 +10972,7 @@ class OEE_Edit_Data(QtWidgets.QDialog):
             
             self.downtime_records  = self.database.query(sql='''SELECT dr.Downtime_ID, dr.Date, dr.Start_Time, dr.Start_Repair_Time, dr.End_Time,dr.Staff_Name, dr.Error_Code, dr.Machine_Code, dr.Line_Name
                                                             FROM `downtime_report` as dr
-                                                            JOIN machines as m ON dr.Machine_Code = m.machine_code
-                                                            JOIN machine_oee_register as mor ON m.machine_id = mor.machine_id
-                                                            JOIN production_lines as pl ON mor.line_id = pl.line_id AND pl.line_name = dr.Line_Name
-                                                            JOIN product_models_oee as pmo ON mor.model_id = pmo.model_id AND pmo.model_name = dr.Current_Model
-                                                            WHERE dr.Line_Name = :line AND dr.Current_Model = :model AND dr.Date = :date AND mor.process = :process; ''', 
+                                                            WHERE dr.Line_Name = :line AND dr.Current_Model = :model AND dr.Date = :date; ''', 
                                                             params={'line': line, 'model': model, 'date': production_date, 'process': process})
             self.production_outputs = self.database.query(sql = '''SELECT po.output_id, po.OK_qty, po.NG_qty 
                                                             FROM production_output as po
@@ -10332,9 +11196,10 @@ class OEE_Other_Data(QtWidgets.QDialog):
         self.ui.Tab_widget.currentChanged.connect(lambda index: self.tab_changing(index))
         self.ui.OEE_OD_calendar_widget.currentPageChanged.connect(lambda year,
                               month: self.parent.update_date_from_calendar(year, month, self.ui.OEE_OD_period_edit))
-        self.ui.machine_cycle_table.customContextMenuRequested.connect(lambda pos: self._cycle_table_context_menu(pos))
+        self.ui.machine_cycle_table.customContextMenuRequested.connect(lambda pos: self._table_context_menu(pos, self.ui.machine_cycle_table))
         self.ui.confirm_btn.clicked.connect(self.accept_action)
         self.ui.line_operation_table.doubleClicked.connect(lambda index: self.edit_operation_time_record(index))
+        self.ui.line_operation_table.customContextMenuRequested.connect(lambda pos: self._table_context_menu(pos, self.ui.line_operation_table))
         self.ui.OEE_OD_area_cbb.currentTextChanged.connect(lambda: self.filter_process())
         self.ui.OEE_OD_model_cbb.currentTextChanged.connect(lambda: self.show_data())
         self.ui.OEE_OD_line_cbb.currentTextChanged.connect(lambda: self.show_data())
@@ -10387,16 +11252,16 @@ class OEE_Other_Data(QtWidgets.QDialog):
                 month = self.ui.OEE_OD_period_edit.date().month()
                 year = self.ui.OEE_OD_period_edit.date().year()
                 self.data_operation_time_model.removeRows(0, self.data_operation_time_model.rowCount())
-                operetion_time = self.database.query(sql = '''  SELECT lot.operation_id, pl.line_name, po.production_date, 
+                operetion_time = self.database.query(sql = '''  SELECT lot.operation_id, pl.line_name, lot.operation_date, 
                                                                     lot.operation_hours, lot.break_time, lot.setup_time, 
                                                                     lot.change_model, lot.change_from , po.OK_qty
-                                                                FROM production_output AS po
-                                                                JOIN production_lines AS pl ON po.line_id = pl.line_id
-                                                                LEFT JOIN line_operation_times AS lot 
-                                                                    ON po.line_id = lot.line_id AND po.production_date = lot.operation_date AND po.model_name = lot.model_running
-                                                                WHERE MONTH(po.production_date) = :month AND YEAR(po.production_date) = :year
-                                                                AND pl.line_name = :line_name AND po.`OK_qty`> 100
-                                                                ORDER BY po.production_date ASC;''',
+                                                                FROM line_operation_times AS lot
+                                                                JOIN production_lines AS pl ON lot.line_id = pl.line_id
+                                                                LEFT JOIN production_output AS po
+                                                                    ON po.line_id = lot.line_id AND po.production_date = lot.operation_date AND lot.model_running = po.model_name
+                                                                WHERE MONTH(lot.operation_date) = :month AND YEAR(lot.operation_date) = :year
+                                                                AND pl.line_name = :line_name
+                                                                ORDER BY lot.operation_date ASC;''',
                                                                 params={"line_name": line_name, "month": month, "year": year})
                 self.operation_time_df = pd.DataFrame(operetion_time, columns=["operation_id", "line_name", "operation_date", "operation_hours", "break_time", "setup_time", "model", "change_from", "OK_qty"])
                 for row in range(self.operation_time_df.shape[0]):
@@ -10422,7 +11287,6 @@ class OEE_Other_Data(QtWidgets.QDialog):
                         else:
                             item = QtGui.QStandardItem(str(self.operation_time_df.iat[row, col]) if self.operation_time_df.iat[row, col] is not None else "")
                         item.setTextAlignment(QtCore.Qt.AlignCenter)
-                        # item.setEditable(False)
                         item.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Normal))
                         self.data_operation_time_model.setItem(row, col, item)
                 self.ui.line_operation_table.setModel(self.data_operation_time_model)
@@ -10461,50 +11325,74 @@ class OEE_Other_Data(QtWidgets.QDialog):
         
 
     @QtCore.pyqtSlot()
-    def _cycle_table_context_menu(self, pos):
-        index = self.ui.machine_cycle_table.indexAt(pos)
-        menu = QtWidgets.QMenu(self.ui.machine_cycle_table)
+    def _table_context_menu(self, pos,table):
+        index = table.indexAt(pos)
+        menu = QtWidgets.QMenu(table)
         add_act = menu.addAction("Add")
-        add_act.triggered.connect(lambda: self.add_cycle_time_record(index))
+        add_act.triggered.connect(lambda: self.add_action(index,table))
         if index.isValid():
             menu.addSeparator()
             del_act = menu.addAction("Delete")
-            del_act.triggered.connect(lambda: self.delete_cycle_time_record(index))
-        menu.exec_(self.ui.machine_cycle_table.viewport().mapToGlobal(pos))
+            del_act.triggered.connect(lambda: self.delete_action(index,table))
+        menu.exec_(table.viewport().mapToGlobal(pos))
 
     @QtCore.pyqtSlot()
-    def add_cycle_time_record(self,index):
-        self.edit_cycle_time_flag = True
+    def add_action(self,index,table):
         try:
-            self.data_cycle_time_model.insertRow(self.cycle_time_df.shape[0])
-            new_record = {"id": None, "model_name": self.ui.OEE_OD_model_cbb.currentText(), "machine_code": self.cycle_time_df.iat[0, 2], "cycle_time_seconds": None, "create_at": dt.datetime.now().date(), "notes": None}
-            self.cycle_time_df = pd.concat([pd.DataFrame([new_record]), self.cycle_time_df], ignore_index=True)
-            for col in range(self.cycle_time_df.shape[1]):
-                item = QtGui.QStandardItem(str(self.cycle_time_df.iat[0, col]) if self.cycle_time_df.iat[0, col] is not None else "")
-                item.setTextAlignment(QtCore.Qt.AlignCenter)
-                item.setEditable(True)
-                item.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Normal))
-                item.setBackground(QtGui.QColor(34, 57, 40, 30))
-                self.data_cycle_time_model.setItem(len(self.cycle_time_df) - 1, col, item)
+            if table is self.ui.machine_cycle_table:
+                self.edit_cycle_time_flag = True
+                self.data_cycle_time_model.insertRow(self.cycle_time_df.shape[0])
+                new_record = {"id": None, "model_name": self.ui.OEE_OD_model_cbb.currentText(), "machine_code": self.cycle_time_df.iat[0, 2], "cycle_time_seconds": None, "create_at": dt.datetime.now().date(), "notes": None}
+                self.cycle_time_df = pd.concat([pd.DataFrame([new_record]), self.cycle_time_df], ignore_index=True)
+                for col in range(self.cycle_time_df.shape[1]):
+                    item = QtGui.QStandardItem(str(self.cycle_time_df.iat[0, col]) if self.cycle_time_df.iat[0, col] is not None else "")
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setEditable(True)
+                    item.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Normal))
+                    item.setBackground(QtGui.QColor(34, 57, 40, 30))
+                    self.data_cycle_time_model.setItem(len(self.cycle_time_df) - 1, col, item)
+            else:
+                self.edit_operation_time_flag = True
+                self.data_operation_time_model.insertRow(self.operation_time_df.shape[0])
+                new_record = {"operation_id": None, "line_name": self.ui.OEE_OD_line_cbb.currentText(), "operation_date": self.ui.OEE_OD_period_edit.date().toPyDate(), "operation_hours": None, "break_time": None, "setup_time": None, "model": None, "change_from": None, "OK_qty": None}
+                self.operation_time_df = pd.concat([pd.DataFrame([new_record]), self.operation_time_df], ignore_index=True)
+                for col in range(self.operation_time_df.shape[1]):
+                    item = QtGui.QStandardItem(str(self.operation_time_df.iat[0, col]) if self.operation_time_df.iat[0, col] is not None else "")
+                    item.setTextAlignment(QtCore.Qt.AlignCenter)
+                    item.setEditable(True)
+                    item.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Normal))
+                    item.setBackground(QtGui.QColor(34, 57, 40, 30))
+                    self.data_operation_time_model.setItem(len(self.operation_time_df) - 1, col, item)
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to add cycle time record: {e}")
 
 
     @QtCore.pyqtSlot()
-    def delete_cycle_time_record(self,index):
+    def delete_action(self,index,table):
         try:
-            record_id = self.cycle_time_df.iat[index.row(), 0]
-            if record_id is not None:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Confirm", "Are you sure you want to delete this cycle time record?\nThis action cannot be undone.",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-                if reply != QtWidgets.QMessageBox.Yes:
-                    return
-                self.database.query(sql=''' DELETE FROM `machine_cycle_times` WHERE cycle_time_id = :id ''', params={'id': record_id})
-            self.data_cycle_time_model.removeRow(index.row())
-            self.cycle_time_df = self.cycle_time_df.drop(index.row()).reset_index(drop=True)
+            if table is self.ui.machine_cycle_table:
+                record_id = self.cycle_time_df.iat[index.row(), 0]
+                if record_id is not None:
+                    reply = QtWidgets.QMessageBox.question(
+                        self, "Confirm", "Are you sure you want to delete this cycle time record?\nThis action cannot be undone.",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                    if reply == QtWidgets.QMessageBox.Yes:
+                        self.database.query(sql=''' DELETE FROM `machine_cycle_times` WHERE cycle_time_id = :id ''', params={'id': record_id})
+                self.data_cycle_time_model.removeRow(index.row())
+                self.cycle_time_df = self.cycle_time_df.drop(index.row()).reset_index(drop=True)
+            else:
+                operation_id = self.operation_time_df.iat[index.row(), 0]
+                if operation_id is not None:
+                    reply = QtWidgets.QMessageBox.question(
+                        self, "Confirm", "Are you sure you want to delete this operation time record?\nThis action cannot be undone.",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                    if reply == QtWidgets.QMessageBox.Yes:
+                        self.database.query(sql=''' DELETE FROM `line_operation_times` WHERE operation_id = :id ''', params={'id': operation_id})
+                        self.rebuild_after_edit({"line_name": self.ui.OEE_OD_line_cbb.currentText(), "operation_month": self.ui.OEE_OD_period_edit.date().month(), "operation_year": self.ui.OEE_OD_period_edit.date().year()})
+                self.data_operation_time_model.removeRow(index.row())
+                self.operation_time_df = self.operation_time_df.drop(index.row()).reset_index(drop=True)
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to delete cycle time record: {e}")
+            QtWidgets.QMessageBox.critical(self, "Error", f"Failed to delete cycle time or operation time record: {e}")
     
     @QtCore.pyqtSlot()
     def edit_operation_time_record(self,index):
@@ -10530,10 +11418,25 @@ class OEE_Other_Data(QtWidgets.QDialog):
             QtWidgets.QMessageBox.critical(self, "Error", f"Failed to edit operation time record: {e}")
             return
 
+    def rebuild_after_edit(self, affected_points):
+        if not affected_points:
+            return
+        line_name = affected_points.get("line_name")
+        operation_month = affected_points.get("operation_month")
+        operation_year = affected_points.get("operation_year")
+        line_id = self.database.query(
+            sql="SELECT line_id FROM production_lines WHERE line_name = :line_name",
+            params={'line_name': line_name}
+        )[0][0]
+        self.database.query(
+            sql="CALL sp_rebuild_model_running(:line_id, :operation_month, :operation_year, :change_from)",
+            params={'line_id': line_id, 'operation_month': operation_month, 'operation_year': operation_year, 'change_from': "00:00:00"}
+        )
+
     @QtCore.pyqtSlot()
     def accept_action(self):
         insert_params = []
-        affected_points = []
+        affected_data = {}
         def update_cycle_time():
             for row in range(self.cycle_time_df.shape[0]):
                 record_id = self.data_cycle_time_model.index(row, 0).data()
@@ -10550,30 +11453,6 @@ class OEE_Other_Data(QtWidgets.QDialog):
                                                     (SELECT machine_id FROM machines WHERE machine_code = :machine_code),
                                                     :cycle_time_seconds,:notes)''', params_list=insert_params)
 
-        def rebuild_after_edit( affected_points):
-            if not affected_points:
-                return
-
-            line_name = self.ui.line_operation_table.model().index(0, 1).data()
-
-            line_id = self.database.query(
-                sql="SELECT line_id FROM production_lines WHERE line_name = :line_name",
-                params={'line_name': line_name}
-            )[0][0]
-            unique_points = {(p['operation_date'], p['change_from']) for p in affected_points}
-
-            points_sorted = sorted(
-                unique_points,
-                key=lambda x: (str(x[0]), x[1] if x[1] is not None else '00:00:00')
-            )
-            call_params = [
-                {'line_id': line_id, 'operation_date': d, 'change_from': cf}
-                for (d, cf) in points_sorted
-            ]
-            self.database.executemany(
-                sql="CALL sp_rebuild_model_running(:line_id, :operation_date, :change_from)",
-                params_list=call_params
-            )
         def update_operations():
             line_name = self.ui.line_operation_table.model().index(0, 1).data()
             if self.operation_edit_item_dict["new"]:
@@ -10581,13 +11460,9 @@ class OEE_Other_Data(QtWidgets.QDialog):
                 for row in set(self.operation_edit_item_dict["new"]):
                     operation_date = self.ui.line_operation_table.model().index(row, 2).data()
                     operation_hours = self.ui.line_operation_table.model().index(row, 3).data()
-                    break_time = self.ui.line_operation_table.model().index(row, 4).data() 
-                    setup_time = self.ui.line_operation_table.model().index(row, 5).data()
                     change_model = self.ui.line_operation_table.model().index(row, 6).data()
                     change_from = self.ui.line_operation_table.model().index(row, 7).data()
                     params_list.append({'line_name': line_name, 'operation_date': operation_date, 'operation_hours': operation_hours, 
-                                        # 'break_time': break_time.strip() if break_time.strip() != "" else 0, 
-                                        # 'setup_time': setup_time.strip() if setup_time.strip() != "" else 0, 
                                         'change_model': change_model.strip() if change_model.strip() != "" else None, 
                                         'change_from': change_from.strip() if change_from.strip() != "" else None})
                     
@@ -10602,23 +11477,16 @@ class OEE_Other_Data(QtWidgets.QDialog):
                     operation_id = self.operation_time_df.iat[row, 0]
                     operation_date = self.ui.line_operation_table.model().index(row, 2).data()
                     operation_hours = self.ui.line_operation_table.model().index(row, 3).data()
-                    break_time = self.ui.line_operation_table.model().index(row, 4).data()
-                    setup_time = self.ui.line_operation_table.model().index(row, 5).data()
                     change_model = self.ui.line_operation_table.model().index(row, 6).data()
                     change_from = self.ui.line_operation_table.model().index(row, 7).data()
                     cm = change_model.strip() if change_model.strip() != "" else None
                     cf = change_from.strip()  if change_from.strip()  != "" else None
-                    affected_points.append({'operation_date': operation_date, 'change_from': cf}) 
                     if pd.isna(operation_id) or operation_id is None:
                         params_list_insert.append({'line_name': line_name, 'operation_date': operation_date, 'operation_hours': operation_hours, 
-                                                            # 'break_time': break_time if break_time.strip() != "" else 0, 
-                                                            # 'setup_time': setup_time if setup_time.strip() != "" else 0, 
                                                             'change_model': cm, 
                                                             'change_from': cf})
                         continue
                     params_list_update.append({'operation_id': operation_id, 'operation_date': operation_date, 'operation_hours': operation_hours, 
-                                        # 'break_time': break_time if break_time.strip() != "" else 0, 
-                                        # 'setup_time': setup_time if setup_time.strip() != "" else 0, 
                                         'change_model': cm, 
                                         'change_from': cf})
                     
@@ -10628,10 +11496,12 @@ class OEE_Other_Data(QtWidgets.QDialog):
                                         params_list=params_list_update)
                 if params_list_insert:
                     self.database.executemany(sql = ''' INSERT INTO line_operation_times (line_id, operation_date, operation_hours, change_model, change_from)
-                                                    VALUES ((SELECT line_id FROM production_lines WHERE line_name = :line_name),
+                                                        VALUES ((SELECT line_id FROM production_lines WHERE line_name = :line_name),
                                                             :operation_date, :operation_hours, :change_model, :change_from)'''
                                           , params_list=params_list_insert)
-                rebuild_after_edit(affected_points)
+                affected_data["line_name"] = line_name
+                affected_data["operation_month"] = self.ui.OEE_OD_period_edit.date().month()
+                affected_data["operation_year"] = self.ui.OEE_OD_period_edit.date().year()
         try:
             if hasattr(self, 'edit_cycle_time_flag') and hasattr(self, 'edit_operation_time_flag'):
                 msgBox = QtWidgets.QMessageBox(self)
@@ -10647,10 +11517,12 @@ class OEE_Other_Data(QtWidgets.QDialog):
                     QtWidgets.QMessageBox.information(self, "Success", "Cycle time records have been updated successfully.")
                 elif clicked_button == operations_btn:
                     update_operations()
+                    self.rebuild_after_edit(affected_data)
                     QtWidgets.QMessageBox.information(self, "Success", "Operation time records have been updated successfully.")
                 elif clicked_button == both_btn:
                     update_cycle_time()
                     update_operations()
+                    self.rebuild_after_edit(affected_data)
                     QtWidgets.QMessageBox.information(self, "Success", "Cycle time and operation time records have been updated successfully.")
                 else:
                     return
@@ -10659,6 +11531,7 @@ class OEE_Other_Data(QtWidgets.QDialog):
                 QtWidgets.QMessageBox.information(self, "Success", "Cycle time records have been updated successfully.")
             elif hasattr(self, 'edit_operation_time_flag'):
                 update_operations()
+                self.rebuild_after_edit(affected_data)
                 QtWidgets.QMessageBox.information(self, "Success", "Operation time records have been updated successfully.")
             else:
                 return
@@ -11081,7 +11954,7 @@ class Downtime_Detail_dashboard(QtWidgets.QDialog):
                 symbolSize=4
             )
             VISIBLE = 30 if view_by == "day" else 12
-            STEP_LABEL = 7 if len(labels) > 30 else 1
+            STEP_LABEL = 7 if len(labels) > 7 else 1
             ticks = [(i, labels[i]) for i in range(0, len(labels), STEP_LABEL)]
             if len(labels) > 0 and (len(labels) - 1) % STEP_LABEL != 0:
                 ticks.append((len(labels) - 1, labels[-1]))
@@ -11176,24 +12049,25 @@ class Downtime_Detail_dashboard(QtWidgets.QDialog):
             insights.append(f"<p style='margin: 0px; margin-top: 8px;'>• <b>Overview:</b></p>")
             
             style_sub_overview = "style='margin: 0px; margin-left: 25px;'"
-            
-            if mttr <= mttr_target:
-                mttr_text = f"<p {style_sub_overview}>• <b>MTTR:</b> <span style='color: #10b981; font-weight: bold;'> Reached target ({mttr_time})</span></p>"
+            if data.get("group_col") == "Line Name":
+                if mttr <= mttr_target:
+                    mttr_text = f"<p {style_sub_overview}>• <b>MTTR:</b> <span style='color: #10b981; font-weight: bold;'> Reached target ({mttr_time})</span></p>"
+                else:
+                    mttr_text = f"<p {style_sub_overview}>• <b>MTTR:</b> <span style='color:red; font-weight: bold;'> Missed target ({mttr_time})</span></p>"
+                insights.append(mttr_text)
+                
+                if mtbf >= mtbf_target:
+                    mtbf_text = f"<p {style_sub_overview}>• <b>MTBF:</b> <span style='color: #10b981; font-weight: bold;'> Reached target ({mtbf_time})</span></p>"
+                else:
+                    mtbf_text = f"<p {style_sub_overview}>• <b>MTBF:</b> <span style='color:red; font-weight: bold;'> Missed target ({mtbf_time})</span></p>"
+                insights.append(mtbf_text)
+                is_mttr_good = mttr <= mttr_target 
+                is_mtbf_good = mtbf >= mtbf_target
             else:
-                mttr_text = f"<p {style_sub_overview}>• <b>MTTR:</b> <span style='color:red; font-weight: bold;'> Missed target ({mttr_time})</span></p>"
-            insights.append(mttr_text)
-            
-            if mtbf >= mtbf_target:
-                mtbf_text = f"<p {style_sub_overview}>• <b>MTBF:</b> <span style='color: #10b981; font-weight: bold;'> Reached target ({mtbf_time})</span></p>"
-            else:
-                mtbf_text = f"<p {style_sub_overview}>• <b>MTBF:</b> <span style='color:red; font-weight: bold;'> Missed target ({mtbf_time})</span></p>"
-            insights.append(mtbf_text)
-            
+                is_mttr_good = True
+                is_mtbf_good = True
             insights.append(f"<p style='margin: 0px; margin-top: 14px;'>• <b>Reference:</b></p>")
             style_sub_ref = "style='margin: 0px; margin-left: 25px; text-align: justify;'"
-            
-            is_mttr_good = mttr <= mttr_target 
-            is_mtbf_good = mtbf >= mtbf_target 
             
             if is_mttr_good and not is_mtbf_good:
                 conclusion = (
@@ -11417,7 +12291,7 @@ class Mini_Card(QtWidgets.QFrame):
             new_layout.setSpacing(0)
             self.ui.OEE_chart.setLayout(new_layout)
         layout = self.ui.OEE_chart.layout()
-        chart = DonutChart(value=percent_value,target_value = self.oee_target, parameter_name="%OEE", scale = 0.9, has_Lengend=False)
+        chart = Progress_DonutChart(value=percent_value,target_value = self.oee_target, parameter_name="%OEE", scale = 0.9, has_Lengend=False)
         layout.addWidget(chart)
 
     def mouseDoubleClickEvent(self, event):
@@ -11427,8 +12301,63 @@ class Mini_Card(QtWidgets.QFrame):
         else:
             super().mouseDoubleClickEvent(event)
         
+class Filter_Frame(QtWidgets.QFrame):
+    def __init__(self, parent=None, filter_using = None, apply_filter_callback=None, suggestion_callback=None , view_type = None, columns = None, script_select_column = None):
+        super().__init__(parent)
+        self.ui = Ui_Filter_frame()
+        self.ui.setupUi(self)
+        self.filter_using = filter_using
+        self.apply_filter_callback = apply_filter_callback
+        self.suggestion_callback = suggestion_callback
+        self.view_type = view_type
+        self.columns = columns
+        self.script_select_column = script_select_column
+        self.setWindowFlags(QtCore.Qt.Popup | QtCore.Qt.FramelessWindowHint)
+        self.filter_mapping = {
+            "code": self.ui.code_frame,
+            "name": self.ui.name_frame,
+            "group": self.ui.group_frame,
+            "line": self.ui.line_frame,
+            "status": self.ui.status_frame,
+            "button": self.ui.button_frame }
+        for key, frame in self.filter_mapping.items():
+            if key in self.filter_using:
+                frame.setHidden(False)
+            else:
+                frame.setHidden(True)
+        self.ui.apply_filter_btn.clicked.connect(self.apply_filter)
+        self.ui.cancel_filter_btn.clicked.connect(lambda: self.setHidden(True))
+        self.ui.code_lnedit.textChanged.connect(lambda text: self.suggestion_callback(fill = "code", text = text) if self.suggestion_callback else None)
+        self.ui.name_lnedit.textChanged.connect(lambda text: self.suggestion_callback(fill = "name", text = text) if self.suggestion_callback else None)
 
-    
+    def set_filter_parameters(self, view_type = None, columns = None, script_select_column = None ):
+        self.view_type = view_type
+        self.columns = columns
+        self.script_select_column = script_select_column
+        
+    @QtCore.pyqtSlot()
+    def apply_filter(self):
+        filter_values = {}
+        for filter_name in self.filter_using:
+            frame = self.filter_mapping[filter_name]
+
+            line_edit = frame.findChild(QtWidgets.QLineEdit)
+            if line_edit:
+                filter_values[filter_name] = line_edit.text().strip()
+                continue
+
+            combo = frame.findChild(QtWidgets.QComboBox)
+            if combo:
+                filter_values[filter_name] = combo.currentText()
+                continue
+
+            check = frame.findChild(QtWidgets.QCheckBox)
+            if check:
+                filter_values[filter_name] = check.isChecked()
+        if self.apply_filter_callback:
+            self.apply_filter_callback(filter_values = filter_values, view_type = self.view_type, columns = self.columns, script_select_column = self.script_select_column)
+        self.setHidden(True)
+
 def main():
     try:
         import ctypes

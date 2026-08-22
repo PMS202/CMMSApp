@@ -20,6 +20,7 @@ COLOR_CARD_BG = "#FFFFFF"   # White cards
 COLOR_TEXT_MAIN = "#1F2937" # Dark graphite
 COLOR_TEXT_MUTED = "#6B7280"
 COLOR_HOVER_BG = "#F7F7F7"
+
 class Ui_OEE_mini_card(object):
     def setupUi(self, Frame):
         Frame.setObjectName("Frame")
@@ -45,24 +46,26 @@ class Ui_OEE_mini_card(object):
         self.infor_widget = QtWidgets.QWidget(Frame)
         self.infor_widget.setObjectName("infor_widget")
         self.infor_widget.setFixedWidth(250)
-        self.gridLayout = QtWidgets.QGridLayout(self.infor_widget)
-        self.gridLayout.setObjectName("gridLayout")
+        self.verticalLayout_1 = QtWidgets.QVBoxLayout(self.infor_widget)
+        self.verticalLayout_1.setObjectName("verticalLayout_1")
+        self.verticalLayout_1.setContentsMargins(5, 0, 5, 0)
         self.line_lbl = QtWidgets.QLabel(self.infor_widget)
         self.line_lbl.setObjectName("line_lbl")
         self.line_lbl.setFont(QtGui.QFont(FONT_FAMILY, 15, QtGui.QFont.Bold))
         self.line_lbl.setStyleSheet(f"color: {COLOR_TEXT_MAIN}; border: none;")
-        self.gridLayout.addWidget(self.line_lbl, 0, 0, 1, 1)
+        self.verticalLayout_1.addWidget(self.line_lbl)
         self.model_lbl = QtWidgets.QLabel(self.infor_widget)
         self.model_lbl.setObjectName("model_lbl")
         self.model_lbl.setFont(QtGui.QFont(FONT_FAMILY, 13))
         self.model_lbl.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; border: none;")
-        self.gridLayout.addWidget(self.model_lbl, 1, 0, 1, 1)
+        self.model_lbl.setWordWrap(True)
+        self.verticalLayout_1.addWidget(self.model_lbl)
         self.process_lbl = QtWidgets.QLabel(self.infor_widget)
         self.process_lbl.setObjectName("process_lbl")
         self.process_lbl.setFont(QtGui.QFont(FONT_FAMILY, 10))
         self.process_lbl.setStyleSheet(f"color: {COLOR_TEXT_MUTED}; border: none;")
 
-        self.gridLayout.addWidget(self.process_lbl, 2, 0, 1, 1)
+        self.verticalLayout_1.addWidget(self.process_lbl)
         self.horizontalLayout.addWidget(self.infor_widget)
         self.frame = QtWidgets.QFrame(Frame)
         self.frame.setStyleSheet("background-color: #E5E7EB; max-width: 1px; border: none;")
