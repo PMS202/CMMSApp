@@ -38,6 +38,7 @@ RED = "#e2483d"
 AMBER = "#e8a33d"
 TRACK = "#e6eaf0"
 BLUE_LOGO = "#1447a3"
+TARGET_COLOR = "#6bffff"
 
 
 
@@ -81,12 +82,13 @@ def make_card_path(w, h, r, nr, notch):
     return p
 
 class ArcGauge(QWidget):
-    def __init__(self, value, max_value, color, ticks=None,
+    def __init__(self, value, max_value, target ,color, ticks=None,
                  start_angle=225.0, span_angle=-270.0,
                  minor_ticks=48, center_lines=None, ratio=1.3, parent=None):
         super().__init__(parent)
         self.value = value
         self.max_value = max_value
+        self.target = target
         self.color = QColor(color)
         self.ticks = ticks or []
         self.start_angle = start_angle
@@ -119,14 +121,20 @@ class ArcGauge(QWidget):
         p.setPen(pen)
         p.drawArc(rect, int(self.start_angle * 16), int(self.span_angle * 16))
 
-        # --- value arc ---
-        frac = max(0.0, min(1.0, self.value / self.max_value)) if self.max_value else 0
-        if frac > 0:
-            pen.setColor(self.color)
-            p.setPen(pen)
-            p.drawArc(rect, int(self.start_angle * 16),
-                      int(self.span_angle * frac * 16))
-
+        def draw_arc(value, color, pen_thickness):
+            frac = max(0.0, min(1.0, value / self.max_value)) if self.max_value else 0
+            if frac > 0:
+                pen.setWidthF(pen_thickness)
+                pen.setColor(QColor(color))
+                p.setPen(pen)
+                p.drawArc(rect, int(self.start_angle * 16),
+                          int(self.span_angle * frac * 16))
+        if self.target > self.value:
+            draw_arc(self.target, TARGET_COLOR, thickness * 0.5)
+            draw_arc(self.value, self.color, thickness)
+        else:
+            draw_arc(self.value, self.color, thickness)
+            draw_arc(self.target, TARGET_COLOR, thickness * 0.5)
         # --- fine dotted minor ticks (just outside the ring) ---
         if self.minor_ticks:
             p.setPen(QPen(QColor(TEXT_GRAY), 1))
@@ -147,6 +155,124 @@ class ArcGauge(QWidget):
             p.setFont(QFont("Segoe UI", max(7, int(radius * 0.11))))
             n = len(self.ticks) - 1
             r_lbl = radius + thickness * 1.55
+            for i, t in enumerate(self.ticks):
+                f = i / n if n else 0
+                ang = math.radians(self.start_angle + self.span_angle * f)
+                tx = cx + r_lbl * math.cos(ang)
+                ty = cy - r_lbl * math.sin(ang)
+                p.drawText(QRectF(tx - 16, ty - 9, 32, 18),
+                           Qt.AlignCenter, str(t))
+
+        # --- centred text lines (title + value) ---
+        if self.center_lines:
+            total = sum(l.get("size", 14) + 6 for l in self.center_lines)
+            y = cy - total / 2
+            for line in self.center_lines:
+                size = line.get("size", 14)
+                p.setPen(QColor(line.get("color", TEXT_DARK)))
+                f = QFont("Segoe UI", size,
+                          QFont.Bold if line.get("bold") else QFont.Normal)
+                p.setFont(f)
+                p.drawText(QRectF(cx - radius, y, radius * 2, size + 8),
+                           Qt.AlignCenter, line["text"])
+                y += size + 6
+
+class Arc_Health_Gauge(QWidget):
+    def __init__(self, value, max_value, target ,color_desc = True, ticks=None,
+                 start_angle=225.0, span_angle=-270.0,
+                 minor_ticks=48, center_lines=None, ratio=1.3, parent=None):
+        super().__init__(parent)
+        self.value = value
+        self.max_value = max_value
+        self.target = target
+        if color_desc:
+            self.LIGHT_COLOR = [
+                            "#28851F", "#55A028", "#63B72F", "#8BCA35", 
+                            "#FDD03C", "#F8B334", "#F3962D", "#EF7A26",
+                            "#E95B20", "#E33F1A", "#DD2616", "#D61314"
+                        ]
+            self.DARK_COLOR = [
+                            "#14420F", "#2A5014", "#315B17", "#46661A",
+                            "#80691E", "#7D591A", "#794B16", "#774014",
+                            "#732E12", "#701F0D", "#6E120B", "#6B090A"
+                        ]
+        else:
+            self.LIGHT_COLOR = [
+                            "#D61314", "#DD2616", "#E33F1A", "#E95B20",
+                            "#EF7A26", "#F3962D", "#F8B334", "#FDD03C",
+                            "#8BCA35",  "#63B72F", "#55A028", "#28851F"
+                        ]
+            self.DARK_COLOR = [
+                            "#6B090A", "#6E120B", "#701F0D", "#732E12", 
+                            "#774014", "#794B16", "#7D591A", "#80691E",
+                            "#46661A", "#315B17", "#2A5014", "#14420F"
+                        ]
+        self.ticks = ticks or []
+        self.start_angle = start_angle
+        self.span_angle = span_angle
+        self.minor_ticks = minor_ticks
+        self.center_lines = center_lines or []
+        self.setMinimumSize(200, 170)
+        self.ratio = ratio
+
+    def setValue(self, value, max_value=None):
+        self.value = value
+        if max_value is not None:
+            self.max_value = max_value
+        self.update()
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+
+        w, h = self.width(), self.height()
+        side = min(w, h * self.ratio)
+        thickness = max(9, side * 0.01)
+        radius = side / 2 - thickness
+        cx = w / 2
+        cy = h * 0.52 if self.span_angle <= -260 else h*0.78
+        rect = QRectF(cx - radius, cy - radius, radius * 2, radius * 2)
+
+        # --- background track ---
+        self.split_part_arc = int(self.span_angle / len(self.LIGHT_COLOR))
+        frac = max(0.0, min(1.0, self.value / self.max_value)) if self.max_value else 0
+        color = None
+        for i in range(len(self.LIGHT_COLOR)):
+            if self.value > self.max_value * i / len(self.LIGHT_COLOR):
+                color = self.LIGHT_COLOR[i]
+            pen = QPen(QColor(self.LIGHT_COLOR[i]), thickness, Qt.SolidLine, Qt.FlatCap)
+            p.setPen(pen)
+            p.drawArc(rect, int((self.start_angle + self.split_part_arc * i) * 16), int(self.split_part_arc * 16))
+
+        offset = thickness * 2
+        rect_inner = rect.adjusted(offset, offset, -offset, -offset)
+        pen = QPen(QColor(TRACK), thickness*2, Qt.SolidLine, Qt.FlatCap)
+        p.setPen(pen)
+        p.drawArc(rect_inner, int(self.start_angle * 16), int(self.span_angle * 16))
+
+        pen.setColor(QColor(color))
+        p.setPen(pen)
+        p.drawArc(rect_inner, int(self.start_angle * 16), int(self.span_angle * frac * 16))
+
+        if self.minor_ticks:
+            p.setPen(QPen(QColor(TEXT_GRAY), 1))
+            r_in = radius + thickness * 0.60
+            r_out = radius + thickness * 0.95
+            for i in range(self.minor_ticks + 1):
+                f = i / self.minor_ticks
+                ang = math.radians(self.start_angle + self.span_angle * f)
+                x1 = cx + r_in * math.cos(ang)
+                y1 = cy - r_in * math.sin(ang)
+                x2 = cx + r_out * math.cos(ang)
+                y2 = cy - r_out * math.sin(ang)
+                p.drawLine(QPointF(x1, y1), QPointF(x2, y2))
+
+        # --- major tick labels ---
+        if self.ticks:
+            p.setPen(QColor(TEXT_GRAY))
+            p.setFont(QFont("Segoe UI", max(7, int(radius * 0.11))))
+            n = len(self.ticks) - 1
+            r_lbl = radius + thickness * 2.0
             for i, t in enumerate(self.ticks):
                 f = i / n if n else 0
                 ang = math.radians(self.start_angle + self.span_angle * f)

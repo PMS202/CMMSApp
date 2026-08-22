@@ -28,7 +28,7 @@ def load_qss_file(qss_path):
 class UI_DT_detail_report(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Down_time_detail_report")
-        Dialog.resize(1100, 950)
+        Dialog.resize(1100, 980)
         qss = load_qss_file(resource_path("Stylesheet\\Ubuntu.qss"))
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
@@ -360,7 +360,7 @@ class UI_DT_detail_report(object):
         self.Detail_action_frame.setObjectName(u"Detail_action_frame")
         self.Detail_action_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.Detail_action_frame.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.Detail_action_frame.setMaximumHeight(100)
+        self.Detail_action_frame.setMaximumHeight(120)
         self.Detail_action_frame.setStyleSheet(qss)
         self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.Detail_action_frame)
         self.verticalLayout_9.setObjectName(u"verticalLayout_9")

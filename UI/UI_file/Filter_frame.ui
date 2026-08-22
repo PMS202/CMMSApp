@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Frame</class>
+ <widget class="QFrame" name="Frame">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>318</width>
+    <height>326</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Frame</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QFrame" name="frame">
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_14">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Code</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="code_lnedit"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame_2">
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_15">
+      <item>
+       <widget class="QLabel" name="label_1">
+        <property name="text">
+         <string>Name</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="name_lnedit"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame_3">
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_17">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Group</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="group_cbb"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame_4">
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_18">
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Line</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="line_cbb"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame_5">
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_19">
+      <item>
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>Status</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="status_cbb"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frame_6">
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_21">
+      <item>
+       <widget class="QPushButton" name="apply_filter_btn">
+        <property name="text">
+         <string>Apply</string>
+        </property>
+        <property name="flat">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="cancel_filter_btn">
+        <property name="text">
+         <string>Cancel</string>
+        </property>
+        <property name="flat">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

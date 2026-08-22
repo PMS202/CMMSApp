@@ -69,7 +69,7 @@ class Printer_process():
                             fontname="helv",
                             color=(0, 0, 0)  
                         )
-            page.insert_text((x+50, y+40), f"Techinical: {data[4]}",      
+            page.insert_text((x+50, y+40), f"Technician: {data[4]}",      
                             fontsize=8,
                             fontname="helv",
                             color=(0, 0, 0)  
@@ -102,4 +102,55 @@ class Printer_process():
         except Exception as e:
             raise e
 
+# if __name__ == "__main__":
+#     printer_process = Printer_process()
+#     printer_process.choice_printer("")
 
+#     form_dict = {
+#     # '2130288':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\6.0 FORM BAO TRI NFX\CUM MAY FORMING NFX.pdf',
+#     '2130291':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\6.0 FORM BAO TRI NFX\CUM MAY DAY CORE NFX.pdf',
+#     '2142312-1/13':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\6.0 FORM BAO TRI NFX\MÁY QUẤN DÂY TỰ ĐỘNG.pdf',
+#     '2142312-6/13':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\6.0 FORM BAO TRI NFX\CUM MAY FORMING NFX.pdf',
+#     '2142312-7/13':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\6.0 FORM BAO TRI NFX\CUM MAY DAY CORE NFX.pdf',
+#     '2166321-1/4':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\6.0 FORM BAO TRI NFX\MÁY QUẤN DÂY TỰ ĐỘNG.pdf',
+#     '2224560':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\6.0 FORM BAO TRI NFX\CUM MAY FORMING NFX.pdf',
+#     '2224561':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\6.0 FORM BAO TRI NFX\MÁY QUẤN DÂY TỰ ĐỘNG.pdf',
+#     '2224562':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\6.0 FORM BAO TRI NFX\CUM MAY DAY CORE NFX.pdf',
+#     'MCG150005':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG150011':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG150032':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG150048':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG150273':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG150297':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG153626':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG153647':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG180040':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG190210':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     'MCG230122':r'\\172.30.73.156\nd_ie2\Noise Device - IE Data\DANH MUC THIET BI BAO TRI\FORM BAO TRI SCAN\1.1 FORM BẢO TRÌ NHÓM IE1\MÁY FORMING.pdf',
+#     }
+#     data_dict = {
+#     # '2130288':['2130288','ROUNDING + DISPENSING','PE1','NFC4','THANH','2026-01-05'],
+#     '2130291':['2130291','ASSEMBLING +JET DISPENSER','PE1','NFC4','THANH','2026-01-05'],
+#     '2142312-1/13':['2142312-1/13','WINDING MACHINE for 2142312','PE1','NFC5','THANH','2026-01-06'],
+#     '2142312-6/13':['2142312-6/13','ASSEMBLING AND FORMING  for 2142312','PE1','NFC5','THANH','2026-01-06'],
+#     '2142312-7/13':['2142312-7/13','ASSEMBLY T CORE AND JET DISPENSER for 2142312','PE1','NFC5','THANH','2026-01-06'],
+#     '2166321-1/4':['2166321-1/4','WINDING MACHINE for 2166321','PE1','NFC4','THANH','2026-01-05'],
+#     '2224560':['2224560','FORMING MACHINE','PE1','NFC6','THANH','2026-01-07'],
+#     '2224561':['2224561','WINDING MACHINE','PE1','NFC6','THANH','2026-01-07'],
+#     '2224562':['2224562','GLUE,T-CORE ASSY MACHINE','PE1','NFC6','THANH','2026-01-07'],
+#     'MCG150005':['MCG150005','Forming','PE1','WSPE1','THANH','2026-01-19'],
+#     'MCG150011':['MCG150011','Forming','PE1','WSPE1','THANH','2026-01-19'],
+#     'MCG150032':['MCG150032','Forming','PE1','WSPE1','THANH','2026-01-19'],
+#     'MCG150048':['MCG150048','Forming','PE1','WSPE1','THANH','2026-01-19'],
+#     'MCG150273':['MCG150273','Forming','PE1','WSPE1','THANH','2026-01-19'],
+#     'MCG150297':['MCG150297','Forming','PE1','WSPE1','THANH','2026-01-17'],
+#     'MCG153626':['MCG153626','Forming','PE1','WSPE1','THANH','2026-01-19'],
+#     'MCG153647':['MCG153647','Forming','PE1','WSPE1','THANH','2026-01-19'],
+#     'MCG180040':['MCG180040','Forming','PE1','WSPE1','THANH','2026-01-19'],
+#     'MCG190210':['MCG190210','Forming ','PE1','WSPE1','THANH','2026-01-19'],
+#     'MCG230122':['MCG230122','Forming ','PE1','WSPE1','THANH','2026-01-19']}
+
+#     for machine_code, data in data_dict.items():
+#         form_path = form_dict.get(machine_code)
+#         if data:
+#             printer_process.send_to_printer(input_pdf=form_path, data=data, page_number=0, x=10, y=25, size=50)
