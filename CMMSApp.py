@@ -866,11 +866,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             filter_scripts = f''' AND {period_query} = :year '''
             filter_scripts_dt = ''' AND YEAR(Date) = :year'''
             filter_scripts_wt = f'''AND YEAR(lot.operation_date) = :year'''
+            filter_script_area = f" AND YEAR(po.production_date) = {year}"
         else:
             period_query = "MONTH(oee.production_date)"
             filter_scripts = ''' AND MONTH(oee.production_date) = :month AND YEAR(oee.production_date) = :year '''
             filter_scripts_dt = ''' AND MONTH(Date) = :month AND YEAR(Date) = :year'''
             filter_scripts_wt = f'''AND MONTH(lot.operation_date) = :month AND YEAR(lot.operation_date) = :year'''
+            filter_script_area = f" AND MONTH(po.production_date) = {month} AND YEAR(po.production_date) = {year}"
 
         def fetch_data():
             oee_data = self.database_process.query(sql=f'''WITH oee_data AS (
@@ -899,26 +901,37 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                         ORDER BY oee_data.line_name, oee_data.model_name, oee_data.process;
                                                     ''' ,
                                                     params={"area_name": area_name, "month": month, "year": year})
-            oee_target = self.database_process.query(sql=f'''SELECT pl.line_name, model.model_name, target.process, target.availability_target, target.performance_target, target.quality_target, target.OEE_target
-                                                            FROM oee_targets AS target
-                                                            JOIN downtime_areas AS da ON da.downtime_area_id = target.downtime_area_id
-                                                            LEFT JOIN production_lines AS pl ON target.line_id = pl.line_id
-                                                            LEFT JOIN product_models_oee AS model ON target.model_id = model.model_id
-                                                            WHERE da.downtime_area_name = :area_name;''',
-                                                    params={"area_name": area_name})
+            oee_target = self.database_process.query(sql=f'''SELECT pl.line_name, model.model_name, t.process, t.availability_target, t.performance_target, t.quality_target, t.OEE_target
+                                                                FROM (
+                                                                    SELECT target.*,
+                                                                        ROW_NUMBER() OVER (
+                                                                            PARTITION BY target.line_id, target.model_id, target.process
+                                                                            ORDER BY target.date_created DESC
+                                                                        ) AS rn
+                                                                    FROM oee_targets AS target
+                                                                    JOIN downtime_areas AS da ON da.downtime_area_id = target.downtime_area_id
+                                                                    WHERE da.downtime_area_name = :area_name AND target.date_created <= :date
+                                                                ) AS t
+                                                                LEFT JOIN production_lines AS pl ON t.line_id = pl.line_id
+                                                                LEFT JOIN product_models_oee AS model ON t.model_id = model.model_id
+                                                                WHERE t.rn = 1;''',
+                                                    params={"area_name": area_name, "date": f"{year}-{month:02d}-28"})
             mttr_mtbf_area_target = self.database_process.query(sql=f'''SELECT dttg.mttr_target_value, dttg.mtbf_target_value
                                                                     FROM mttr_mtbf_targets AS dttg
                                                                     JOIN downtime_areas AS da ON dttg.downtime_area_id = da.downtime_area_id
-                                                                    WHERE da.downtime_area_name = :area_name AND dttg.created_at <= ":year-:month-28"
-                                                                    AND dttg.line_id IS NULL AND dttg.machine_id IS NULL
+                                                                    WHERE da.downtime_area_name = :area_name AND dttg.created_at <= :date AND dttg.line_id IS NULL AND dttg.machine_id IS NULL
                                                                     ORDER BY dttg.created_at DESC
-                                                                    LIMIT 1; ''', params={"area_name": area_name, "month": month, "year": year})
-            mttr_mtbf_line_target = self.database_process.query(sql=f'''SELECT pl.line_name, dttg.mttr_target_value, dttg.mtbf_target_value
-                                                                    FROM mttr_mtbf_targets AS dttg
-                                                                    JOIN production_lines AS pl ON dttg.line_id = pl.line_id
-                                                                    JOIN downtime_areas AS da ON dttg.downtime_area_id = da.downtime_area_id
-                                                                    WHERE da.downtime_area_name = :area_name AND dttg.created_at <= ":year-:month-28"
-                                                                    ORDER BY dttg.created_at DESC; ''', params={"area_name": area_name, "month": month, "year": year})
+                                                                    LIMIT 1; ''', params={"area_name": area_name, "month": month, "year": year, "date": f"{year}-{month:02d}-28"})
+            mttr_mtbf_line_target = self.database_process.query(sql=f'''SELECT pl.line_name, t.mttr_target_value, t.mtbf_target_value
+                                                                        FROM (
+                                                                            SELECT dttg.*,
+                                                                                    ROW_NUMBER() OVER (PARTITION BY dttg.line_id ORDER BY dttg.created_at DESC) AS rn
+                                                                            FROM mttr_mtbf_targets AS dttg
+                                                                            WHERE dttg.created_at <= :date AND dttg.machine_id IS NULL
+                                                                        ) AS t
+                                                                        JOIN production_lines AS pl ON t.line_id = pl.line_id
+                                                                        JOIN downtime_areas AS da ON t.downtime_area_id = da.downtime_area_id
+                                                                        WHERE da.downtime_area_name = :area_name AND t.rn = 1; ''', params={"area_name": area_name, "month": month, "year": year, "date": f"{year}-{month:02d}-28"})
             total_model_iatf_count = self.database_process.query(sql=f'''SELECT COUNT(DISTINCT model_id) as total_model_iatf_count
                                                                         FROM product_models_oee  AS pmo
                                                                         JOIN departments as d ON pmo.department_id = d.department_id
@@ -936,7 +949,26 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                 JOIN production_lines as pl ON lot.line_id = pl.line_id
                                                                 WHERE da.downtime_area_name = :area_name {filter_scripts_wt}
                                                                 GROUP BY pl.line_name;''', params={"area_name": area_name, "month": month, "year": year})
-            return {"oee_data": oee_data, "oee_target": oee_target, "dt_line_target": mttr_mtbf_line_target, "dt_area_target": mttr_mtbf_area_target, "model_count": total_model_iatf_count[0][0] if total_model_iatf_count else 0, "downtime_data": downtime_data, "working_time": working_time}
+            lines = self.database_process.query(sql=f'''SELECT DISTINCT pl.line_name
+                                                            FROM `production_lines` as pl
+                                                            JOIN `production_output` as po ON pl.line_id = po.line_id
+                                                            JOIN `product_models_oee` as pmo ON po.model_name = pmo.model_name
+                                                            JOIN `downtime_areas` as da ON pmo.department_id = da.department_id
+                                                            WHERE da.downtime_area_name = :area_name AND po.OK_qty > 100  {filter_script_area}
+                                                            ORDER BY pl.line_name ASC;''', params={"area_name": area_name})
+            OEE_model = self.database_process.query(sql=f'''SELECT DISTINCT pmo.model_name 
+                                                            FROM `product_models_oee` as pmo
+                                                            JOIN `production_output` as po ON pmo.model_name = po.model_name
+                                                            JOIN `production_lines` as pl ON po.line_id = pl.line_id
+                                                            WHERE pl.line_name = :line_name  {filter_script_area};''', params={"line_name": lines[0][0]})
+            process = self.database_process.query(sql=f'''SELECT DISTINCT mor.process 
+                                                            FROM `machine_OEE_register` as mor
+                                                            JOIN `machines` as m ON mor.machine_id = m.machine_id
+                                                            JOIN `production_lines` as pl ON m.line_id = pl.line_id
+                                                            JOIN `product_models_oee` as pmo ON mor.model_id = pmo.model_id
+                                                            WHERE pl.line_name = :line_name AND pmo.model_name = :model_name;''', params={"line_name": lines[0][0], "model_name": OEE_model[0][0]})
+            upload_data_filter = {"line": lines, "model": OEE_model, "process": process}
+            return {"oee_data": oee_data, "oee_target": oee_target, "dt_line_target": mttr_mtbf_line_target, "dt_area_target": mttr_mtbf_area_target, "model_count": total_model_iatf_count[0][0] if total_model_iatf_count else 0, "downtime_data": downtime_data, "working_time": working_time, "upload_data_filter": upload_data_filter}
         
         def on_data_fetched(data):
             oee_data = data["oee_data"]
@@ -946,6 +978,15 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             dt_line_target = data["dt_line_target"]
             dt_area_target = data["dt_area_target"]
             working_time = data["working_time"]
+            upload_data_filter = data["upload_data_filter"]
+            if upload_data_filter is not None:
+                blockers = [QtCore.QSignalBlocker(w) for w in [self.ui.OEE_line_cbb, self.ui.OEE_model_cbb, self.ui.OEE_process_cbb] if w is not None]
+                self.ui.OEE_line_cbb.clear()
+                self.ui.OEE_line_cbb.addItems([line[0] for line in upload_data_filter["line"]])
+                self.ui.OEE_model_cbb.clear()
+                self.ui.OEE_model_cbb.addItems([model[0] for model in upload_data_filter["model"]])
+                self.ui.OEE_process_cbb.clear()
+                self.ui.OEE_process_cbb.addItems([process[0] for process in upload_data_filter["process"]])
             total_oee = pd.DataFrame(oee_data, columns=["area_name", "line_name", "model_name", "process", "cycle_time_seconds" ,"production_date", "planed_time", "OK_qty",
                                        "NG_qty", "Available_Time", "Availability_percentage", "Performance_percentage", "Quality_percentage", "OEE_percentage"])
             if total_oee.empty or model_count == 0 or downtime_data is None or working_time is None:
@@ -1134,11 +1175,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                 AND pl.line_name = :line AND ot.process = :process
                                                                 AND ot.date_created <= :date
                                                                 ORDER BY ot.date_created DESC
-                                                                LIMIT 1;''', params={"model_name": model_name, "line": line, "process": process, "date": f"{year}-{month:02d}-{calendar.monthrange(year, month)[1]}"})
+                                                                LIMIT 1;''', params={"model_name": model_name, "line": line, "process": process, "date": f"{year}-{month:02d}-28"})
             downtime_target = self.database_process.query(sql=f'''SELECT mttr_target_value, mtbf_target_value
                                                                 FROM `mttr_mtbf_targets` as mmt
                                                                 JOIN `production_lines` as pl ON mmt.line_id = pl.line_id
-                                                                WHERE pl.line_name = :line;''', params={"line": line})
+                                                                WHERE pl.line_name = :line AND mmt.created_at <= :date
+                                                                ORDER BY mmt.created_at DESC
+                                                                LIMIT 1;''', params={"line": line, "date": f"{year}-{month:02d}-01"})
             previous_oee_data = self.database_process.query(sql=f'''SELECT ore.area_name, ore.line_name, ore.model_name, ore.process, MONTH(ore.production_date), SUM(ore.planed_time), SUM(ore.`OK_qty`),
                                                                 SUM(`NG_qty`), SUM(`Total_Loss`), SUM(`Repair_Time`), SUM(`Available_Time`), AVG(`Availability_percentage`), AVG(`Performance_percentage`),
                                                                 AVG(`Quality_percentage`), AVG(`OEE_percentage`) 
@@ -1429,9 +1472,11 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 line_chart.setMouseEnabled(x=False, y=False)
                 x = df[x_lbl].apply(lambda d: d.timestamp()
                                     ).values.astype(float)
-                x_dense = np.linspace(x[0], x[-1], len(x) * 10)
+                # x_dense = np.linspace(x[0], x[-1], len(x) * 10)
+                x_dense = x
                 OEE = (df[y_lbl] * 100).values.astype(float).round(2)
-                OEE_smooth = interp1d(x, OEE, kind='linear')(x_dense)
+                # OEE_smooth = interp1d(x, OEE, kind='linear')(x_dense)
+                OEE_smooth = OEE
                 target_array = np.full(x_dense.shape, target_val)
                 target_line = pg.PlotDataItem(x_dense, target_array, pen=pg.mkPen(color=(
                     0, 206, 209), width=1, style=QtCore.Qt.DashLine), name='Target', antialias=True)
@@ -1444,15 +1489,18 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                         100).values.astype(float).round(2)
                 Q = (df['Quality_percentage'] *
                      100).values.astype(float).round(2)
-                if len(x)>= 3:
-                    A_smooth = interp1d(x, A, kind='quadratic')(x_dense)
-                    P_smooth = interp1d(x, P, kind='quadratic')(x_dense)
-                    Q_smooth = interp1d(x, Q, kind='quadratic')(x_dense)
+                # if len(x)>= 3:
+                #     A_smooth = interp1d(x, A, kind='quadratic')(x_dense)
+                #     P_smooth = interp1d(x, P, kind='quadratic')(x_dense)
+                #     Q_smooth = interp1d(x, Q, kind='quadratic')(x_dense)
 
-                else:
-                    A_smooth = interp1d(x, A, kind='linear')(x_dense)
-                    P_smooth = interp1d(x, P, kind='linear')(x_dense)
-                    Q_smooth = interp1d(x, Q, kind='linear')(x_dense)
+                # else:
+                #     A_smooth = interp1d(x, A, kind='linear')(x_dense)
+                #     P_smooth = interp1d(x, P, kind='linear')(x_dense)
+                #     Q_smooth = interp1d(x, Q, kind='linear')(x_dense)
+                A_smooth = A
+                P_smooth = P
+                Q_smooth = Q
                 line_chart.plot(x_dense, A_smooth, pen=pg.mkPen(
                     color=(66, 107, 41), width=2), name='Availability', antialias=True)
                 line_chart.plot(x_dense, P_smooth, pen=pg.mkPen(
@@ -1495,7 +1543,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     antialias=True
                 )
                 line_chart.addItem(Q_dot_item)
-                line_chart.setYRange(0, 105, padding=0)
+                line_chart.setYRange(0, 125, padding=0)
                 line_chart.getAxis('left').setTicks(
                     [[(i, str(i)) for i in range(0, 101, 20)]])
                 line_chart.getAxis('left').setStyle(tickLength=5)
@@ -1597,7 +1645,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 )
                 column_chart.addItem(bar)
                 column_chart.getAxis('bottom').setTicks([list(zip(x, month_labels))])
-                y_max = max(df_grouped["OEE_percentage"] * 100) if max(df_grouped["OEE_percentage"] * 100) > 0 else 1 
+                y_max = max(df_grouped["OEE_percentage"] * 100) if max(df_grouped["OEE_percentage"] * 100) > 0 else 1
                 column_chart.setYRange(0, y_max*1.3, padding=0)
                 limit = int(y_max*1.3)
                 column_chart.getAxis('left').setTicks(
@@ -3306,7 +3354,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                         JOIN `Departments` as d
                                                         ON p.department_id = d.department_id
                                                         WHERE d.department_name = :dep
-                                                        ORDER BY p.line_name ASC''', params={'dep': self.ui.Group_cbb_PF.currentText()})
+                                                        ORDER BY p.line_name ASC;''', params={'dep': self.ui.Group_cbb_PF.currentText()})
             items = ["All"] + [line[0] for line in lines]
             self.ui.Line_cbb_PF.clear()
             self.ui.Line_cbb_PF.addItems(items)
@@ -3351,6 +3399,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 list_widget.setItemWidget(item, line_edit)
                 item.setSizeHint(line_edit.sizeHint())
                 line_edits.append(line_edit)
+
             @QtCore.pyqtSlot()
             def on_equipment_editing_finished(_line_edit):
                 local_line_edits = _line_edit
@@ -3687,13 +3736,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             res_pending = self.database_process.query('''
                 SELECT m.machine_code 
                 FROM Record_pending AS rp
-                JOIN Machines AS m ON rp.machine_id = m.machine_id
+                JOIN Machines AS m ON rp.machine_id = m.machine_id;
             ''')
             res_attach_exist = self.database_process.query('''
                 SELECT m.machine_code AS attach_machine, m2.machine_code AS main_machine
                 FROM Record_pending AS rp
                 JOIN Machines AS m ON rp.machine_id = m.machine_id
-                JOIN Machines AS m2 ON rp.attached_equipment = m2.machine_id
+                JOIN Machines AS m2 ON rp.attached_equipment = m2.machine_id;
             ''')
             self.record_pending = [r[0] for r in res_pending]
             exist_map = {r[0]: r[1] for r in res_attach_exist}
@@ -4218,7 +4267,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                     :link
                                                 FROM `machines` m
                                                 JOIN `production_Lines` p ON p.line_name = :line
-                                                WHERE m.machine_code = :code;''', params_list=update_list).rowcount
+                                                WHERE m.machine_code = :code;''', params_list=update_list)
             # success = 1
             if success > 0:
                 QtWidgets.QMessageBox.information(
@@ -5271,7 +5320,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
         self.stock_filter.ui.group_cbb.setCurrentIndex(0)
         self.stock_filter.ui.status_cbb.setCurrentIndex(0)
         self.stock_filter.apply_filter()
-        # self.filter_process_stock()
 
 
     def add_data_to_stock_model(self, df, view_type="detail"):
@@ -5344,9 +5392,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 spare_part.setToolTip(f'<img src="{image_path}" width="500" height="500">')
         self.ui.stock_table.resizeRowsToContents()
         self.ui.total_part_num.setText(f"{df.shape[0]}")
-        self.ui.urgent_status_part_num.setText(f"{int(df[df['stock_status'] == 'Urgent'].shape[0])}")
-        self.ui.below_min_status_part_num.setText(f"{int(df[df['stock_status'] == 'Below Min Stock'].shape[0])}")
-        self.ui.overstock_status_part_num.setText(f"{int(df[df['stock_status'] == 'Overstock'].shape[0])}")
+        self.ui.urgent_status_part_num.setText(f"{int(df[df['stock_status'] == 'Critical Replenishment'].shape[0])}")
+        self.ui.below_min_status_part_num.setText(f"{int(df[df['stock_status'] == 'Monthly Planned Replenishment'].shape[0])}")
+        self.ui.overstock_status_part_num.setText(f"{int(df[df['stock_status'] == 'Above Target Stock'].shape[0])}")
 
     def call_inventory_update(self):
         url = os.getenv("API_UPDATE_INVENTORY")
@@ -5455,9 +5503,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             df.drop(columns=["currency"], inplace=True)
             total_cost_num = (df["unit_price"] * df["current_stock"]).sum()
             critical_parts_num = df[df["priority_level"] == "A"].shape[0]
-            urgent_parts_num = df[df["stock_status"] == "Urgent"].shape[0]
-            below_min_parts_num = df[df["stock_status"] == "Below Min Stock"].shape[0]
-            overstock_parts_num = df[df["stock_status"] == "Overstock"].shape[0]
+            urgent_parts_num = df[df["stock_status"] == "Critical Replenishment"].shape[0]
+            below_min_parts_num = df[df["stock_status"] == "Monthly Planned Replenishment"].shape[0]
+            overstock_parts_num = df[df["stock_status"] == "Above Target Stock"].shape[0]
             self.ui.SP_total_part_value.setText(f'{total_parts_num:,} <span style="font-size:10px;">items</span>')
             self.ui.SP_total_cost_value.setText( f'${(total_cost_num/1000):,.2f} <span style="font-size:10px;">KUSD</span>')
             self.ui.SP_critical_part_value.setText(f'{critical_parts_num:,} <span style="font-size:10px;">items</span>')
@@ -5468,10 +5516,16 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             categories_value_dict = {category: df[df["stock_status"] == category].shape[0] for category in categories}
             categories_value_dict = dict(sorted(categories_value_dict.items(), key=lambda x: x[1], reverse=True))
             categories_color_dict = {
-                "Urgent": "#DF3E2C",
-                "Below Min Stock": "#F1B310",
-                "Overstock": "#0004D3",
-                "Normal": "#48A247"
+                "Critical Replenishment": "#DF3E2C",
+                "Monthly Planned Replenishment": "#F1B310",
+                "Above Target Stock": "#0004D3",
+                "Within Target Range": "#48A247"
+            }
+            categories_label_dict = {
+                "Above Target Stock": "Above Target",
+                "Within Target Range": "Within Target",
+                "Monthly Planned Replenishment": "Monthly Planned",
+                "Critical Replenishment": "Critical"
             }
             def draw_donut_chart():
                 if self.ui.SP_part_summary_chart.layout() is not None:
@@ -5485,13 +5539,13 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     new_layout.setSpacing(0)
                     self.ui.SP_part_summary_chart.setLayout(new_layout)
                 categories_donut_chart = CategoricalDonutChart(
-                                                                categories=categories,
+                                                                categories=categories_label_dict,
                                                                 categories_value_dict=categories_value_dict,
                                                                 categories_color_dict=categories_color_dict,
                                                                 scale = 1)
                 self.ui.SP_part_summary_chart.layout().addWidget(categories_donut_chart)
 
-            def draw_column_chart(widget, data_df, category_column, priorities, title, x_label, y_label):
+            def draw_column_chart(widget, data_df, category_column, priorities, title, x_label, y_label, legend_label):
                 layout = widget.layout()
                 if layout is not None:
                     while layout.count():
@@ -5505,10 +5559,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     widget.setLayout(layout)
 
                 status_defs = [
-                    ("Urgent", "#DF3E2C"),
-                    ("Below Min Stock", "#F1B310"),
-                    ("Overstock", "#0004D3"),
-                    ("Normal", "#48A247"),
+                    ("Critical Replenishment", "#DF3E2C"),
+                    ("Monthly Planned Replenishment", "#F1B310"),
+                    ("Within Target Range", "#48A247"),
+                    ("Above Target Stock", "#0004D3")
                 ]
 
                 priority_series = {
@@ -5591,7 +5645,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     swatch.setStyleSheet(
                         f"background-color: {color}; border: 1px solid {color}; border-radius: 2px;"
                     )
-                    label = QtWidgets.QLabel(status_name)
+                    label = QtWidgets.QLabel(legend_label.get(status_name, status_name))
                     label.setStyleSheet("color:#4B5563; font-size:10pt;")
                     legend_layout.addWidget(swatch)
                     legend_layout.addWidget(label)
@@ -5612,9 +5666,9 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     self.ui.SP_inventory_health_chart.setLayout(new_layout)
 
                 total_score = data_df["total_score"].sum()
-                urgent_score = data_df[data_df["stock_status"] == "Urgent"]["total_score"].sum()
-                below_min_score = data_df[data_df["stock_status"] == "Below Min Stock"]["total_score"].sum()
-                health_score = total_score - urgent_score - below_min_score
+                urgent_score = data_df[data_df["stock_status"] == "Critical Replenishment"]["total_score"].sum()
+                below_min_score = data_df[data_df["stock_status"] == "Monthly Planned Replenishment"]["total_score"].sum()
+                health_score = total_score - urgent_score
                 health_percentage = (health_score / total_score) * 100 if total_score > 0 else 100
                 gauge = Arc_Health_Gauge(
                     value=health_percentage, max_value=100, target=0, color_desc=False,
@@ -5634,7 +5688,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                 * Health % is a reference indicator only and is not currently used for operational decision-making.
                                                 <br>
                                                 <br>
-                                                Health % = (Urgent Part Score + Below Min Stock Part Score) ÷ Total Inventory Part Score × 100%
+                                                Health % = (1 - Critical Replenishment Part Score ÷ Total Inventory Part Score) × 100%
                                             </i>
                                         </div>'''
                 self.ui.label_46.setTextFormat(QtCore.Qt.RichText)
@@ -5656,7 +5710,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.ui.SP_part_alert_table.setItemDelegate(delegate)
                 df_alerts = df_alerts.sort_values(
                                     by=["stock_status", "area"],
-                                    ascending=[False, True]
+                                    ascending=[True, True]
                                 )
                 def make_item( text, align=QtCore.Qt.AlignCenter, round_up_mode = True, digit=2):
                     if text is None or text is pd.NA or text == "":
@@ -5687,7 +5741,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     "QHeaderView::section { qproperty-alignment: AlignCenter; }")
                 # self.ui.SP_part_alert_table.setSortingEnabled(True)
                 self.ui.SP_part_alert_table.setShowGrid(False)
-                self.ui.SP_part_alert_table.sortByColumn(self.model_alerts.columnCount()-1, QtCore.Qt.DescendingOrder)
+                # self.ui.SP_part_alert_table.sortByColumn(self.model_alerts.columnCount()-1, QtCore.Qt.DescendingOrder)
                 self.ui.SP_part_alert_table.setAlternatingRowColors(True)
                 self.ui.SP_part_alert_table.setStyleSheet("""
                 QTableView#SP_part_alert_table {
@@ -5738,20 +5792,20 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 self.ui.SP_part_alert_table.setColumnWidth(5, 120)
                 vertical_header = self.ui.SP_part_alert_table.verticalHeader()
                 vertical_header.setVisible(False)
-                vertical_header.setDefaultSectionSize(34)
+                vertical_header.setDefaultSectionSize(50)
                 self.ui.SP_part_alert_table.viewport().update()
                 self.ui.SP_part_alert_table.viewport().setMouseTracking(True)
 
             def keyinsight_generate(df, health_percentage):
-                immediate_df = df[(df["stock_status"] == "Urgent") & (df["priority_level"] == "A")]
+                immediate_df = df[(df["stock_status"] == "Critical Replenishment") & (df["priority_level"] == "A")]
                 immediate_count = int(immediate_df.shape[0])
                 no_order_count = int((immediate_df["outstanding_orders"].fillna(0) <= 0).sum())
 
-                shortage_df = df[df["stock_status"] == "Below Min Stock"]
+                shortage_df = df[df["stock_status"] == "Monthly Planned Replenishment"]
                 shortage_count = int(shortage_df.shape[0])
                 estimated_shortage = float((shortage_df["safety_stock"] - shortage_df["current_stock"]).clip(lower=0).sum())
 
-                overstock_df = df[df["stock_status"] == "Overstock"].copy()
+                overstock_df = df[df["stock_status"] == "Above Target Stock"].copy()
                 overstock_count = int(overstock_df.shape[0])
                 overstock_df["excess_value"] = (overstock_df["current_stock"] - overstock_df["max_stock"]).clip(lower=0) * overstock_df["unit_price"]
                 total_excess_value = float(overstock_df["excess_value"].sum())
@@ -5771,14 +5825,14 @@ class OEEAppWindow(QtWidgets.QMainWindow):
 
                 if shortage_count > 0:
                     shortage_main = f'<strong>{shortage_count} parts</strong> are projected to fall below Min stock.'
-                    shortage_sub = f' <strong>⇒ Kindly review the PO for the next monthly purchase cycle.</strong>'
+                    shortage_sub = f' <strong>=> Review production demand and carefully consider  when issuing POs for the next monthly purchase cycle.</strong>'
                 else:
                     shortage_main = 'No parts are currently projected to fall below Min stock.'
                     shortage_sub = '⇒ No shortage risk detected.'
 
                 if overstock_count > 0:
-                    exposure_main = f'<strong>{overstock_count} parts</strong> are currently Overstock.'
-                    exposure_sub1 = f'⇒ Estimated excess inventory value: <strong>${total_excess_value:,.0f} ⇒ Freeze the issue PO for these parts.</strong>'
+                    exposure_main = f'<strong>{overstock_count} parts</strong> are currently Above Target Stock.'
+                    exposure_sub1 = f'⇒ Estimated excess inventory value: <strong> Carefully review actual demand before issuing POs to control stock levels.</strong>'
                 else:
                     exposure_main = 'No parts are currently Overstock.'
                     exposure_sub1 = '⇒ No excess inventory detected.'
@@ -5845,7 +5899,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                 shortage_risk = '''<div class="insight-card shortage-risk">
                                     <div class="insight-header">
                                         <span class="insight-icon">🟠</span>
-                                        <span class="insight-title"> SHORTAGE RISK</span>
+                                        <span class="insight-title"> MONTHLY REPLENISHMENT NOTICE</span>
                                     </div>
 
                                     <div class="insight-main">
@@ -5973,7 +6027,8 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                 priorities=["A", "B", "C"],
                                 title="Stock status by priority level",
                                 x_label="Priority Level",
-                                y_label="Number of parts"
+                                y_label="Number of parts",
+                                legend_label=categories_label_dict
                             )
             area_priorities = df["area"].dropna().unique().tolist()
             area_priorities.sort()
@@ -5984,10 +6039,12 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                 priorities=area_priorities,
                                 title="Stock status by area",
                                 x_label="Area",
-                                y_label="Number of parts"
+                                y_label="Number of parts",
+                                legend_label=categories_label_dict
                             )
-            table_alerts(df[df["stock_status"].isin(["Urgent", "Below Min Stock"])])
+            table_alerts(df[df["stock_status"].isin(["Critical Replenishment", "Monthly Planned Replenishment"])])
             health = draw_health_gauge(df)
+            self.ui.SP_key_insight_lbl.setWordWrap(True)
             self.ui.SP_key_insight_lbl.setTextFormat(QtCore.Qt.RichText)
             self.ui.SP_key_insight_lbl.setText(keyinsight_generate(df, health))
             self.spinner.stop()
@@ -6254,22 +6311,21 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                                                     LEFT JOIN `error_codes_list` as ecl ON dact.error_code = ecl.error_code
                                                                     WHERE da.downtime_area_name = :area_name {filter_scripts_report};
                                                                     ''', params={"area_name": area_name, "month": prev_target, "year": prev_year}) if view_by == "month" else []
-            KPI_data = self.database_process.query(sql= f''' SELECT pl.line_name, m.machine_code, dtg.mttr_target_value, dtg.mtbf_target_value
+            KPI_data = self.database_process.query(sql= f''' SELECT pl.line_name, m.machine_code, t.mttr_target_value, t.mtbf_target_value
+                                                            FROM (
+                                                                SELECT dtg.*,
+                                                                    ROW_NUMBER() OVER (
+                                                                        PARTITION BY dtg.line_id, dtg.machine_id
+                                                                        ORDER BY dtg.created_at DESC
+                                                                    ) AS rn
                                                                 FROM `mttr_mtbf_targets` AS dtg
                                                                 JOIN `downtime_areas` AS da ON dtg.downtime_area_id = da.downtime_area_id
-                                                                LEFT JOIN `production_lines` AS pl ON dtg.line_id = pl.line_id
-                                                                LEFT JOIN (SELECT line_id , MAX(created_at) AS max_created_at
-                                                                    FROM mttr_mtbf_targets
-                                                                    WHERE downtime_area_id = (SELECT downtime_area_id FROM downtime_areas WHERE downtime_area_name = :area_name) and {filter_scripts_tg}
-                                                                    GROUP BY line_id
-                                                                ) AS latest ON dtg.line_id = latest.line_id AND dtg.created_at = latest.max_created_at
-                                                                LEFT JOIN `machines` AS m ON dtg.machine_id = m.machine_id
-                                                                LEFT JOIN (SELECT machine_id , MAX(created_at) AS max_created_at
-                                                                    FROM mttr_mtbf_targets
-                                                                    WHERE downtime_area_id = (SELECT downtime_area_id FROM downtime_areas WHERE downtime_area_name = :area_name) and {filter_scripts_tg}
-                                                                    GROUP BY machine_id
-                                                                ) AS latest_machine ON dtg.machine_id = latest_machine.machine_id AND dtg.created_at = latest_machine.max_created_at
-                                                                WHERE da.downtime_area_name = :area_name;''', params={"area_name": area_name, "object": target, "year": year})
+                                                                WHERE da.downtime_area_name = :area_name
+                                                                AND dtg.created_at <= :date
+                                                            ) AS t
+                                                            LEFT JOIN `production_lines` AS pl ON t.line_id = pl.line_id
+                                                            LEFT JOIN `machines` AS m ON t.machine_id = m.machine_id
+                                                            WHERE t.rn = 1;''', params={"area_name": area_name, "target": target, "year": year, "date": f"{year}-{target}-28" if view_by == "month" else f"{year}-12-31"})
             return {"data": data, "working_time": working_time , "action": action_report, "prev_action" : prev_action_report, "prev_data": prev_data, "prev_working_time": prev_working_time, "KPI_data": KPI_data}
         
         def on_data_fetched_dashboard(res, area_name, target, year, view_by):
@@ -6314,7 +6370,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             prev_working_time["Working Time"] = prev_working_time["Working Shift"]*60 - prev_working_time["Setup Time"] - prev_working_time["Break Time"]
             self.downtime_target = pd.DataFrame(KPI_data, columns=["Line Name","Machine Code" , "MTTR Target", "MTBF Target"])
             mask = self.downtime_target["Line Name"].isna() & self.downtime_target["Machine Code"].isna()
-            self.downtime_target.loc[mask, "Line Name"] = "SC-A"
+            self.downtime_target.loc[mask, "Line Name"] = area_name
             self.data["Shift"] = self.data["Downtime Start Time"].apply(assign_shift)
             error_code = self.data["Error Code"].unique().tolist()
             error_code = ",".join([f'"{code}"' for code in error_code if code])
@@ -6332,7 +6388,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             self.working_time["Working Time"] = self.working_time["Working Shift"]*60 - self.working_time["Setup Time"] - self.working_time["Break Time"]
             total_loss = self.data["Total Loss Time"].sum()
             downtime_count = len(self.data)
-            mttr_value = self.data["Repair Time"].mean() if downtime_count > 0 else 0
+            mttr_value = self.data["Repair Time"].sum() / downtime_count if downtime_count > 0 else 0
             mttr = self.change_time_format(mttr_value,"m")
             mtbf_value = (self.working_time["Working Time"].sum()-total_loss) / \
                 downtime_count if downtime_count > 0 else self.working_time["Working Time"].sum(
@@ -6390,17 +6446,6 @@ class OEEAppWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to load data: {e}")
 
-    # @QtCore.pyqtSlot()
-    # def show_sorting_filter_Downtime(self):
-    #     if self.ui.DT_show_sorting_btn.isChecked():
-    #         self.ui.frame_106.setEnabled(True)
-    #         self.DT_silde_bar_animation.setStartValue(0)
-    #         self.DT_silde_bar_animation.setEndValue(535)
-    #     else:
-    #         self.ui.frame_106.setEnabled(False)
-    #         self.DT_silde_bar_animation.setStartValue(535)
-    #         self.DT_silde_bar_animation.setEndValue(0)
-    #     self.DT_silde_bar_animation.start()
 
     # def Sparkline_chart(self, widget, data, color, title=""):
     #     old_layout = widget.layout()
@@ -6479,7 +6524,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     group_col: gb["Total Loss Time"].sum().index,
                     "Total Downtime": gb["Total Loss Time"].sum().values,
                     "Failure Event": gb.size().values,
-                    "MTTR": gb["Repair Time"].mean().values,
+                    "MTTR": gb["Repair Time"].sum().values / gb.size().values,
                     "MTBF": gb["Total Loss Time"].apply(
                         lambda x: (
                             float(working_time.loc[ (working_time["Line Name"] == line_of_machine[x.name] if group_col == "Machine Code" else working_time["Line Name"] == x.name), "Working Time"].sum(
@@ -7042,6 +7087,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     self.ui.DT_year_cbb.currentTextChanged.disconnect()
                 except TypeError:
                     pass
+                view_by = "day"
                 target = self.ui.DT_date_edit_2.date().toString("yyyy-MM-dd")
             elif self.ui.DT_year_radiobtn.isChecked():
                 self.ui.frame_87.setEnabled(False)
@@ -7056,6 +7102,7 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                     self.ui.DT_date_edit_2.dateChanged.disconnect()
                 except TypeError:
                     pass
+                view_by = "year"
                 target = int(self.ui.DT_year_cbb.currentText())
             else:
                 if not self.ui.frame_87.isEnabled():
@@ -7071,10 +7118,10 @@ class OEEAppWindow(QtWidgets.QMainWindow):
                                 month: self.update_date_from_calendar(year, month, self.ui.DT_date_edit_2))
                 self.safe_connect(self.ui.DT_date_edit_2.dateChanged, lambda: self.DT_filtering(
                     changed_object="month_range"))
+                view_by = "month"
                 target = self.ui.DT_date_edit_2.date().month()
-
             self.Dashboard_Downtime_page_refresh(
-                area_name=area_name, target=target, year=year, view_by=changed_object)
+                area_name=area_name, target=target, year=year, view_by=view_by)
         except Exception as e:
             QtWidgets.QMessageBox.critical(
                 self, "Error", f"Failed to filter data 1: {e}")
@@ -8359,19 +8406,29 @@ class Update_machine_info(QtWidgets.QDialog):
 class PageRenderWorker(QtCore.QThread):
     rendered = QtCore.pyqtSignal(int, QtGui.QPixmap)
 
-    def __init__(self, doc, page_num, zoom):
+    def __init__(self, doc, page_num, zoom, target_width=None):
         super().__init__()
         self.doc = doc
         self.page_num = page_num
         self.zoom = zoom
+        self.target_width = target_width
 
     def run(self):
         try:
             page = self.doc.load_page(self.page_num)
-            mat = fitz.Matrix(self.zoom, self.zoom)
+            render_zoom = self.zoom
+            if self.target_width and page.rect.width > 0:
+                render_zoom = self.target_width / page.rect.width
+            mat = fitz.Matrix(render_zoom, render_zoom)
             pix = page.get_pixmap(matrix=mat, alpha=False)
-            img = QtGui.QImage(pix.samples, pix.width, pix.height, pix.stride,
-                               QtGui.QImage.Format_RGB888)
+            # Copy image buffer so QImage/QPixmap does not depend on pix's temporary memory.
+            img = QtGui.QImage(
+                pix.samples,
+                pix.width,
+                pix.height,
+                pix.stride,
+                QtGui.QImage.Format_RGB888,
+            ).copy()
             self.rendered.emit(self.page_num, QtGui.QPixmap.fromImage(img))
         except Exception:
             pass
@@ -8397,7 +8454,11 @@ class pdf_view(QtWidgets.QGraphicsView):
 
         self.page_cache = {}
         self.page_items = {}
+        self.page_heights = {}
         self.loading_threads = {}
+        self.page_spacing = 40
+        first_page = self.doc.load_page(0)
+        self.target_page_width = max(1, int(first_page.rect.width * self.zoom))
 
         self.load_initial_pages()
 
@@ -8409,7 +8470,7 @@ class pdf_view(QtWidgets.QGraphicsView):
         if page_num in self.page_cache or page_num in self.loading_threads:
             return
 
-        worker = PageRenderWorker(self.doc, page_num, self.zoom)
+        worker = PageRenderWorker(self.doc, page_num, self.zoom, self.target_page_width)
         worker.rendered.connect(self.insert_page)
         worker.start()
 
@@ -8417,12 +8478,34 @@ class pdf_view(QtWidgets.QGraphicsView):
 
     def insert_page(self, page_num, pixmap):
         self.page_cache[page_num] = pixmap
-        item = self.scene.addPixmap(pixmap)
-        item.setPos(0, page_num * (pixmap.height() + 40))
-        self.page_items[page_num] = item
+        self.page_heights[page_num] = pixmap.height()
+
+        if page_num in self.page_items:
+            item = self.page_items[page_num]
+            item.setPixmap(pixmap)
+        else:
+            item = self.scene.addPixmap(pixmap)
+            self.page_items[page_num] = item
+
+        self.relayout_pages()
         self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
-        del self.loading_threads[page_num]
+        self.loading_threads.pop(page_num, None)
+
+    def relayout_pages(self):
+        if not self.page_items:
+            return
+
+        max_width = max(
+            self.page_items[num].pixmap().width()
+            for num in self.page_items
+        )
+        y_offset = 0
+        for num in sorted(self.page_items.keys()):
+            item = self.page_items[num]
+            x_offset = (max_width - item.pixmap().width()) / 2
+            item.setPos(x_offset, y_offset)
+            y_offset += self.page_heights.get(num, 0) + self.page_spacing
 
     def wheelEvent(self, event):
         if event.modifiers() & QtCore.Qt.ControlModifier:
@@ -9247,7 +9330,7 @@ class Login_Dialog(QtWidgets.QDialog):
             self.ui.user_status.clear()
             username = self.ui.user_line.text().strip()
             password = self.ui.password_line.text().strip()
-            username = "misa"
+            # username = "misa"
             # password = ""
             self.ui.login_btn.setEnabled(False)
             QtWidgets.QApplication.processEvents()
@@ -10568,7 +10651,7 @@ class CategoricalDonutChart(QtWidgets.QWidget):
         legend_x = int(x + size * 1.3)
         legend_y = int(y + size * 0.03)
         dot_r = int(size * 0.045)
-        for category in self.categories_value_dict.keys():
+        for category in self.categories.keys():
             painter.setBrush(QtGui.QColor(self.categories_color_dict.get(category, "#000000")))
             painter.setPen(QtCore.Qt.NoPen)
             painter.drawRect(legend_x, legend_y - dot_r + 3, dot_r * 2, dot_r * 2)
@@ -10578,7 +10661,7 @@ class CategoricalDonutChart(QtWidgets.QWidget):
             painter.drawText(
                 legend_x + dot_r * 2 + 5,
                 legend_y + dot_r ,
-                category
+                self.categories[category]
             )
             painter.drawText(
                 legend_x + dot_r * 2 + 5,
@@ -11729,6 +11812,7 @@ class Downtime_Detail_dashboard(QtWidgets.QDialog):
         action_content = self.extract_content(self.ui.action_text)
         comment = ""
         link_list = []
+        API_UPLOAD_URL = os.getenv("API_UPLOAD_ACTION_FILE")
         for key, value in enumerate(action_content):
             if value['type'] == 'link':
                 link_list.append({
@@ -11739,6 +11823,22 @@ class Downtime_Detail_dashboard(QtWidgets.QDialog):
             else:
                 comment += f" {value['text']}"
         link_list = json.dumps(link_list, ensure_ascii=False)
+        def upload_file_to_server(local_path):
+            with open(local_path, "rb") as f:
+                resp = requests.post(API_UPLOAD_URL, files={"file": (os.path.basename(local_path), f)}, timeout=60)
+            resp.raise_for_status()
+            return resp.json()["server_path"]
+        # for link in link_list:
+            # if link["file_path"].startswith("file://"):
+            #     local_path = link["file_path"][7:]
+            #     print(local_path)
+            # print(link)
+        # for link in json.loads(link_list):
+        #     if link["file_path"].startswith("file://"):
+        #         local_path = link["file_path"][8:]
+        #         uploaded_path = upload_file_to_server(local_path)
+        #         link["file_path"] = uploaded_path
+
         if self.data_dict.get("group_col", "") == "Machine Code":
             category = f"machine_id"
             part_condition = "(SELECT machine_id FROM machines WHERE machine_code = :category_value)"
@@ -12174,7 +12274,7 @@ class Downtime_Detail_dashboard(QtWidgets.QDialog):
         if anchor:
             url = QtCore.QUrl(anchor)
             path = url.toLocalFile() if url.isLocalFile() else anchor
-            path = os.path.normpath(path)  
+            path = os.path.normpath(path)
             if os.path.exists(path):
                 try:
                     os.startfile(path)

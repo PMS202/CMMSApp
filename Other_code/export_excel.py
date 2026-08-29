@@ -22,9 +22,19 @@ db = Database_process()
 # ''')
 
 
-frame = db.query(sql = '''SELECT dr.Date, dr.Start_Time, dr.Start_Repair_Time , dr.End_Time, dr.Total_Loss, dr.Repair_Time, 
-                                dr.Staff_Name, dr.Error_Code, dr.Machine_Code, dr.Line_Name FROM downtime_report as dr;''')
+# frame = db.query(sql = '''SELECT m.machine_code, pl.line_name, mp.week
+# FROM maintenance_plan AS mp
+# JOIN machines AS m ON mp.machine_id = m.machine_id
+# JOIN production_lines AS pl ON mp.line_id = pl.line_id
+# WHERE mp.machine_id NOT IN (
+#     SELECT rp.machine_id
+#     FROM record_pending as rp
+#     WHERE rp.technical = "VINH"
+# ) AND mp.month_year_id = 20 AND mp.maintenance_date IS NULL AND mp.status = "Near due" ;''')
 
-df = pd.DataFrame(frame, columns=['Date', 'Start_Time', 'Start_Repair_Time', 'End_Time', 'Total_Loss', 'Repair_Time', 'Staff_Name', 'Error_Code', 'Machine_Code', 'Line_Name'])
-output_path = os.path.join(PROJECT_ROOT, 'exported_files', 'downtime_SCA.xlsx')
+frame = db.query(sql = '''SELECT * FROM downtime_report
+WHERE `Date` BETWEEN '2026-07-01' AND '2026-07-31';''')
+
+df = pd.DataFrame(frame)
+output_path = os.path.join(PROJECT_ROOT, 'exported_files', 'dt_SCA_Kha.xlsx')
 df.to_excel(output_path, index=False)

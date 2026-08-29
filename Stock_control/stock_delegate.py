@@ -51,7 +51,6 @@ class ImageCache:
         r = pix.rect().adjusted(margin, margin, -margin, -margin)
         painter.drawRoundedRect(r, 4, 4)
         painter.drawEllipse(r.left()+5, r.top()+5, 8, 8)
-        # painter.drawRect(pix.rect().adjusted(10,10,-10,-10))
         painter.drawText(
             pix.rect(),
             QtCore.Qt.AlignCenter,
@@ -119,34 +118,21 @@ class StockItemDelegate(QtWidgets.QStyledItemDelegate):
         elif header_text == "Stock\nstatus":
             stock_status = index.data()
             painter.setFont(QtGui.QFont("Arial", 10, QtGui.QFont.Bold))
-            if stock_status == "Urgent":
+            if stock_status == "Critical Replenishment":
+                stock_status_show = "Critical"
                 color = QtGui.QColor("#ff0000")
-            elif stock_status == "Below Min Stock":
+            elif stock_status == "Monthly Planned Replenishment":
+                stock_status_show = "Monthly\nPlanned"
                 color = QtGui.QColor("#ff6600")
-            elif stock_status == "Overstock":
+            elif stock_status == "Above Target Stock":
+                stock_status_show = "Above\nTarget"
                 color = QtGui.QColor("#0000ff")
             else:
+                stock_status_show = "Within\nTarget"
                 color = QtGui.QColor("black")
             painter.setPen(color)
-            painter.drawText(rect, QtCore.Qt.AlignCenter, str(stock_status) if stock_status != "Below Min Stock" else "Below\nMin Stock")
-        # elif index.column() == 12:
-        #     key = (index.row(), index.column())
-        #     count = len(self._button_names)
-        #     if count > 0:
-        #         w = rect.width() // count - (count + 20)
-        #         h = rect.height() - 50
-        #         btn_rects = {}
-        #         for i, name in enumerate(self._button_names):
-        #             x = rect.left() + 10 + i * (w + 5)
-        #             y = rect.top() + 25
-        #             r = QtCore.QRect(x, y, w, h)
-        #             btn_rects[name] = r
-        #             hovered = (self._hovered == (name, key))
-        #             self._drawButton(painter, r, name, "#FFFFFF", "#ff6600", "black", hovered)
-        #         self._buttons[key] = btn_rects
-        #     else:
-        #         if key in self._buttons:
-        #             del self._buttons[key]
+            painter.drawText(rect, QtCore.Qt.AlignCenter, stock_status_show)
+
         else:
             super().paint(painter, option, index)
 
@@ -210,25 +196,29 @@ class StockAlertDelegate(QtWidgets.QStyledItemDelegate):
 
         status = index.data()
 
-        if status == "Urgent":
+        if status == "Critical Replenishment":
             bg = QtGui.QColor("#FFDADA")
             border = QtGui.QColor("#E74C3C")
             text = QtGui.QColor("#9C1000")
+            status_show = "Critical\nReplenishment"
 
-        elif status == "Below Min Stock":
+        elif status == "Monthly Planned Replenishment":
             bg = QtGui.QColor("#FFEDD6")
             border = QtGui.QColor("#F39C12")
             text = QtGui.QColor("#A76700")
+            status_show = "Monthly Planned\nReplenishment"
 
-        elif status == "Overstock":
+        elif status == "Above Target Stock":
             bg = QtGui.QColor("#D2E6FF")
             border = QtGui.QColor("#3498DB")
             text = QtGui.QColor("#21618C")
+            status_show = "Above Target\nStock"
 
         else:
             bg = QtGui.QColor("#EEEEEE")
             border = QtGui.QColor("#BBBBBB")
             text = QtGui.QColor("#666666")
+            status_show = "Within Target\nRange"
 
         badge = option.rect.adjusted(8, 6, -8, -6)
 
@@ -236,5 +226,5 @@ class StockAlertDelegate(QtWidgets.QStyledItemDelegate):
         painter.setBrush(bg)
         painter.drawRoundedRect(badge, 8, 8)
         painter.setPen(text)
-        painter.drawText(badge, QtCore.Qt.AlignCenter, status)
+        painter.drawText(badge, QtCore.Qt.AlignCenter, status_show)
         painter.restore()

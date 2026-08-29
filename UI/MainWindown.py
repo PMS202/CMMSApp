@@ -5889,11 +5889,11 @@ class Ui_MainWindow(object):
         self.label_28.setText(_translate("MainWindow", u"Total part", None))
         self.total_part_num.setText(_translate("MainWindow", u"", None))
         self.label_42.setText(_translate(
-            "MainWindow", u"Urgent", None))
+            "MainWindow", u"Critical", None))
         self.urgent_status_part_num.setText(_translate("MainWindow", u"", None))
         self.label_44.setText(_translate(
-            "MainWindow", u"Below min", None))
-        self.label_45.setText(_translate("MainWindow", u"Overstock", None))
+            "MainWindow", u"Monthly Planned", None))
+        self.label_45.setText(_translate("MainWindow", u"Above Target", None))
         self.below_min_status_part_num.setText(_translate("MainWindow", u"", None))
         self.filter_stock_btn.setText(
             _translate("MainWindow", u"Filter ", None))
@@ -6102,16 +6102,16 @@ class Ui_MainWindow(object):
         self.label_25.setText(_translate("MainWindow", u"TOTAL SPARE PART", None))
         self.label_105.setText(_translate("MainWindow", u"TOTAL STOCK VALUE", None))
         self.label_110.setText(_translate("MainWindow", u"CRITICAL PART", None))
-        self.label_112.setText(_translate("MainWindow", u"URGENT STATUS PART", None))
-        self.label_116.setText(_translate("MainWindow", u"BELOW MIN STATUS PART", None))
-        self.label_125.setText(_translate("MainWindow", u"OVERSTOCK STATUS PART", None))
+        self.label_112.setText(_translate("MainWindow", u"CRITICAL STATUS PART", None))
+        self.label_116.setText(_translate("MainWindow", u"MONTHLY PLANNED STATUS PART", None))
+        self.label_125.setText(_translate("MainWindow", u"ABOVE TARGET STATUS PART", None))
         self.label_126.setText(_translate("MainWindow", u"SPARE PART STATUS SUMMARY", None))
         self.label_127.setText(_translate("MainWindow", u"SPARE PART STATUS BY PART TYPE", None))
         self.label_128.setText(_translate("MainWindow", u"SPARE PART STATUS BY AREA", None))
-        self.label_26.setText(_translate("MainWindow", u"Key Insight", None))
+        self.label_26.setText(_translate("MainWindow", u"KEY INSIGHT", None))
         self.SP_key_insight_lbl.setText("")
         self.label_129.setText(_translate("MainWindow", u"SPARE PART STATUS ALERT TABLE", None))
-        self.label_132.setText(_translate("MainWindow", u"SPARE PART HEALTH GAUGE", None))
+        self.label_132.setText(_translate("MainWindow", u"CRITICAL PART HEALTH GAUGE", None))
 
     def company_week_number(self, date: datetime.date) -> int:
         year_start = datetime.date(date.year, 1, 1)

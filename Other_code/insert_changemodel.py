@@ -10,7 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from Database.MariaDB import Database_process
 
-excel_file_path = r"C:\Users\2173452100291\Desktop\Excel_to_add_db\purchase.xlsx"
+excel_file_path = r"C:\Users\2173452100291\Downloads\dt_SCA_Kha.xlsx"
 
 def read_excel_file(file_path):
     try:
@@ -30,26 +30,19 @@ def insert(df):
     DB = Database_process()
 
     sql = """
-            INSERT IGNORE INTO purchase
-            (part_code, part_name, part_name_vi, vendor_code, vendor_name, po_unit, unit_price, currency, lead_time)
-            VALUES
-            (:part_code, :part_name, :part_name_vi, :vendor_code, :vendor_name, :po_unit, :unit_price, :currency, :lead_time)
+            UPDATE downtime_records
+            SET error_code = :new_error_code
+            WHERE downtime_record_id = :downtime_record_id;
     """
     param_list = []
     try:
         for index, row in df.iterrows():
             param_list.append({
-                "part_code": row["part_code"],
-                "part_name": row["part_name"],
-                "part_name_vi": row["part_name_vi"] if not pd.isna(row["part_name_vi"]) else None,
-                "vendor_code": row["vendor_code"] if not pd.isna(row["vendor_code"]) else None,
-                "vendor_name": row["vendor_name"] if not pd.isna(row["vendor_name"]) else None,
-                "po_unit": row["po_unit"],
-                "unit_price": row["unit_price"],
-                "currency": row["currency"],
-                "lead_time": row["lead_time"]
+                "new_error_code": row["error_code"],
+                "downtime_record_id": row["downtime_record_id"]
             })
         DB.executemany(sql = sql, params_list= param_list)
+        # print(f"Data inserted successfully. Rows affected: {len(param_list)}")
     except Exception as e:
         print(f"Error inserting data into database: {e}")
 
