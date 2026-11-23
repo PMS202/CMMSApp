@@ -31,17 +31,9 @@ class Printer_process():
     def choice_printer(self,printer_name):
         self.printer_name = printer_name
         
-    def send_to_printer(self,input_pdf, data, attached_machine = None, file_index = 0 ,page_number=0, x=10, y=25, size=50):
+    def send_to_printer(self,input_pdf, data, attached_machine = None, QR_code_value = None,file_index = 0 ,page_number=0, x=10, y=25, size=50):
         try:
-            qr_json = json.dumps({
-                    "machine_code": data[0],
-                    "machine_name":data[1],
-                    "group":data[2],
-                    "line": data[3],
-                    "technical": data[4],
-                    "maintenance_date": data[5],
-                    "attached_machine": "" if attached_machine is None else attached_machine
-                })
+            qr_json = QR_code_value
             qr = segno.make(qr_json, error='h')  #  ISO/IEC 18004
             buffer = BytesIO()
             qr.save(buffer, kind='png', scale=10)  

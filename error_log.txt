@@ -1,16 +1,15 @@
 App bị crash do lỗi:
-cannot access local variable 'sizePolicy16' where it is not associated with a value
+addFile(self, fileName: Optional[str], size: QSize = QSize(), mode: QIcon.Mode = QIcon.Normal, state: QIcon.State = QIcon.Off): argument 2 has unexpected type 'Mode'
 
 Chi tiết Traceback:
 Traceback (most recent call last):
-  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 12363, in <module>
+  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 13241, in <module>
     main()
-  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 12340, in main
+  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 13218, in main
     window = OEEAppWindow(login.login_info)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 77, in __init__
+  File "c:\Users\2173452100291\Documents\CMMSApp\CMMSApp.py", line 78, in __init__
     self.ui.setupUi(self)
-  File "c:\Users\2173452100291\Documents\CMMSApp\UI\MainWindown.py", line 5294, in setupUi
-    sizePolicy16.setHeightForWidth(self.SP_part_alert_frame.sizePolicy().hasHeightForWidth())
-    ^^^^^^^^^^^^
-UnboundLocalError: cannot access local variable 'sizePolicy16' where it is not associated with a value
+  File "c:\Users\2173452100291\Documents\CMMSApp\UI\MainWindown.py", line 5767, in setupUi
+    download_icon.addFile(resource_path(r"Icons/download.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+TypeError: addFile(self, fileName: Optional[str], size: QSize = QSize(), mode: QIcon.Mode = QIcon.Normal, state: QIcon.State = QIcon.Off): argument 2 has unexpected type 'Mode'
