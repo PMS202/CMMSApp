@@ -120,7 +120,16 @@ class Ui_MainWindow(object):
         self.OEE_data_btn.setFlat(True)
 
         self.horizontalLayout_82.addWidget(self.OEE_data_btn)
+        self.Bottleneck_btn = QtWidgets.QPushButton(self.OEE_function_frame)
+        self.Bottleneck_btn.setObjectName(u"Bottleneck_btn")
+        icon8 = QtGui.QIcon()
+        icon8.addFile(resource_path(u"Icons/bottleneck.ico"),
+                      QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.Bottleneck_btn.setIcon(icon8)
+        self.Bottleneck_btn.setIconSize(QtCore.QSize(25, 25))
+        self.Bottleneck_btn.setFlat(True)
 
+        self.horizontalLayout_82.addWidget(self.Bottleneck_btn)
         self.verticalLayout_58.addWidget(self.OEE_function_frame)
 
         self.OEE_stacked_widget = QtWidgets.QStackedWidget(self.frame_112)
@@ -300,6 +309,7 @@ class Ui_MainWindow(object):
         self.groupBox_6.setMinimumSize(QtCore.QSize(0, 60))
         self.groupBox_6.setStyleSheet(qss)
         self.groupBox_6.setFont(font2)
+        self.groupBox_6.setVisible(False)
         self.verticalLayout_79 = QtWidgets.QVBoxLayout(self.groupBox_6)
         self.verticalLayout_79.setSpacing(0)
         self.verticalLayout_79.setObjectName(u"verticalLayout_79")
@@ -618,7 +628,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_84.setObjectName(u"horizontalLayout_84")
         self.horizontalLayout_84.setSpacing(10)
         self.horizontalLayout_84.setContentsMargins(0, 0, 0, 0)
-        self.frame_131 = QtWidgets.QFrame(self.frame_130)
+        self.frame_131 = ClickableFrame(self.frame_130)
         self.frame_131.setObjectName(u"frame_131")
         self.frame_131.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_131.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -653,7 +663,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_84.addWidget(self.frame_131)
 
-        self.frame_132 = QtWidgets.QFrame(self.frame_130)
+        self.frame_132 = ClickableFrame(self.frame_130)
         self.frame_132.setObjectName(u"frame_132")
         self.frame_132.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_132.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -687,7 +697,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_84.addWidget(self.frame_132)
 
-        self.frame_133 = QtWidgets.QFrame(self.frame_130)
+        self.frame_133 = ClickableFrame(self.frame_130)
         self.frame_133.setObjectName(u"frame_133")
         self.frame_133.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_133.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -722,7 +732,7 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_84.addWidget(self.frame_133)
 
-        self.frame_134 = QtWidgets.QFrame(self.frame_130)
+        self.frame_134 = ClickableFrame(self.frame_130)
         self.frame_134.setObjectName(u"frame_134")
         self.frame_134.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_134.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -765,7 +775,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_71.setObjectName(u"verticalLayout_71")
         self.verticalLayout_71.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_71.setSpacing(10)
-        self.frame_137 = QtWidgets.QFrame(self.frame_136)
+        self.frame_137 = ClickableFrame(self.frame_136)
         self.frame_137.setObjectName(u"frame_137")
         self.frame_137.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_137.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -800,7 +810,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_71.addWidget(self.frame_137)
 
-        self.frame_138 = QtWidgets.QFrame(self.frame_136)
+        self.frame_138 = ClickableFrame(self.frame_136)
         self.frame_138.setObjectName(u"frame_138")
         self.frame_138.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_138.setFrameShadow(QtWidgets.QFrame.Raised)
@@ -1477,16 +1487,382 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_86.addWidget(self.frame_148)
         self.OEE_stacked_widget.addWidget(self.OEE_Detail_page)
-        self.OEE_Importdata_page = QtWidgets.QWidget()
-        self.OEE_Importdata_page.setObjectName(u"OEE_Importdata_page")
-        self.OEE_stacked_widget.addWidget(self.OEE_Importdata_page)
+        
+        self.Bottleneck_page = QtWidgets.QWidget()
+        self.Bottleneck_page.setObjectName(u"Bottleneck_page")
+        self.verticalLayout_100 = QtWidgets.QVBoxLayout(self.Bottleneck_page)
+        self.verticalLayout_100.setObjectName(u"verticalLayout_100")
+        self.frame_53 = QtWidgets.QFrame(self.Bottleneck_page)
+        self.frame_53.setObjectName(u"frame_53")
+        self.frame_53.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_53.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.horizontalLayout_35 = QtWidgets.QHBoxLayout(self.frame_53)
+        self.horizontalLayout_35.setObjectName(u"horizontalLayout_35")
+        self.botneck_area_groupbox = QtWidgets.QGroupBox(self.frame_53)
+        self.botneck_area_groupbox.setObjectName(u"botneck_area_groupbox")
+        self.botneck_area_groupbox.setStyleSheet(qss)
+        self.botneck_area_groupbox.setFont(font2)
+        self.verticalLayout_101 = QtWidgets.QVBoxLayout(self.botneck_area_groupbox)
+        self.verticalLayout_101.setObjectName(u"verticalLayout_101")
+        self.botneck_area_cbb = QtWidgets.QComboBox(self.botneck_area_groupbox)
+        self.botneck_area_cbb.setObjectName(u"botneck_area_cbb")
 
+        self.verticalLayout_101.addWidget(self.botneck_area_cbb)
+
+
+        self.horizontalLayout_35.addWidget(self.botneck_area_groupbox)
+
+        self.botneck_line_groupbox = QtWidgets.QGroupBox(self.frame_53)
+        self.botneck_line_groupbox.setObjectName(u"botneck_line_groupbox")
+        self.botneck_line_groupbox.setStyleSheet(qss)
+        self.botneck_line_groupbox.setFont(font2)
+        self.verticalLayout_110 = QtWidgets.QVBoxLayout(self.botneck_line_groupbox)
+        self.verticalLayout_110.setObjectName(u"verticalLayout_110")
+        self.botneck_line_cbb = QtWidgets.QComboBox(self.botneck_line_groupbox)
+        self.botneck_line_cbb.setObjectName(u"botneck_line_cbb")
+
+        self.verticalLayout_110.addWidget(self.botneck_line_cbb)
+
+
+        self.horizontalLayout_35.addWidget(self.botneck_line_groupbox)
+
+        self.botneck_model_groupbox = QtWidgets.QGroupBox(self.frame_53)
+        self.botneck_model_groupbox.setObjectName(u"botneck_model_groupbox")
+        self.botneck_model_groupbox.setStyleSheet(qss)
+        self.botneck_model_groupbox.setFont(font2)
+        self.botneck_model_groupbox.setMinimumSize(QtCore.QSize(200, 0))
+        self.verticalLayout_111 = QtWidgets.QVBoxLayout(self.botneck_model_groupbox)
+        self.verticalLayout_111.setObjectName(u"verticalLayout_111")
+        self.botneck_model_cbb = QtWidgets.QComboBox(self.botneck_model_groupbox)
+        self.botneck_model_cbb.setObjectName(u"botneck_model_cbb")
+
+        self.verticalLayout_111.addWidget(self.botneck_model_cbb)
+
+
+        self.horizontalLayout_35.addWidget(self.botneck_model_groupbox)
+
+        self.horizontalSpacer_16 = QtWidgets.QSpacerItem(1102, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+
+        self.horizontalLayout_35.addItem(self.horizontalSpacer_16)
+
+
+        self.verticalLayout_100.addWidget(self.frame_53)
+
+        self.frame_167 = QtWidgets.QFrame(self.Bottleneck_page)
+        self.frame_167.setObjectName(u"frame_167")
+        self.frame_167.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_167.setFrameShadow(QtWidgets.QFrame.Raised)
+        sizePolicy3.setHeightForWidth(self.frame_167.sizePolicy().hasHeightForWidth())
+        self.frame_167.setSizePolicy(sizePolicy3)
+        self.frame_167.setMinimumSize(QtCore.QSize(0, 150))
+        self.horizontalLayout_49 = QtWidgets.QHBoxLayout(self.frame_167)
+        self.horizontalLayout_49.setSpacing(10)
+        self.horizontalLayout_49.setObjectName(u"horizontalLayout_49")
+        self.horizontalLayout_49.setContentsMargins(10, 0, 10, 0)
+        self.botneck_process_card = QtWidgets.QFrame(self.frame_167)
+        self.botneck_process_card.setObjectName(u"botneck_process_card")
+        sizePolicy4.setHeightForWidth(self.botneck_process_card.sizePolicy().hasHeightForWidth())
+        self.botneck_process_card.setSizePolicy(sizePolicy4)
+        self.botneck_process_card.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.botneck_process_card.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 0)
+        self.shadow.setColor(QtGui.QColor(0, 0, 0, 50))
+        self.botneck_process_card.setGraphicsEffect(self.shadow)
+        self.botneck_process_card.setStyleSheet(qss)
+        self.gridLayout_14 = QtWidgets.QGridLayout(self.botneck_process_card)
+        self.gridLayout_14.setObjectName(u"gridLayout_14")
+        self.label_111 = QtWidgets.QLabel(self.botneck_process_card)
+        self.label_111.setObjectName(u"label_111")
+        self.label_111.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_111.setStyleSheet(qss)
+        self.gridLayout_14.addWidget(self.label_111, 0, 1, 1, 1)
+
+        self.botneck_process_value = QtWidgets.QLabel(self.botneck_process_card)
+        self.botneck_process_value.setObjectName(u"botneck_process_value")
+        sizePolicy4.setHeightForWidth(self.botneck_process_value.sizePolicy().hasHeightForWidth())
+        self.botneck_process_value.setSizePolicy(sizePolicy4)
+        self.botneck_process_value.setAlignment(QtCore.Qt.AlignCenter)
+        self.botneck_process_value.setStyleSheet(qss)
+        self.gridLayout_14.addWidget(self.botneck_process_value, 2, 1, 1, 1)
+
+        self.botneck_process_ico = QtWidgets.QLabel(self.botneck_process_card)
+        self.botneck_process_ico.setObjectName(u"botneck_process_ico")
+        icon25 = QtGui.QIcon()
+        icon25.addFile(resource_path(r"Icons\Process.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.botneck_process_ico.setPixmap(icon25.pixmap(96, 96))
+        self.gridLayout_14.addWidget(self.botneck_process_ico, 0, 0, 3, 1)
+
+
+        self.horizontalLayout_49.addWidget(self.botneck_process_card)
+
+        self.botneck_keyprocess_card = QtWidgets.QFrame(self.frame_167)
+        self.botneck_keyprocess_card.setObjectName(u"botneck_keyprocess_card")
+        sizePolicy4.setHeightForWidth(self.botneck_keyprocess_card.sizePolicy().hasHeightForWidth())
+        self.botneck_keyprocess_card.setSizePolicy(sizePolicy4)
+        self.botneck_keyprocess_card.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.botneck_keyprocess_card.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 0)
+        self.shadow.setColor(QtGui.QColor(0, 0, 0, 50))
+        self.botneck_keyprocess_card.setGraphicsEffect(self.shadow)
+        self.botneck_keyprocess_card.setStyleSheet(qss)
+        self.gridLayout_13 = QtWidgets.QGridLayout(self.botneck_keyprocess_card)
+        self.gridLayout_13.setObjectName(u"gridLayout_13")
+        self.label_115 = QtWidgets.QLabel(self.botneck_keyprocess_card)
+        self.label_115.setObjectName(u"label_115")
+        self.label_115.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_115.setStyleSheet(qss)
+        self.gridLayout_13.addWidget(self.label_115, 0, 1, 1, 1)
+
+        self.botneck_keyprocess_value = QtWidgets.QLabel(self.botneck_keyprocess_card)
+        self.botneck_keyprocess_value.setObjectName(u"botneck_keyprocess_value")
+        self.botneck_keyprocess_value.setAlignment(QtCore.Qt.AlignCenter)
+        sizePolicy4.setHeightForWidth(self.botneck_keyprocess_value.sizePolicy().hasHeightForWidth())
+        self.botneck_keyprocess_value.setSizePolicy(sizePolicy4)
+        self.botneck_keyprocess_value.setStyleSheet(qss)
+        self.gridLayout_13.addWidget(self.botneck_keyprocess_value, 2, 1, 1, 1)
+
+        self.botneck_keyprocess_ico = QtWidgets.QLabel(self.botneck_keyprocess_card)
+        self.botneck_keyprocess_ico.setObjectName(u"botneck_keyprocess_ico")
+        icon27 = QtGui.QIcon()
+        icon27.addFile(resource_path(r"Icons\keyprocess.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.botneck_keyprocess_ico.setPixmap(icon27.pixmap(96, 96))
+        self.gridLayout_13.addWidget(self.botneck_keyprocess_ico, 0, 0, 3, 1)
+
+
+        self.horizontalLayout_49.addWidget(self.botneck_keyprocess_card)
+
+        self.botneck_keyprocess_capacity_card = QtWidgets.QFrame(self.frame_167)
+        self.botneck_keyprocess_capacity_card.setObjectName(u"botneck_keyprocess_capacity_card")
+        sizePolicy4.setHeightForWidth(self.botneck_keyprocess_capacity_card.sizePolicy().hasHeightForWidth())
+        self.botneck_keyprocess_capacity_card.setSizePolicy(sizePolicy4)
+        self.botneck_keyprocess_capacity_card.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.botneck_keyprocess_capacity_card.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 0)
+        self.shadow.setColor(QtGui.QColor(0, 0, 0, 50))
+        self.botneck_keyprocess_capacity_card.setGraphicsEffect(self.shadow)
+        self.botneck_keyprocess_capacity_card.setStyleSheet(qss)
+        self.gridLayout_16 = QtWidgets.QGridLayout(self.botneck_keyprocess_capacity_card)
+        self.gridLayout_16.setObjectName(u"gridLayout_16")
+        self.label_130 = QtWidgets.QLabel(self.botneck_keyprocess_capacity_card)
+        self.label_130.setObjectName(u"label_130")
+        self.label_130.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_130.setStyleSheet(qss)
+        self.gridLayout_16.addWidget(self.label_130, 0, 1, 1, 1)
+
+        self.botneck_keyprocess_capacity_value = QtWidgets.QLabel(self.botneck_keyprocess_capacity_card)
+        self.botneck_keyprocess_capacity_value.setObjectName(u"botneck_keyprocess_capacity_value")
+        sizePolicy4.setHeightForWidth(self.botneck_keyprocess_capacity_value.sizePolicy().hasHeightForWidth())
+        self.botneck_keyprocess_capacity_value.setSizePolicy(sizePolicy4)
+        self.botneck_keyprocess_capacity_value.setAlignment(QtCore.Qt.AlignCenter)
+        self.botneck_keyprocess_capacity_value.setStyleSheet(qss)
+        self.gridLayout_16.addWidget(self.botneck_keyprocess_capacity_value, 2, 1, 1, 1)
+
+        self.botneck_keyprocess_capacity_ico = QtWidgets.QLabel(self.botneck_keyprocess_capacity_card)
+        self.botneck_keyprocess_capacity_ico.setObjectName(u"botneck_keyprocess_capacity_ico")
+        icon28 = QtGui.QIcon()
+        icon28.addFile(resource_path(r"Icons\keyprocess_cycletime.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.botneck_keyprocess_capacity_ico.setPixmap(icon28.pixmap(96, 96))
+        self.gridLayout_16.addWidget(self.botneck_keyprocess_capacity_ico, 0, 0, 3, 1)
+
+
+        self.horizontalLayout_49.addWidget(self.botneck_keyprocess_capacity_card)
+
+        self.botneck_card = QtWidgets.QFrame(self.frame_167)
+        self.botneck_card.setObjectName(u"botneck_card")
+        sizePolicy4.setHeightForWidth(self.botneck_card.sizePolicy().hasHeightForWidth())
+        self.botneck_card.setSizePolicy(sizePolicy4)
+        self.botneck_card.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.botneck_card.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 0)
+        self.shadow.setColor(QtGui.QColor(0, 0, 0, 50))
+        self.botneck_card.setGraphicsEffect(self.shadow)
+        self.botneck_card.setStyleSheet(qss)
+        self.gridLayout_18 = QtWidgets.QGridLayout(self.botneck_card)
+        self.gridLayout_18.setObjectName(u"gridLayout_18")
+        self.label_134 = QtWidgets.QLabel(self.botneck_card)
+        self.label_134.setObjectName(u"label_134")
+        self.label_134.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_134.setStyleSheet(qss)
+        self.gridLayout_18.addWidget(self.label_134, 0, 1, 1, 1)
+
+        self.botneck_value = QtWidgets.QLabel(self.botneck_card)
+        self.botneck_value.setObjectName(u"botneck_value")
+        sizePolicy4.setHeightForWidth(self.botneck_value.sizePolicy().hasHeightForWidth())
+        self.botneck_value.setSizePolicy(sizePolicy4)
+        self.botneck_value.setAlignment(QtCore.Qt.AlignCenter)
+        self.botneck_value.setStyleSheet(qss)
+        self.gridLayout_18.addWidget(self.botneck_value, 2, 1, 1, 1)
+
+        self.botneck_ico = QtWidgets.QLabel(self.botneck_card)
+        self.botneck_ico.setObjectName(u"botneck_ico")
+        icon29 = QtGui.QIcon()
+        icon29.addFile(resource_path(r"Icons\bottleneck_process.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.botneck_ico.setPixmap(icon29.pixmap(96, 96))
+        self.gridLayout_18.addWidget(self.botneck_ico, 0, 0, 3, 1)
+
+
+        self.horizontalLayout_49.addWidget(self.botneck_card)
+
+        self.botneck_capacity_card = QtWidgets.QFrame(self.frame_167)
+        self.botneck_capacity_card.setObjectName(u"botneck_capacity_card")
+        sizePolicy4.setHeightForWidth(self.botneck_capacity_card.sizePolicy().hasHeightForWidth())
+        self.botneck_capacity_card.setSizePolicy(sizePolicy4)
+        self.botneck_capacity_card.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.botneck_capacity_card.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 0)
+        self.shadow.setColor(QtGui.QColor(0, 0, 0, 50))
+        self.botneck_capacity_card.setGraphicsEffect(self.shadow)
+        self.botneck_capacity_card.setStyleSheet(qss)
+        self.gridLayout_17 = QtWidgets.QGridLayout(self.botneck_capacity_card)
+        self.gridLayout_17.setObjectName(u"gridLayout_17")
+        self.label_137 = QtWidgets.QLabel(self.botneck_capacity_card)
+        self.label_137.setObjectName(u"label_137")
+        self.label_137.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_137.setStyleSheet(qss)
+        self.gridLayout_17.addWidget(self.label_137, 0, 1, 1, 1)
+
+        self.botneck_capacity_value = QtWidgets.QLabel(self.botneck_capacity_card)
+        self.botneck_capacity_value.setObjectName(u"botneck_capacity_value")
+        sizePolicy4.setHeightForWidth(self.botneck_capacity_value.sizePolicy().hasHeightForWidth())
+        self.botneck_capacity_value.setSizePolicy(sizePolicy4)
+        self.botneck_capacity_value.setAlignment(QtCore.Qt.AlignCenter)
+        self.botneck_capacity_value.setStyleSheet(qss)
+        self.gridLayout_17.addWidget(self.botneck_capacity_value, 2, 1, 1, 1)
+
+        self.botneck_capacity_ico = QtWidgets.QLabel(self.botneck_capacity_card)
+        self.botneck_capacity_ico.setObjectName(u"botneck_capacity_ico")
+        icon30 = QtGui.QIcon()
+        icon30.addFile(resource_path(r"Icons\bottleneck_cycletime.ico"), QtCore.QSize(), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.botneck_capacity_ico.setPixmap(icon30.pixmap(96,96))  
+        self.gridLayout_17.addWidget(self.botneck_capacity_ico, 0, 0, 3, 1)
+        self.horizontalLayout_49.addWidget(self.botneck_capacity_card)
+        self.verticalLayout_100.addWidget(self.frame_167)
+
+        self.frame_54 = QtWidgets.QFrame(self.Bottleneck_page)
+        self.frame_54.setObjectName(u"frame_54")
+        self.frame_54.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_54.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.gridLayout_15 = QtWidgets.QGridLayout(self.frame_54)
+        self.gridLayout_15.setObjectName(u"gridLayout_15")
+        self.botneck_productionflow_frame = QtWidgets.QFrame(self.frame_54)
+        self.botneck_productionflow_frame.setObjectName(u"botneck_productionflow_frame")
+        self.botneck_productionflow_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.botneck_productionflow_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 0)
+        self.shadow.setColor(QtGui.QColor(0, 0, 0, 50))
+        self.botneck_productionflow_frame.setGraphicsEffect(self.shadow)
+        self.botneck_productionflow_frame.setStyleSheet(qss)
+        self.verticalLayout_116 = QtWidgets.QVBoxLayout(self.botneck_productionflow_frame)
+        self.verticalLayout_116.setObjectName(u"verticalLayout_116")
+        self.label_109 = QtWidgets.QLabel(self.botneck_productionflow_frame)
+        self.label_109.setObjectName(u"label_109")
+        self.label_109.setStyleSheet(qss)
+        self.verticalLayout_116.addWidget(self.label_109)
+
+        self.botneck_productionflow_scrollArea = QtWidgets.QScrollArea(self.botneck_productionflow_frame)
+        self.botneck_productionflow_scrollArea.setObjectName(u"botneck_productionflow_scrollArea")
+        sizePolicy5.setHeightForWidth(self.botneck_productionflow_scrollArea.sizePolicy().hasHeightForWidth())
+        self.botneck_productionflow_scrollArea.setSizePolicy(sizePolicy5)
+        self.botneck_productionflow_scrollArea.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.botneck_productionflow_scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.botneck_productionflow_scrollArea.setWidgetResizable(True)
+        self.botneck_productionflow_widget = QtWidgets.QWidget()
+        self.botneck_productionflow_widget.setObjectName(u"botneck_productionflow_widget")
+        self.botneck_productionflow_widget.setGeometry(QtCore.QRect(0, 0, 1100, 181))
+        self.horizontalLayout_120 = QtWidgets.QHBoxLayout(self.botneck_productionflow_widget)
+        self.horizontalLayout_120.setSpacing(0)
+        self.horizontalLayout_120.setObjectName(u"horizontalLayout_120")
+        self.horizontalLayout_120.setContentsMargins(0, 0, 0, 0)
+        self.botneck_productionflow_scrollArea.setWidget(self.botneck_productionflow_widget)
+
+        self.verticalLayout_116.addWidget(self.botneck_productionflow_scrollArea)
+
+
+        self.gridLayout_15.addWidget(self.botneck_productionflow_frame, 0, 0, 1, 1)
+
+        self.botneck_capacityranking_frame = QtWidgets.QFrame(self.frame_54)
+        self.botneck_capacityranking_frame.setObjectName(u"botneck_capacityranking_frame")
+        self.botneck_capacityranking_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.botneck_capacityranking_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 0)
+        self.shadow.setColor(QtGui.QColor(0, 0, 0, 50))
+        self.botneck_capacityranking_frame.setGraphicsEffect(self.shadow)
+        self.botneck_capacityranking_frame.setStyleSheet(qss)
+        self.verticalLayout_114 = QtWidgets.QVBoxLayout(self.botneck_capacityranking_frame)
+        self.verticalLayout_114.setObjectName(u"verticalLayout_114")
+        self.label_107 = QtWidgets.QLabel(self.botneck_capacityranking_frame)
+        self.label_107.setObjectName(u"label_107")
+
+        self.verticalLayout_114.addWidget(self.label_107)
+
+        self.botneck_capacityranking_chart = QtWidgets.QWidget(self.botneck_capacityranking_frame)
+        self.botneck_capacityranking_chart.setObjectName(u"botneck_capacityranking_chart")
+        sizePolicy10 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy10.setHorizontalStretch(0)
+        sizePolicy10.setVerticalStretch(0)
+        sizePolicy10.setHeightForWidth(self.botneck_capacityranking_chart.sizePolicy().hasHeightForWidth())
+        self.botneck_capacityranking_chart.setSizePolicy(sizePolicy10)
+
+        self.verticalLayout_114.addWidget(self.botneck_capacityranking_chart)
+
+
+        self.gridLayout_15.addWidget(self.botneck_capacityranking_frame, 0, 1, 2, 1)
+
+        self.botneck_capacityprocess_frame = QtWidgets.QFrame(self.frame_54)
+        self.botneck_capacityprocess_frame.setObjectName(u"botneck_capacityprocess_frame")
+        self.botneck_capacityprocess_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.botneck_capacityprocess_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 0)
+        self.shadow.setColor(QtGui.QColor(0, 0, 0, 50))
+        self.botneck_capacityprocess_frame.setGraphicsEffect(self.shadow)
+        self.botneck_capacityprocess_frame.setStyleSheet(qss)
+        self.verticalLayout_112 = QtWidgets.QVBoxLayout(self.botneck_capacityprocess_frame)
+        self.verticalLayout_112.setObjectName(u"verticalLayout_112")
+        self.label_108 = QtWidgets.QLabel(self.botneck_capacityprocess_frame)
+        self.label_108.setObjectName(u"label_108")
+
+        self.verticalLayout_112.addWidget(self.label_108)
+
+        self.botneck_capacityprocess_chart = QtWidgets.QWidget(self.botneck_capacityprocess_frame)
+        self.botneck_capacityprocess_chart.setObjectName(u"botneck_capacityprocess_chart")
+        sizePolicy11 = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy11.setHorizontalStretch(0)
+        sizePolicy11.setVerticalStretch(0)
+        sizePolicy11.setHeightForWidth(self.botneck_capacityprocess_chart.sizePolicy().hasHeightForWidth())
+        self.botneck_capacityprocess_chart.setSizePolicy(sizePolicy11)
+
+        self.verticalLayout_112.addWidget(self.botneck_capacityprocess_chart)
+
+
+        self.gridLayout_15.addWidget(self.botneck_capacityprocess_frame, 1, 0, 1, 1)
+        self.gridLayout_15.setColumnStretch(0, 3)
+        self.gridLayout_15.setColumnStretch(1, 1)
+        self.gridLayout_15.setRowStretch(0, 1)
+        self.gridLayout_15.setRowStretch(1, 1)
+        self.gridLayout_15.setSpacing(6)
+        self.gridLayout_15.setContentsMargins(0, 0, 0, 0)
+
+        self.verticalLayout_100.addWidget(self.frame_54)
+        self.OEE_stacked_widget.addWidget(self.Bottleneck_page)
         self.verticalLayout_58.addWidget(self.OEE_stacked_widget)
-
         self.verticalLayout_2.addWidget(self.frame_112)
-
         self.main_stacked.addWidget(self.OEE_page)
-
         self.Downtime_page = QtWidgets.QWidget()
         self.Downtime_page.setObjectName(u"Downtime_page")
         self.verticalLayout_39 = QtWidgets.QVBoxLayout(self.Downtime_page)
@@ -3411,9 +3787,9 @@ class Ui_MainWindow(object):
         self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.horizontalLayout_7 = QtWidgets.QHBoxLayout(self.frame)
-        self.horizontalLayout_7.setSpacing(20)
+        self.horizontalLayout_7.setSpacing(10)
         self.horizontalLayout_7.setObjectName("horizontalLayout_7")
-        self.horizontalLayout_7.setContentsMargins(50, 0, 50, 0)
+        self.horizontalLayout_7.setContentsMargins(20, 0, 20, 0)
 
         self.frame_157 = QtWidgets.QFrame(self.frame)
         self.frame_157.setObjectName(u"frame_157")
@@ -3491,6 +3867,34 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_87.addWidget(self.Maintenance_status)
         self.horizontalLayout_7.addWidget(self.frame_157)
+        
+        self.overdue_frame = QtWidgets.QFrame(self.frame)
+        self.overdue_frame.setObjectName(u"overdue_frame")
+        self.overdue_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.overdue_frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.shadow = QtWidgets.QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setOffset(0, 0)
+        self.shadow.setColor(QtGui.QColor(0, 0, 0, 50))
+        self.overdue_frame.setGraphicsEffect(self.shadow)
+        self.overdue_frame.setStyleSheet(qss)
+        self.verticalLayout_99 = QtWidgets.QVBoxLayout(self.overdue_frame)
+        self.verticalLayout_99.setSpacing(10)
+        self.verticalLayout_99.setObjectName(u"verticalLayout_99")
+        self.verticalLayout_99.setContentsMargins(10, 10, 10, 10)
+        self.label_47 = QtWidgets.QLabel(self.overdue_frame)
+        self.label_47.setObjectName(u"label_47")
+        self.label_47.setMaximumSize(QtCore.QSize(16777215, 20))
+        font6.setPointSize(14)
+        self.label_47.setFont(font6)
+        self.label_47.setAlignment(QtCore.Qt.AlignCenter)
+        self.verticalLayout_99.addWidget(self.label_47)
+
+        self.overdue_label = QtWidgets.QLabel(self.overdue_frame)
+        self.overdue_label.setObjectName(u"overdue_label")
+        self.overdue_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.verticalLayout_99.addWidget(self.overdue_label)
+        self.horizontalLayout_7.addWidget(self.overdue_frame)
 
         self.near_due_frame = QtWidgets.QFrame(self.frame)
         self.near_due_frame.setObjectName("near_due_frame")
@@ -3508,7 +3912,6 @@ class Ui_MainWindow(object):
         self.label_18 = QtWidgets.QLabel(self.near_due_frame)
         self.label_18.setObjectName("label_18")
         self.label_18.setMaximumSize(QtCore.QSize(16777215, 20))
-        font6.setPointSize(14)
         self.label_18.setFont(font6)
         self.label_18.setAlignment(QtCore.Qt.AlignCenter)
 
@@ -5313,7 +5716,6 @@ class Ui_MainWindow(object):
         self.SP_key_insight_lbl.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
         self.verticalLayout_96.addWidget(self.SP_key_insight_lbl)
 
-
         self.gridLayout_10.addWidget(self.SP_key_insight_frame, 3, 1, 1, 1)
 
         self.SP_part_alert_frame = QtWidgets.QFrame(self.frame_23)
@@ -5333,6 +5735,21 @@ class Ui_MainWindow(object):
         self.verticalLayout_95.setSpacing(0)
         self.verticalLayout_95.setObjectName(u"verticalLayout_95")
         self.verticalLayout_95.setContentsMargins(6, 6, 6, 6)
+        self.frame_69 = QtWidgets.QFrame(self.SP_part_alert_frame)
+        self.frame_69.setObjectName(u"frame_69")
+        self.frame_69.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_69.setFrameShadow(QtWidgets.QFrame.Raised)
+        content_label_sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
+        content_label_sizePolicy.setHorizontalStretch(0)
+        content_label_sizePolicy.setVerticalStretch(0)
+        content_label_sizePolicy.setHeightForWidth(
+            self.frame_69.sizePolicy().hasHeightForWidth())
+        sizePolicy3.setHeightForWidth(self.frame_69.sizePolicy().hasHeightForWidth())
+        self.frame_69.setSizePolicy(content_label_sizePolicy)
+        self.horizontalLayout_36 = QtWidgets.QHBoxLayout(self.frame_69)
+        self.horizontalLayout_36.setObjectName(u"horizontalLayout_36")
+        self.horizontalLayout_36.setContentsMargins(0,0,10,5)
         self.label_129 = QtWidgets.QLabel(self.SP_part_alert_frame)
         self.label_129.setObjectName(u"label_129")
         sizePolicy3.setHeightForWidth(self.label_129.sizePolicy().hasHeightForWidth())
@@ -5340,7 +5757,35 @@ class Ui_MainWindow(object):
         self.label_129.setMinimumSize(QtCore.QSize(0, 0))
         self.label_129.setMaximumSize(QtCore.QSize(16777215, 25))
         self.label_129.setStyleSheet(qss)
-        self.verticalLayout_95.addWidget(self.label_129)
+        self.horizontalLayout_36.addWidget(self.label_129)
+        self.horizontalSpacer_17 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_36.addItem(self.horizontalSpacer_17)
+        self.spare_part_download_btn = QtWidgets.QPushButton(self.frame_69)
+        self.spare_part_download_btn.setObjectName(u"spare_part_download_btn")
+        self.spare_part_download_btn.setFlat(True)
+        self.spare_part_download_btn.setStyleSheet('''
+                                                    #spare_part_download_btn {
+                                                        border: none;
+                                                        background: none;
+                                                    }
+                                                    #spare_part_download_btn::hover {
+                                                        background-color: #F0F6FF;
+                                                        border: 1px solid #4A90E2;
+                                                        color: #2563EB;
+                                                    }
+
+                                                    #spare_part_download_btn::pressed {
+                                                        background-color: #DBEAFE;
+                                                        border: 1px solid #2563EB;
+                                                    }
+                                                         ''')
+        download_icon = QtGui.QIcon(resource_path(r"Icons/download.ico"))
+        self.spare_part_download_btn.setIcon(download_icon)
+        self.spare_part_download_btn.setIconSize(QtCore.QSize(32, 32))
+        self.horizontalLayout_36.addWidget(self.spare_part_download_btn)
+
+
+        self.verticalLayout_95.addWidget(self.frame_69)
 
         self.SP_part_alert_table = CopyableTableView(self.SP_part_alert_frame)
         self.SP_part_alert_table.setObjectName(u"SP_part_alert_table")
@@ -5348,18 +5793,10 @@ class Ui_MainWindow(object):
         self.SP_part_alert_table.setSizePolicy(sizePolicy1)
         self.SP_part_alert_table.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.SP_part_alert_table.setFrameShadow(QtWidgets.QFrame.Raised)
-
         self.verticalLayout_95.addWidget(self.SP_part_alert_table)
-
-
         self.gridLayout_10.addWidget(self.SP_part_alert_frame, 2, 0, 2, 1)
-
-
         self.verticalLayout_92.addWidget(self.frame_23)
-
-
         self.verticalLayout_17.addWidget(self.frame_20)
-
         self.Stock_control_stacked_widget.addWidget(self.Stock_dashboard_page)
         self.Stock_detail_page = QtWidgets.QWidget()
         self.Stock_detail_page.setObjectName(u"Stock_detail_page")
@@ -5367,7 +5804,6 @@ class Ui_MainWindow(object):
         self.verticalLayout_90.setSpacing(0)
         self.verticalLayout_90.setObjectName(u"verticalLayout_90")
         self.verticalLayout_90.setContentsMargins(0, 0, 0, 0)
-
         self.frame_14 = QtWidgets.QFrame(self.Stock_detail_page)
         self.frame_14.setObjectName(u"frame_14")
         self.frame_14.setFrameShape(QtWidgets.QFrame.NoFrame)
@@ -5789,6 +6225,7 @@ class Ui_MainWindow(object):
             "MainWindow", u"<html><head/><body><p align=\"center\"><span style=\" font-size:26pt; font-weight:696; color:#9d0000;\">Overall Equipment Effectiveness</span></p></body></html>", None))
         self.OEE_dashboard_btn.setText(
             _translate("MainWindow", u"Dashboard", None))
+        self.Bottleneck_btn.setText(_translate("MainWindow", u"Bottleneck", None))
         self.OEE_data_btn.setText(_translate(
             "MainWindow", u"Detail Data", None))
         self.groupBox_2.setTitle(_translate("MainWindow", u"Area", None))
@@ -5839,6 +6276,7 @@ class Ui_MainWindow(object):
         self.reset_filter_mainten_btn.setText(
             _translate("MainWindow", "Reset filter"))
         self.cancel_btn.setText(_translate("MainWindow", "Cancel"))
+        self.label_47.setText(_translate("MainWindow", "Overdue"))
         self.label_13.setText(_translate("MainWindow", u"Upcoming", None))
         self.upcoming_label.setText("")
         self.label_16.setText(_translate(
@@ -6112,6 +6550,27 @@ class Ui_MainWindow(object):
         self.SP_key_insight_lbl.setText("")
         self.label_129.setText(_translate("MainWindow", u"SPARE PART STATUS ALERT TABLE", None))
         self.label_132.setText(_translate("MainWindow", u"CRITICAL PART HEALTH GAUGE", None))
+        self.botneck_area_groupbox.setTitle(_translate("MainWindow", u"Area", None))
+        self.botneck_line_groupbox.setTitle(_translate("MainWindow", u"Line", None))
+        self.botneck_model_groupbox.setTitle(_translate("MainWindow", u"Model", None))
+        self.label_111.setText(_translate("MainWindow", u"Process", None))
+        self.botneck_process_value.setText("")
+        self.botneck_process_ico.setText("")
+        self.label_115.setText(_translate("MainWindow", u"Key Process", None))
+        self.botneck_keyprocess_value.setText("N/A")
+        self.botneck_keyprocess_ico.setText("")
+        self.label_130.setText(_translate("MainWindow", u"Key Process Capacity", None))
+        self.botneck_keyprocess_capacity_value.setText("N/A")
+        self.botneck_keyprocess_capacity_ico.setText("")
+        self.label_134.setText(_translate("MainWindow", u"Bottleneck", None))
+        self.botneck_value.setText("N/A")
+        self.botneck_ico.setText("")
+        self.label_137.setText(_translate("MainWindow", u"Bottleneck Capacity", None))
+        self.botneck_capacity_value.setText("N/A")
+        self.botneck_capacity_ico.setText("")
+        self.label_109.setText(_translate("MainWindow", u"Production Flow", None))
+        self.label_108.setText(_translate("MainWindow", u"Capacity by Process", None))
+        self.label_107.setText(_translate("MainWindow", u"Capacity Ranking", None))
 
     def company_week_number(self, date: datetime.date) -> int:
         year_start = datetime.date(date.year, 1, 1)
@@ -6152,6 +6611,24 @@ class CopyableTableView(QtWidgets.QTableView):
 
         else:
             super().keyPressEvent(event)
+        
+class ClickableFrame(QtWidgets.QFrame):
+
+    clicked = QtCore.pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setCursor(QtCore.Qt.PointingHandCursor)
+
+    def mouseReleaseEvent(self, event):
+        if (
+            event.button() == QtCore.Qt.LeftButton
+            and self.rect().contains(event.pos())
+        ):
+            self.clicked.emit()
+
+        super().mouseReleaseEvent(event)
 
 # if __name__ == "__main__":
 #     import sys

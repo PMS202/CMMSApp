@@ -32,9 +32,14 @@ db = Database_process()
 #     WHERE rp.technical = "VINH"
 # ) AND mp.month_year_id = 20 AND mp.maintenance_date IS NULL AND mp.status = "Near due" ;''')
 
-frame = db.query(sql = '''SELECT * FROM downtime_report
-WHERE `Date` BETWEEN '2026-07-01' AND '2026-07-31';''')
+frame = db.query(sql = '''
+    SELECT * FROM oee_report
+WHERE area_name = "SC-A"
+ORDER BY line_name, production_date;
+''')
+
+# frame = db.query(sql = '''SELECT * FROM ; ''')
 
 df = pd.DataFrame(frame)
-output_path = os.path.join(PROJECT_ROOT, 'exported_files', 'dt_SCA_Kha.xlsx')
+output_path = os.path.join(PROJECT_ROOT, 'exported_files', 'OEE_report_SCA.xlsx')
 df.to_excel(output_path, index=False)

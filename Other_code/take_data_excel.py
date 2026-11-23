@@ -5,7 +5,7 @@ from openpyxl import load_workbook
 
 # TAKE DATA AMOUNT USING FROM MCG
 group_dict = {"PE1": "XUẤT IE1", "PE2": "XUẤT IE2", "PE3": "XUẤT IE3", "PE4": "XUẤT IE4", "PE5": "XUẤT PEM"} 
-output_folder = r"X:\CY26\Safety Stock\Data\NEW"
+output_folder = r"X:\CY26\Safety Stock\Data\NEW2"
 PE1_df = pd.DataFrame(columns=['part_code'])
 PE2_df = pd.DataFrame(columns=['part_code'])
 PE3_df = pd.DataFrame(columns=['part_code'])
@@ -19,7 +19,7 @@ def read_excel_file():
             year_2 = str(year)[-2:]
             folder_path  = rf"\\172.30.73.156\mcg\QUAN LY CCDC&PTTT\Bao Cao Kiem Soat CCDC&PTTT\Bao cao da gui\Bao cao {year}\PE"
             for month in range(1, 13):
-                if year == 2026 and month > 6:
+                if year == 2026 and month > 8:
                    break  # Stop processing months after June 2026
                 if year == 2024:
                     file_name = f"Bao Cao {month}'{year_2}.xlsx"

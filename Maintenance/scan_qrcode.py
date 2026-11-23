@@ -25,19 +25,21 @@ class Scan_record_process():
             roi = img[self.y:self.height, self.x:self.width]
             gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
             result = zxingcpp.read_barcode(gray) # ISO/IEC 18004
-            if not result:  
-                readed_code.append("text")
-            else:  
-                try:
-                    data = json.loads(result.text)
-                    if isinstance(data, dict):
-                        data["page_num"] = page_num 
-                        result_text_with_page = json.dumps(data, ensure_ascii=False)
-                        readed_code.append(result_text_with_page)
-                    else:
-                        readed_code.append(result.text)
-                except json.JSONDecodeError:
-                    readed_code.append(result.text)
+            if result is None:  
+                readed_code.append("NA")
+            else:
+                readed_code.append(result.text)
+            # else:  
+            #     try:
+            #         data = json.loads(result.text)
+            #         if isinstance(data, dict):
+            #             data["page_num"] = page_num 
+            #             result_text_with_page = json.dumps(data, ensure_ascii=False)
+            #             readed_code.append(result_text_with_page)
+            #         else:
+            #             readed_code.append(result.text)
+                # except json.JSONDecodeError:
+                #     readed_code.append(result.text)
         return readed_code
 
     def scanning_dir(self,path):
@@ -87,16 +89,16 @@ class Scan_record_process():
             self.oneFile = True
         return self.path
     
-# if __name__ == "__main__":
-#     scanner = Scan_record_process()
-#     import os
-#     import sys
-#     from pathlib import Path
+if __name__ == "__main__":
+    scanner = Scan_record_process()
+    import os
+    import sys
+    from pathlib import Path
 #     PROJECT_ROOT = Path(__file__).resolve().parents[1]
 #     if str(PROJECT_ROOT) not in sys.path:
 #         sys.path.insert(0, str(PROJECT_ROOT))
 #     from Database.MariaDB import Database_process
-#     paths = scanner.paths(r"//172.30.73.156/share/14032026154102.pdf")
+    # paths = scanner.paths(r"//172.30.73.156/share/14032026154102.pdf")
 #     database = Database_process()
 #     plan_query = ''' SELECT m.machine_code,m.machine_name,d.department_name,pl.line_name,mp.maintenance_date,(SELECT "VINH") as technical_name, mf.page_num FROM maintenance_plan as mp
 #                     JOIN machines AS m ON mp.machine_id = m.machine_id
@@ -156,3 +158,33 @@ class Scan_record_process():
 #     for output in output_file:
 #         file_name = rf"X:\Scan\{output[0]}_{output[1]}_{output[2]}_{output[3]}_{output[5]}_{output[4]}.pdf"
 #         scanner.split_pdf(r"\\172.30.73.156\share\14032026154102.pdf",start_page_dict[output[0]],start_page_dict[output[0]]+output[6]-1,file_name)  
+
+    split_list = [
+        {"code":"MCG240007", "file_name":"MCG240007_Arrange_Products_Into_Trays_MC_PE3_FA27_LONG_2026-09-29.pdf", "page_start":0, "page_end":1},
+        {"code":"MCG250152", "file_name":"MCG250152_Industrial_Electron_Microscop_GP660V_PE3_FA27_LONG_2026-09-29.pdf", "page_start":2, "page_end":2},
+        {"code":"1741213-5/7", "file_name":"1741213-5-7_Wire_cutting_machine_PE3_FA27_LONG_2026-09-29.pdf", "page_start":3, "page_end":4},
+        {"code":"MCG220016", "file_name":"MCG220016_Vacuum_Cleaner_BF502_PE3_FA27_LONG_2026-09-29.pdf", "page_start":3, "page_end":4},
+        {"code":"1741213-6/7", "file_name":"1741213-6-7_Piece_cutting_machine_PE3_FA27_LONG_2026-09-29.pdf", "page_start":5, "page_end":6},
+        {"code":"MCG230021", "file_name":"MCG230021_Belt_Over_PE3_FA27_LONG_2026-09-29.pdf", "page_start":7, "page_end":8},
+        {"code":"1741213-3/7", "file_name":"1741213-3-7_LASER_PEELING_MACHINE_PE3_FA27_LONG_2026-09-29.pdf", "page_start":9, "page_end":10},
+        {"code":"1741213-4/7", "file_name":"1741213-4-7_Laser_welding_machine_PE3_FA27_LONG_2026-09-29.pdf", "page_start":11, "page_end":12},
+        {"code":"1741213-4/7+1", "file_name":"1741213-4-7+1_Power_suplly_for_welding_PE3_FA27_LONG_2026-09-29.pdf", "page_start":11, "page_end":12},
+        {"code":"1741213-7/7", "file_name":"1741213-7-7_Industrial_chiller_machine_PE3_FA27_LONG_2026-09-29.pdf", "page_start":11, "page_end":12},
+        {"code":"1741211-1/2", "file_name":"1741211-1-2_Terminal_Forming_machine(6)_PE3_FA27_LONG_2026-09-29.pdf", "page_start":13, "page_end":14},
+        {"code":"1741211-2/2", "file_name":"1741211-2-2_Terminal_Forming_machine(6)_PE3_FA27_LONG_2026-09-29.pdf", "page_start":15, "page_end":16},
+        {"code":"1741213-2/7", "file_name":"1741213-2-7_Winding_Machine_PE3_FA27_LONG_2026-09-29.pdf", "page_start":17, "page_end":18},
+        {"code":"1741213-1/7", "file_name":"1741213-1-7_Winding_Machine_PE3_FA27_LONG_2026-09-29.pdf", "page_start":19, "page_end":20},
+        {"code":"1741210", "file_name":"1741210_Multi-function_Molding_machine_PE3_FA27_LONG_2026-09-29.pdf", "page_start":21, "page_end":22},
+        {"code":"MCG250117", "file_name":"MCG250117_Vacuum_Cleaner_VF-5N_PE3_FA27_LONG_2026-09-29.pdf", "page_start":21, "page_end":22},
+        {"code":"1818214", "file_name":"1818214_DRYING_MACHINE_(OVEN)-YAMATO-411I_PE3_FA27_LONG_2026-09-29.pdf", "page_start":23, "page_end":24},
+        {"code":"1818218", "file_name":"1818218_DRYING_MACHINE_(OVEN)-YAMATO-411I_PE3_FA27_LONG_2026-09-29.pdf", "page_start":25, "page_end":26},
+        {"code":"1741209-2/15", "file_name":"1741209-2-15_Eletrical_Inspection_Tapping_Machine_PE3_FA27_LONG_2026-09-29.pdf", "page_start":27, "page_end":28},
+    ]
+
+    for item in split_list:
+        scanner.split_pdf(
+            r"C:\Users\2173452100291\Downloads\02102026133716.pdf",
+            item["page_start"],
+            item["page_end"],
+            rf"X:\Scan_Result_M\{item['file_name']}"
+        )
